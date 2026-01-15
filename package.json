@@ -1,0 +1,14 @@
+{
+  "name": "viral-story-search-monorepo",
+  "version": "1.0.0",
+  "description": "Viral Story Search - Next.js frontend with Python FastAPI backend",
+  "scripts": {
+    "dev": "concurrently \"cd backend && ./run.sh\" \"cd viral-story-search && npm run dev\"",
+    "backend": "cd backend && ./run.sh",
+    "frontend": "cd viral-story-search && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "private": true
+}
