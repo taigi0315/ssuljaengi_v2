@@ -190,3 +190,168 @@ export async function getStory(storyId: string): Promise<StoryResponse> {
     throw new Error('Failed to get story');
   }
 }
+
+/**
+ * Generate a webtoon script from a story
+ * @param storyId Story ID to convert to webtoon script
+ * @returns WebtoonScript with characters and panels
+ * @throws Error if the request fails
+ */
+export async function generateWebtoonScript(storyId: string): Promise<import('@/types').WebtoonScript> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        story_id: storyId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: { message: 'Webtoon script generation failed' },
+      }));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    return {
+      script_id: data.script_id,
+      story_id: data.story_id,
+      characters: data.characters,
+      panels: data.panels,
+      character_images: data.character_images || {},
+      created_at: data.created_at,
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to generate webtoon script');
+  }
+}
+
+/**
+ * Generate a character image
+ * @param request Character image generation request
+ * @returns CharacterImage with image URL
+ * @throws Error if the request fails
+ */
+export async function generateCharacterImage(request: import('@/types').GenerateCharacterImageRequest): Promise<import('@/types').CharacterImage> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/character/image`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: { message: 'Character image generation failed' },
+      }));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    return {
+      id: data.id,
+      character_name: data.character_name,
+      description: data.description,
+      image_url: data.image_url,
+      created_at: data.created_at,
+      is_selected: data.is_selected,
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to generate character image');
+  }
+}
+
+/**
+ * Get a webtoon script by ID
+ * @param scriptId Script ID
+ * @returns WebtoonScript with all data
+ * @throws Error if the request fails
+ */
+export async function getWebtoonScript(scriptId: string): Promise<import('@/types').WebtoonScript> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/${scriptId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: { message: 'Failed to get webtoon script' },
+      }));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    return {
+      script_id: data.script_id,
+      story_id: data.story_id,
+      characters: data.characters,
+      panels: data.panels,
+      character_images: data.character_images || {},
+      created_at: data.created_at,
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to get webtoon script');
+  }
+}
+
+/**
+ * Get all images for a character
+ * @param scriptId Script ID
+ * @param characterName Character name
+ * @returns Array of CharacterImage
+ * @throws Error if the request fails
+ */
+export async function getCharacterImages(scriptId: string, characterName: string): Promise<import('@/types').CharacterImage[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/character/${scriptId}/${characterName}/images`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: { message: 'Failed to get character images' },
+      }));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    return data.map((img: any) => ({
+      id: img.id,
+      character_name: img.character_name,
+      description: img.description,
+      image_url: img.image_url,
+      created_at: img.created_at,
+      is_selected: img.is_selected,
+    }));
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to get character images');
+  }
+}

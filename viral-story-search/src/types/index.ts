@@ -203,3 +203,45 @@ export interface WorkflowProgressProps {
 export interface RedditPostDisplayProps {
   post: ViralPost;
 }
+
+// Webtoon Types (Phase 3)
+export interface Character {
+  name: string;
+  visual_description: string;
+}
+
+export interface WebtoonPanel {
+  panel_number: number;
+  shot_type: string;
+  active_character_names: string[];
+  visual_prompt: string;
+  dialogue?: string;
+}
+
+export interface WebtoonScript {
+  script_id: string;
+  story_id: string;
+  characters: Character[];
+  panels: WebtoonPanel[];
+  character_images: Record<string, CharacterImage[]>;
+  created_at: string;
+}
+
+export interface CharacterImage {
+  id: string;
+  character_name: string;
+  description: string;
+  image_url: string;
+  created_at: string;
+  is_selected: boolean;
+}
+
+export interface GenerateWebtoonRequest {
+  story_id: string;
+}
+
+export interface GenerateCharacterImageRequest {
+  script_id: string;
+  character_name: string;
+  description: string;
+}

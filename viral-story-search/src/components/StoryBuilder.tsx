@@ -8,9 +8,10 @@ import RedditPostDisplay from './RedditPostDisplay';
 
 interface StoryBuilderProps {
   post: ViralPost;
+  onGenerateImages?: (storyId: string) => void;
 }
 
-export default function StoryBuilder({ post }: StoryBuilderProps) {
+export default function StoryBuilder({ post, onGenerateImages }: StoryBuilderProps) {
   const [selectedMood, setSelectedMood] = useState<StoryMood | null>(null);
   const [story, setStory] = useState<Story | null>(null);
   const [status, setStatus] = useState<WorkflowStatus | null>(null);
@@ -219,13 +220,22 @@ export default function StoryBuilder({ post }: StoryBuilderProps) {
             </div>
 
             {/* Generate Another Button */}
-            <div className="text-center pt-4">
+            <div className="flex gap-4 justify-center pt-4">
               <button
                 onClick={handleRetry}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all"
+                className="px-6 py-3 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-all"
               >
                 🔄 Generate Another Story
               </button>
+              
+              {onGenerateImages && (
+                <button
+                  onClick={() => onGenerateImages(story.id)}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all"
+                >
+                  🎨 Generate Images
+                </button>
+              )}
             </div>
           </div>
         </div>

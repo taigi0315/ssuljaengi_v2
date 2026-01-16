@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { SearchControls, ResultsList, ErrorMessage } from '@/components';
 import StoryTabs from '@/components/StoryTabs';
 import StoryBuilder from '@/components/StoryBuilder';
+import CharacterImageGenerator from '@/components/CharacterImageGenerator';
 import { SearchCriteria, ViralPost, ErrorState } from '@/types';
 import { searchCache } from '@/utils/searchCache';
 import { debounce } from '@/utils/debounce';
@@ -19,9 +20,10 @@ export default function Home() {
   
   // Selection state for story generation
   const [selectedPost, setSelectedPost] = useState<ViralPost | null>(null);
+  const [generatedStoryId, setGeneratedStoryId] = useState<string | null>(null);
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<'search' | 'generate'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'generate' | 'images'>('search');
   
   const router = useRouter();
 
@@ -106,13 +108,23 @@ export default function Home() {
   }, [selectedPost]);
 
   // Handle tab change
-  const handleTabChange = useCallback((tab: 'search' | 'generate') => {
+  const handleTabChange = useCallback((tab: 'search' | 'generate' | 'images') => {
     if (tab === 'generate' && !selectedPost) {
       // Don't allow switching to generate tab without a selected post
       return;
     }
+    if (tab === 'images' && !generatedStoryId) {
+      // Don't allow switching to images tab without a generated story
+      return;
+    }
     setActiveTab(tab);
-  }, [selectedPost]);
+  }, [selectedPost, generatedStoryId]);
+
+  // Handle generate images
+  const handleGenerateImages = useCallback((storyId: string) => {
+    setGeneratedStoryId(storyId);
+    setActiveTab('images');
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100">
@@ -133,6 +145,7 @@ export default function Home() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
         hasSelectedPost={!!selectedPost}
+        hasGeneratedStory={!!generatedStoryId}
       />
 
       {/* Main Content */}
@@ -162,12 +175,24 @@ export default function Home() {
               />
             )}
           </>
-        ) : (
+        ) : activeTab === 'generate' ? (
           <>
             {/* Story Building Tab */}
             {selectedPost && (
               <div className="max-w-7xl mx-auto">
-                <StoryBuilder post={selectedPost} />
+                <StoryBuilder 
+                  post={selectedPost}
+                  onGenerateImages={handleGenerateImages}
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Character Images Tab */}
+            {generatedStoryId && (
+              <div className="max-w-7xl mx-auto">
+                <CharacterImageGenerator storyId={generatedStoryId} />
               </div>
             )}
           </>

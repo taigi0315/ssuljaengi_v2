@@ -385,9 +385,10 @@ def setup_routes(app: FastAPI) -> None:
         return {"status": "healthy"}
     
     # Import and register routers
-    from app.routers import search, story
+    from app.routers import search, story, webtoon
     app.include_router(search.router, tags=["Search"])
     app.include_router(story.router, tags=["Story"])
+    app.include_router(webtoon.router, tags=["Webtoon"])
     
     logger.info("Routes configured")
 
