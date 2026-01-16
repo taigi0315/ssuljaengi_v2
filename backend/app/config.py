@@ -65,7 +65,7 @@ class Settings(BaseSettings):
         min_length=1
     )
     gemini_model: str = Field(
-        default="gemini-2.0-flash-exp",
+        default="gemini-2.5-flash-latest",
         description="Gemini model name"
     )
     gemini_temperature: float = Field(
