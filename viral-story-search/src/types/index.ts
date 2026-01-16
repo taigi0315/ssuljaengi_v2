@@ -110,10 +110,15 @@ export interface ResultsListProps {
   searchCriteria: SearchCriteria;
   isLoading: boolean;
   error: string | null;
+  selectedPost?: ViralPost | null;
+  onPostSelect?: (post: ViralPost) => void;
+  onCreateStory?: () => void;
 }
 
 export interface ResultItemProps {
   post: ViralPost;
+  isSelected?: boolean;
+  onSelect?: (post: ViralPost) => void;
 }
 
 export interface ErrorMessageProps {
@@ -139,4 +144,62 @@ export interface RedditApiClient {
     limit: number
   ): Promise<RedditPost[]>;
   validateSubreddit(name: string): Promise<boolean>;
+}
+
+// Story Generation Types (Phase 2)
+export type StoryMood = 'rofan' | 'modern_romance' | 'slice_of_life' | 'revenge' | 'high_teen';
+
+export interface StoryMoodOption {
+  id: StoryMood;
+  name: string;
+  emoji: string;
+  description: string;
+}
+
+export interface StoryRequest {
+  postId: string;
+  postTitle: string;
+  postContent: string;
+  mood: StoryMood;
+  options?: Record<string, any>;
+}
+
+export interface Story {
+  id: string;
+  content: string;
+  evaluationScore: number;
+  rewriteCount: number;
+  createdAt: string;
+  metadata?: Record<string, any>;
+}
+
+export interface StoryResponse {
+  story: Story;
+  generationTime: number;
+  workflowInfo: {
+    evaluationScore: number;
+    rewriteCount: number;
+  };
+}
+
+export interface WorkflowStatus {
+  workflowId: string;
+  status: 'started' | 'in_progress' | 'completed' | 'failed';
+  currentStep: string;
+  progress: number; // 0.0 to 1.0
+  storyId?: string;
+  error?: string;
+}
+
+// Story Component Props
+export interface StoryDisplayProps {
+  story: Story;
+}
+
+export interface WorkflowProgressProps {
+  status: WorkflowStatus | null;
+}
+
+export interface RedditPostDisplayProps {
+  post: ViralPost;
 }

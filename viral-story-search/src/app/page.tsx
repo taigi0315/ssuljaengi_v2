@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { SearchControls, ResultsList, ErrorMessage } from '@/components';
+import StoryTabs from '@/components/StoryTabs';
+import StoryBuilder from '@/components/StoryBuilder';
 import { SearchCriteria, ViralPost, ErrorState } from '@/types';
 import { searchCache } from '@/utils/searchCache';
 import { debounce } from '@/utils/debounce';
@@ -13,6 +16,14 @@ export default function Home() {
   const [searchCriteria, setSearchCriteria] = useState<SearchCriteria | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ErrorState | string | null>(null);
+  
+  // Selection state for story generation
+  const [selectedPost, setSelectedPost] = useState<ViralPost | null>(null);
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'search' | 'generate'>('search');
+  
+  const router = useRouter();
 
   // Handle search execution with caching
   const performSearch = useCallback(async (criteria: SearchCriteria) => {
@@ -79,6 +90,30 @@ export default function Home() {
     }
   };
 
+  // Handle post selection
+  const handlePostSelect = useCallback((post: ViralPost) => {
+    setSelectedPost(post);
+  }, []);
+
+  // Handle create story navigation
+  const handleCreateStory = useCallback(() => {
+    if (selectedPost) {
+      // Store selected post in sessionStorage for persistence
+      sessionStorage.setItem('selectedPost', JSON.stringify(selectedPost));
+      // Switch to story building tab
+      setActiveTab('generate');
+    }
+  }, [selectedPost]);
+
+  // Handle tab change
+  const handleTabChange = useCallback((tab: 'search' | 'generate') => {
+    if (tab === 'generate' && !selectedPost) {
+      // Don't allow switching to generate tab without a selected post
+      return;
+    }
+    setActiveTab(tab);
+  }, [selectedPost]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100">
       {/* Header */}
@@ -93,26 +128,49 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Tabs */}
+      <StoryTabs
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        hasSelectedPost={!!selectedPost}
+      />
+
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 sm:py-8 md:py-12">
-        {/* Search Controls */}
-        <SearchControls onSearch={handleSearch} isLoading={isLoading} />
+        {activeTab === 'search' ? (
+          <>
+            {/* Search Controls */}
+            <SearchControls onSearch={handleSearch} isLoading={isLoading} />
 
-        {/* Error Display */}
-        {error && (
-          <div className="mt-6 max-w-4xl mx-auto">
-            <ErrorMessage error={error} onRetry={handleRetry} />
-          </div>
-        )}
+            {/* Error Display */}
+            {error && (
+              <div className="mt-6 max-w-4xl mx-auto">
+                <ErrorMessage error={error} onRetry={handleRetry} />
+              </div>
+            )}
 
-        {/* Results Display */}
-        {(searchCriteria || isLoading) && !error && (
-          <ResultsList
-            posts={posts}
-            searchCriteria={searchCriteria || { timeRange: '1d', subreddits: [], postCount: 20 }}
-            isLoading={isLoading}
-            error={null}
-          />
+            {/* Results Display */}
+            {(searchCriteria || isLoading) && !error && (
+              <ResultsList
+                posts={posts}
+                searchCriteria={searchCriteria || { timeRange: '1d', subreddits: [], postCount: 20 }}
+                isLoading={isLoading}
+                error={null}
+                selectedPost={selectedPost}
+                onPostSelect={handlePostSelect}
+                onCreateStory={handleCreateStory}
+              />
+            )}
+          </>
+        ) : (
+          <>
+            {/* Story Building Tab */}
+            {selectedPost && (
+              <div className="max-w-7xl mx-auto">
+                <StoryBuilder post={selectedPost} />
+              </div>
+            )}
+          </>
         )}
       </main>
 

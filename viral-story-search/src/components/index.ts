@@ -8,3 +8,12 @@ export { default as SearchControls } from './SearchControls';
 export { default as ErrorMessage } from './ErrorMessage';
 export { default as LoadingSpinner } from './LoadingSpinner';
 export { default as VisualFeedback } from './VisualFeedback';
+
+// Story generation components
+export { default as StoryDisplay } from './StoryDisplay';
+export { default as WorkflowProgress } from './WorkflowProgress';
+export { default as RedditPostDisplay } from './RedditPostDisplay';
+
+export { default as StoryTabs } from './StoryTabs';
+export { default as MoodSelector } from './MoodSelector';
+export { default as StoryBuilder } from './StoryBuilder';

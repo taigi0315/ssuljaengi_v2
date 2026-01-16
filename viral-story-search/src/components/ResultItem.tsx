@@ -1,7 +1,7 @@
 import React from 'react';
 import { ResultItemProps } from '@/types';
 
-const ResultItem: React.FC<ResultItemProps> = ({ post }) => {
+const ResultItem: React.FC<ResultItemProps> = ({ post, isSelected = false, onSelect }) => {
   // Format post age
   const formatPostAge = (createdAt: Date): string => {
     const now = new Date();
@@ -31,22 +31,59 @@ const ResultItem: React.FC<ResultItemProps> = ({ post }) => {
     return num.toString();
   };
 
+  // Handle click - either select or navigate to Reddit
+  const handleClick = (e: React.MouseEvent) => {
+    if (onSelect) {
+      // If onSelect is provided, use selection mode
+      e.preventDefault();
+      onSelect(post);
+    }
+    // Otherwise, let the default link behavior happen
+  };
+
+  const containerClasses = `
+    bg-white border-2 rounded-lg p-4 sm:p-5 transition-all duration-200 transform
+    ${isSelected 
+      ? 'border-blue-500 shadow-lg ring-2 ring-blue-200 bg-blue-50' 
+      : 'border-gray-200 hover:shadow-lg hover:border-blue-300 hover:-translate-y-1'
+    }
+    ${onSelect ? 'cursor-pointer' : ''}
+  `.trim();
+
   return (
-    <div className="bg-white border-2 border-gray-200 rounded-lg p-4 sm:p-5 hover:shadow-lg hover:border-blue-300 transition-all duration-200 transform hover:-translate-y-1">
-      {/* Post title - clickable */}
-      <a
-        href={post.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block mb-3 group"
-      >
-        <h3 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-150 leading-snug">
-          {post.title}
-        </h3>
-        <span className="text-xs text-blue-500 group-hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity">
-          Click to view on Reddit →
-        </span>
-      </a>
+    <div 
+      className={containerClasses}
+      onClick={onSelect ? handleClick : undefined}
+    >
+      {/* Post title */}
+      {onSelect ? (
+        // Selection mode - no external link
+        <div className="mb-3">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
+            {post.title}
+          </h3>
+          {isSelected && (
+            <span className="text-xs text-blue-600 font-medium mt-1 inline-block">
+              ✓ Selected for story generation
+            </span>
+          )}
+        </div>
+      ) : (
+        // Normal mode - external link
+        <a
+          href={post.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block mb-3 group"
+        >
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-150 leading-snug">
+            {post.title}
+          </h3>
+          <span className="text-xs text-blue-500 group-hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity">
+            Click to view on Reddit →
+          </span>
+        </a>
+      )}
 
       {/* Post metadata */}
       <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600">
