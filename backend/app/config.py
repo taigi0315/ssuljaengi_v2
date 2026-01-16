@@ -65,8 +65,12 @@ class Settings(BaseSettings):
         min_length=1
     )
     gemini_model: str = Field(
-        default="gemini-2.5-flash-latest",
+        default="gemini-2.0-flash-exp",
         description="Gemini model name"
+    )
+    model_image_gen: str = Field(
+        default="gemini-2.5-flash-image",
+        description="Gemini model for image generation"
     )
     gemini_temperature: float = Field(
         default=0.7,

@@ -6,6 +6,7 @@ and provides feedback for potential improvements.
 """
 
 from langchain.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import JsonOutputParser
 from app.services.llm_config import llm_config
 from app.models.story import EvaluationResult
 
@@ -18,10 +19,11 @@ class StoryEvaluator:
     """
     
     def __init__(self):
-        """Initialize the story evaluator with LLM and prompt template."""
+        """Initialize the story evaluator with LLM and JSON output parser."""
         self.llm = llm_config.get_model()
+        self.parser = JsonOutputParser(pydantic_object=EvaluationResult)
         
-        # Placeholder evaluation prompt - can be optimized later
+        # Evaluation prompt
         self.prompt = ChatPromptTemplate.from_template("""
 Evaluate this story on a scale of 1-10 based on:
 1. Coherence (does it make sense? logical flow?)
@@ -31,12 +33,9 @@ Evaluate this story on a scale of 1-10 based on:
 Story:
 {story}
 
-Provide your evaluation in this EXACT format (one value per line):
-Score: [number 1-10]
-Coherence: [number 1-10]
-Engagement: [number 1-10]
-Length Appropriate: [yes or no]
-Feedback: [specific suggestions for improvement]
+{format_instructions}
+
+Return ONLY valid JSON, no markdown formatting.
 """)
     
     async def evaluate_story(self, story: str) -> EvaluationResult:
@@ -53,51 +52,18 @@ Feedback: [specific suggestions for improvement]
             Exception: If evaluation fails
         """
         try:
-            response = await self.llm.ainvoke(
-                self.prompt.format(story=story)
-            )
+            # Use JSON output parser chain
+            chain = self.prompt | self.llm | self.parser
             
-            # Parse response
-            content = response.content
-            lines = content.strip().split('\n')
+            result = await chain.ainvoke({
+                "story": story,
+                "format_instructions": self.parser.get_format_instructions()
+            })
             
-            # Extract values with error handling
-            score = 7.0  # Default
-            coherence = 7.0
-            engagement = 7.0
-            length_ok = True
-            feedback = "Story evaluation completed."
+            # Convert dict to EvaluationResult model
+            evaluation = EvaluationResult(**result)
             
-            for line in lines:
-                line = line.strip()
-                if line.startswith("Score:"):
-                    try:
-                        score = float(line.split(':', 1)[1].strip())
-                    except (ValueError, IndexError):
-                        pass
-                elif line.startswith("Coherence:"):
-                    try:
-                        coherence = float(line.split(':', 1)[1].strip())
-                    except (ValueError, IndexError):
-                        pass
-                elif line.startswith("Engagement:"):
-                    try:
-                        engagement = float(line.split(':', 1)[1].strip())
-                    except (ValueError, IndexError):
-                        pass
-                elif line.startswith("Length Appropriate:"):
-                    length_str = line.split(':', 1)[1].strip().lower()
-                    length_ok = 'yes' in length_str
-                elif line.startswith("Feedback:"):
-                    feedback = line.split(':', 1)[1].strip()
-            
-            return EvaluationResult(
-                score=score,
-                feedback=feedback,
-                coherence=coherence,
-                engagement=engagement,
-                length_appropriate=length_ok
-            )
+            return evaluation
             
         except Exception as e:
             raise Exception(f"Story evaluation failed: {str(e)}")

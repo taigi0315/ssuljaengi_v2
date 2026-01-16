@@ -85,22 +85,25 @@ async def run_workflow(workflow_id: str, request: StoryRequest):
         
         logger.info(f"Workflow {workflow_id}: Starting writer node")
         
-        # Run workflow
-        result = await story_workflow.ainvoke({
-            "reddit_post": {
-                "id": request.post_id,
-                "title": request.post_title,
-                "content": request.post_content
+        # Run workflow with recursion limit
+        result = await story_workflow.ainvoke(
+            {
+                "reddit_post": {
+                    "id": request.post_id,
+                    "title": request.post_title,
+                    "content": request.post_content
+                },
+                "mood": request.mood,
+                "rewrite_count": 0,
+                "current_step": "writing",
+                "draft_story": "",
+                "evaluation_score": 0.0,
+                "evaluation_feedback": "",
+                "final_story": "",
+                "error": None
             },
-            "mood": request.mood,
-            "rewrite_count": 0,
-            "current_step": "writing",
-            "draft_story": "",
-            "evaluation_score": 0.0,
-            "evaluation_feedback": "",
-            "final_story": "",
-            "error": None
-        })
+            config={"recursion_limit": 10}
+        )
         
         logger.info(f"Workflow {workflow_id}: Completed")
         logger.info(f"Evaluation score: {result.get('evaluation_score', 0)}")

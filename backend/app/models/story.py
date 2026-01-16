@@ -108,19 +108,169 @@ class EvaluationResult(BaseModel):
 
 
 class Character(BaseModel):
-    name: str = Field(..., description="The name of the character.")
-    visual_description: str = Field(..., description="A dense, comma-separated string describing hair, eyes, body, outfit, and vibe. This string will be re-used in every panel prompt.")
+    """
+    Character model with detailed physical and personality attributes.
+    
+    The LLM generates these fields from the story. They should all be populated.
+    """
+    name: str = Field(
+        ..., 
+        description="The name of the character.",
+        min_length=1,
+        max_length=100
+    )
+    gender: str = Field(
+        ..., 
+        description="Gender of the character (e.g., male, female, non-binary).",
+        min_length=1,
+        max_length=50
+    )
+    face: str = Field(
+        ..., 
+        description="Facial features including jawline, face shape, eye color, skin tone, and distinctive features.",
+        min_length=5,
+        max_length=500
+    )
+    hair: str = Field(
+        ..., 
+        description="Hair description including length, color, style, and texture.",
+        min_length=3,
+        max_length=300
+    )
+    body: str = Field(
+        ..., 
+        description="Body type, build, height, and physical characteristics.",
+        min_length=3,
+        max_length=300
+    )
+    outfit: str = Field(
+        ..., 
+        description="Clothing, accessories, and overall style.",
+        min_length=3,
+        max_length=500
+    )
+    mood: str = Field(
+        ..., 
+        description="Character's typical mood, personality vibe, or demeanor.",
+        min_length=3,
+        max_length=200
+    )
+    visual_description: str = Field(
+        ..., 
+        description="Complete visual description combining all attributes. Used for image generation.",
+        min_length=20,
+        max_length=2000
+    )
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Ji-hoon",
+                "gender": "male",
+                "face": "sharp jawline, dark brown eyes, olive skin tone, high cheekbones",
+                "hair": "short black hair, neatly styled with slight wave",
+                "body": "tall athletic build, broad shoulders, lean muscular frame",
+                "outfit": "tailored navy suit with white dress shirt, silver watch",
+                "mood": "confident and charismatic with a hint of mystery",
+                "visual_description": "A tall man with sharp jawline, dark brown eyes, olive skin, high cheekbones, short black hair neatly styled with slight wave, athletic build with broad shoulders and lean muscular frame, wearing a tailored navy suit with white dress shirt and silver watch, confident and charismatic demeanor with a hint of mystery"
+            }
+        }
+
+
 
 class WebtoonPanel(BaseModel):
-    panel_number: int
-    shot_type: str = Field(..., description="Camera angle (e.g., Low Angle, Dutch Angle, Close-up).")
-    active_character_names: List[str] = Field(..., description="List of names of characters appearing in this specific panel.")
-    visual_prompt: str = Field(..., description="The self-contained image generation prompt. MUST include the full physical description of the characters present, not just their names.")
-    dialogue: Optional[str] = Field(None, description="Brief dialogue or SFX, if any.")
+    """
+    Webtoon panel with scene description and dialogue.
+    
+    Each panel represents a single frame in the webtoon with
+    camera angle, characters, visual description, and optional dialogue.
+    """
+    panel_number: int = Field(
+        ..., 
+        description="Sequential panel number starting from 1.",
+        ge=1,
+        le=100
+    )
+    shot_type: str = Field(
+        default="Medium Shot", 
+        description="Camera angle (e.g., Low Angle, Dutch Angle, Close-up, Wide Shot, Bird's Eye).",
+        max_length=100
+    )
+    active_character_names: List[str] = Field(
+        default_factory=list, 
+        description="List of character names appearing in this panel.",
+        max_items=10
+    )
+    visual_prompt: str = Field(
+        default="", 
+        description="Self-contained image generation prompt with full character descriptions, not just names.",
+        max_length=2000
+    )
+    dialogue: Optional[str] = Field(
+        None, 
+        description="Character dialogue or sound effects for this panel.",
+        max_length=500
+    )
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "panel_number": 1,
+                "shot_type": "Medium Shot",
+                "active_character_names": ["Ji-hoon", "Hana"],
+                "visual_prompt": "Medium shot of a tall man with sharp jawline, dark brown eyes, olive skin (Ji-hoon) standing across from a woman with long wavy brown hair, bright green eyes (Hana) in a modern office with glass windows in the background, soft natural lighting",
+                "dialogue": "Ji-hoon: 'We need to talk about what happened.'"
+            }
+        }
+
 
 class WebtoonScript(BaseModel):
-    characters: List[Character]
-    panels: List[WebtoonPanel]
+    """
+    Complete webtoon script with characters and panels.
+    
+    Contains all character definitions and sequential panels
+    for the webtoon story.
+    """
+    characters: List[Character] = Field(
+        ..., 
+        description="List of all characters in the webtoon.",
+        min_items=1,
+        max_items=20
+    )
+    panels: List[WebtoonPanel] = Field(
+        ..., 
+        description="List of sequential panels (8-16 recommended).",
+        min_items=1,
+        max_items=50
+    )
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "characters": [
+                    {
+                        "name": "Ji-hoon",
+                        "gender": "male",
+                        "face": "sharp jawline, dark brown eyes, olive skin",
+                        "hair": "short black hair, neatly styled",
+                        "body": "tall athletic build, broad shoulders",
+                        "outfit": "tailored navy suit with white shirt",
+                        "mood": "confident and charismatic",
+                        "visual_description": "A tall man with sharp jawline, dark brown eyes, olive skin, short black hair neatly styled, athletic build with broad shoulders, wearing a tailored navy suit with white shirt, confident demeanor"
+                    }
+                ],
+                "panels": [
+                    {
+                        "panel_number": 1,
+                        "shot_type": "Wide Shot",
+                        "active_character_names": ["Ji-hoon"],
+                        "visual_prompt": "Wide shot of a tall man with sharp jawline, dark brown eyes, olive skin (Ji-hoon) standing in a modern office",
+                        "dialogue": "Ji-hoon: 'This is just the beginning.'"
+                    }
+                ]
+            }
+        }
+
 
 
 class CharacterImage(BaseModel):
@@ -181,7 +331,13 @@ class GenerateCharacterImageRequest(BaseModel):
         script_id: ID of the webtoon script
         character_name: Name of the character
         description: Visual description for image generation
+        gender: Character gender for base style selection
+        image_style: Image style/mood selection
     """
     script_id: str = Field(..., description="Webtoon script ID")
     character_name: str = Field(..., description="Character name")
     description: str = Field(..., description="Visual description for generation")
+    gender: str = Field(..., description="Character gender (male/female)")
+    image_style: Literal["HISTORY_SAGEUK_ROMANCE", "ISEKAI_OTOME_FANTASY", "MODERN_KOREAN_ROMANCE"] = Field(
+        ..., description="Image style/mood selection"
+    )

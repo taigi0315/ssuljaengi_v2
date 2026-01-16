@@ -152,8 +152,9 @@ def should_rewrite(state: StoryWorkflowState) -> Literal["rewrite", "end"]:
     score = state.get("evaluation_score", 10.0)
     rewrite_count = state.get("rewrite_count", 0)
     
-    # Rewrite if score is below threshold and haven't exceeded max rewrites
-    if score < settings.story_evaluation_threshold and rewrite_count < settings.story_max_rewrites:
+    # Only rewrite once if score is below threshold
+    # After rewrite, always end (no loop back to evaluator)
+    if score < settings.story_evaluation_threshold and rewrite_count == 0:
         return "rewrite"
     
     return "end"
@@ -187,8 +188,8 @@ def create_story_workflow() -> StateGraph:
         }
     )
     
-    # After rewrite, evaluate again
-    workflow.add_edge("rewriter", "evaluator")
+    # After rewrite, go directly to END (no loop back)
+    workflow.add_edge("rewriter", END)
     
     return workflow.compile()
 

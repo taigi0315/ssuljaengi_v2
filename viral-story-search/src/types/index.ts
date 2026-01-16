@@ -207,6 +207,12 @@ export interface RedditPostDisplayProps {
 // Webtoon Types (Phase 3)
 export interface Character {
   name: string;
+  gender: string;
+  face: string;
+  hair: string;
+  body: string;
+  outfit: string;
+  mood: string;
   visual_description: string;
 }
 
@@ -244,4 +250,15 @@ export interface GenerateCharacterImageRequest {
   script_id: string;
   character_name: string;
   description: string;
+  gender: string;
+  image_style: 'HISTORY_SAGEUK_ROMANCE' | 'ISEKAI_OTOME_FANTASY' | 'MODERN_KOREAN_ROMANCE';
+}
+
+export type ImageStyle = 'HISTORY_SAGEUK_ROMANCE' | 'ISEKAI_OTOME_FANTASY' | 'MODERN_KOREAN_ROMANCE';
+
+export interface ImageStyleOption {
+  id: ImageStyle;
+  name: string;
+  description: string;
+  previewImage: string;
 }

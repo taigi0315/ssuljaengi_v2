@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { WebtoonScript, Character, CharacterImage } from '@/types';
-import { generateWebtoonScript, generateCharacterImage } from '@/lib/apiClient';
+import { generateWebtoonScript, generateCharacterImage, selectCharacterImage } from '@/lib/apiClient';
 import CharacterList from './CharacterList';
 import CharacterImageDisplay from './CharacterImageDisplay';
 
@@ -42,7 +42,12 @@ export default function CharacterImageGenerator({ storyId }: CharacterImageGener
     }
   };
 
-  const handleGenerateImage = async (characterName: string, description: string) => {
+  const handleGenerateImage = async (
+    characterName: string, 
+    description: string, 
+    gender: string, 
+    imageStyle: 'HISTORY_SAGEUK_ROMANCE' | 'ISEKAI_OTOME_FANTASY' | 'MODERN_KOREAN_ROMANCE'
+  ) => {
     if (!webtoonScript) return;
 
     try {
@@ -53,6 +58,8 @@ export default function CharacterImageGenerator({ storyId }: CharacterImageGener
         script_id: webtoonScript.script_id,
         character_name: characterName,
         description,
+        gender,
+        image_style: imageStyle,
       });
 
       // Update webtoon script with new image
@@ -80,6 +87,37 @@ export default function CharacterImageGenerator({ storyId }: CharacterImageGener
 
   const handleCharacterSelect = (character: Character) => {
     setSelectedCharacter(character);
+  };
+
+  const handleSelectImage = async (imageId: string) => {
+    if (!webtoonScript) return;
+
+    try {
+      setError(null);
+      
+      // Call API to select image
+      await selectCharacterImage(webtoonScript.script_id, imageId);
+      
+      // Update local state to reflect selection
+      setWebtoonScript(prev => {
+        if (!prev) return prev;
+        
+        const updatedImages = { ...prev.character_images };
+        
+        // Deselect all images for all characters, then select the chosen one
+        Object.keys(updatedImages).forEach(charName => {
+          updatedImages[charName] = updatedImages[charName].map(img => ({
+            ...img,
+            is_selected: img.id === imageId
+          }));
+        });
+        
+        return { ...prev, character_images: updatedImages };
+      });
+    } catch (err) {
+      console.error('Select image error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to select image');
+    }
   };
 
   // Loading state
@@ -151,6 +189,7 @@ export default function CharacterImageGenerator({ storyId }: CharacterImageGener
                   character={selectedCharacter}
                   images={webtoonScript.character_images[selectedCharacter.name] || []}
                   onGenerateImage={handleGenerateImage}
+                  onSelectImage={handleSelectImage}
                   isGenerating={isGeneratingImage}
                 />
               ) : (

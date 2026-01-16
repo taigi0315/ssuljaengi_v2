@@ -7,16 +7,19 @@ This module creates and configures the FastAPI application with:
 - Exception handlers for custom exceptions
 - Health check endpoint
 - API routers
+- Static file serving for assets
 """
 import logging
 import time
+import os
 from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
 from app.config import get_settings
@@ -383,6 +386,14 @@ def setup_routes(app: FastAPI) -> None:
             Status indicating the service is healthy
         """
         return {"status": "healthy"}
+    
+    # Mount static files for image assets
+    assets_path = os.path.join(os.path.dirname(__file__), "assets")
+    if os.path.exists(assets_path):
+        app.mount("/api/assets", StaticFiles(directory=assets_path), name="assets")
+        logger.info(f"Static assets mounted at /api/assets from {assets_path}")
+    else:
+        logger.warning(f"Assets directory not found: {assets_path}")
     
     # Import and register routers
     from app.routers import search, story, webtoon

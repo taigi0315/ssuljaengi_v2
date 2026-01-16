@@ -6,12 +6,15 @@ This module provides REST API endpoints for webtoon script generation and charac
 - POST /webtoon/character/image: Generate character image
 - GET /webtoon/{script_id}: Retrieve webtoon script
 - GET /webtoon/character/{character_name}/images: Get all images for a character
+- GET /webtoon/image-styles: Get available image styles with preview images
 """
 
 import logging
 import uuid
 from typing import Dict, List
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
+import os
 
 from app.models.story import (
     GenerateWebtoonRequest,
@@ -34,6 +37,36 @@ character_images: Dict[str, List[dict]] = {}  # script_id -> list of images
 
 # Import stories from story router
 from app.routers.story import stories
+
+
+@router.get("/image-styles")
+async def get_image_styles():
+    """
+    Get available image styles with metadata.
+    
+    Returns:
+        List of image style options with IDs, names, and descriptions
+    """
+    return [
+        {
+            "id": "HISTORY_SAGEUK_ROMANCE",
+            "name": "Historical Romance",
+            "description": "Elegant sageuk style with dramatic lighting",
+            "preview_url": "/api/assets/images/HISTORY_SAGEUK_ROMANCE.png"
+        },
+        {
+            "id": "ISEKAI_OTOME_FANTASY",
+            "name": "Fantasy Romance",
+            "description": "Dreamy isekai otome style with soft pastels",
+            "preview_url": "/api/assets/images/ISEKAI_OTOME_FANTASY.png"
+        },
+        {
+            "id": "MODERN_KOREAN_ROMANCE",
+            "name": "Modern Romance",
+            "description": "Contemporary K-drama style with warm tones",
+            "preview_url": "/api/assets/images/MODERN_KOREAN_ROMANCE.png"
+        }
+    ]
 
 
 @router.post("/generate")
@@ -91,13 +124,65 @@ async def generate_webtoon_script(request: GenerateWebtoonRequest) -> WebtoonScr
         raise HTTPException(status_code=500, detail=f"Webtoon script generation failed: {str(e)}")
 
 
+@router.post("/character/image/select")
+async def select_character_image(script_id: str, image_id: str):
+    """
+    Mark a character image as selected for scene generation reference.
+    
+    Args:
+        script_id: Webtoon script ID
+        image_id: Image ID to select
+        
+    Returns:
+        Success message
+        
+    Raises:
+        HTTPException: If script or image not found
+    """
+    logger.info(f"Selecting image: {image_id} for script: {script_id}")
+    
+    # Check if script exists
+    if script_id not in webtoon_scripts:
+        raise HTTPException(status_code=404, detail="Webtoon script not found")
+    
+    try:
+        script_data = webtoon_scripts[script_id]
+        
+        # Find the image and update is_selected
+        image_found = False
+        for character_name, images in script_data["character_images"].items():
+            for img in images:
+                if img["id"] == image_id:
+                    # Deselect all other images for this character
+                    for other_img in images:
+                        other_img["is_selected"] = False
+                    # Select this image
+                    img["is_selected"] = True
+                    image_found = True
+                    logger.info(f"Image {image_id} selected for character {character_name}")
+                    break
+            if image_found:
+                break
+        
+        if not image_found:
+            raise HTTPException(status_code=404, detail="Image not found")
+        
+        return {"message": "Image selected successfully", "image_id": image_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to select image: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to select image: {str(e)}")
+
+
 @router.post("/character/image")
 async def generate_character_image(request: GenerateCharacterImageRequest) -> CharacterImage:
     """
     Generate an image for a character.
     
     Args:
-        request: Request with script_id, character_name, and description
+        request: Request with script_id, character_name, description, gender, and image_style
         
     Returns:
         CharacterImage with image URL and metadata
@@ -106,16 +191,22 @@ async def generate_character_image(request: GenerateCharacterImageRequest) -> Ch
         HTTPException: If script not found or image generation fails
     """
     logger.info(f"Generating image for character: {request.character_name}")
+    logger.info(f"Gender: {request.gender}, Style: {request.image_style}")
+    logger.info(f"Script ID: {request.script_id}")
+    logger.info(f"Available scripts: {list(webtoon_scripts.keys())}")
     
     # Check if script exists
     if request.script_id not in webtoon_scripts:
+        logger.error(f"Script {request.script_id} not found in storage")
         raise HTTPException(status_code=404, detail="Webtoon script not found")
     
     try:
-        # Generate image
+        # Generate image with gender and style
         image_url = await image_generator.generate_character_image(
             description=request.description,
-            character_name=request.character_name
+            character_name=request.character_name,
+            gender=request.gender,
+            image_style=request.image_style
         )
         
         # Create image record

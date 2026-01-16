@@ -316,6 +316,39 @@ export async function getWebtoonScript(scriptId: string): Promise<import('@/type
 }
 
 /**
+ * Select a character image as reference for scene generation
+ * @param scriptId Script ID
+ * @param imageId Image ID to select
+ * @returns Success message
+ * @throws Error if the request fails
+ */
+export async function selectCharacterImage(scriptId: string, imageId: string): Promise<{ message: string; image_id: string }> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/character/image/select?script_id=${scriptId}&image_id=${imageId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: { message: 'Failed to select character image' },
+      }));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to select character image');
+  }
+}
+
+/**
  * Get all images for a character
  * @param scriptId Script ID
  * @param characterName Character name
