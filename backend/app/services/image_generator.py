@@ -10,7 +10,6 @@ import os
 import base64
 from typing import Literal
 from google import genai
-from google.genai import types
 from app.config import get_settings
 from app.prompt.character_image import YOUTH_MALE, YOUTH_FEMALE, CHARACTER_IMAGE_TEMPLATE
 from app.prompt.image_mood import (
@@ -153,41 +152,56 @@ class ImageGenerator:
             
             logger.info(f"Using model: {model_name}")
             
-            # Use Gemini 2.5 Flash Image model
+            # Use Gemini 2.5 Flash Image model with safety settings
             response = self.client.models.generate_content(
                 model=model_name,
                 contents=[prompt],
-                config=types.GenerateContentConfig(
-                    response_modalities=['IMAGE']
-                )
+                config={
+                    "safety_settings": [
+                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_LOW_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+                    ],
+                }
             )
             
-            # Extract image from response
-            for part in response.parts:
-                if part.inline_data is not None:
-                    # Get image data and MIME type
-                    image_data = part.inline_data.data
-                    mime_type = part.inline_data.mime_type if hasattr(part.inline_data, 'mime_type') else 'image/png'
-                    
-                    # Check if it's bytes or string
-                    if isinstance(image_data, bytes):
-                        # If bytes, encode to base64
-                        image_base64 = base64.b64encode(image_data).decode('utf-8')
-                    else:
-                        # If already string (base64), use as is
-                        image_base64 = image_data
-                    
-                    logger.info(f"Image data type: {type(image_data)}, length: {len(image_data) if image_data else 0}")
-                    logger.info(f"MIME type: {mime_type}")
-                    
-                    # Return as data URL with correct MIME type
-                    return f"data:{mime_type};base64,{image_base64}"
+            # Extract image from response - check candidates first
+            image_bytes = None
+            if response.candidates and response.candidates[0].content.parts:
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        image_bytes = part.inline_data.data
+                        break
             
-            raise Exception("No image generated in response")
+            if not image_bytes:
+                raise Exception("No image data in response")
+            
+            # Get MIME type
+            mime_type = 'image/png'  # Default
+            if response.candidates and response.candidates[0].content.parts:
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        if hasattr(part.inline_data, 'mime_type'):
+                            mime_type = part.inline_data.mime_type
+                        break
+            
+            # Encode to base64
+            if isinstance(image_bytes, bytes):
+                image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+            else:
+                image_base64 = image_bytes
+            
+            logger.info(f"Image generated successfully")
+            logger.info(f"Image data type: {type(image_bytes)}, length: {len(image_bytes) if image_bytes else 0}")
+            logger.info(f"MIME type: {mime_type}")
+            logger.info(f"Base64 length: {len(image_base64)}")
+            
+            # Return as data URL with correct MIME type
+            return f"data:{mime_type};base64,{image_base64}"
                 
         except Exception as e:
             logger.error(f"Gemini image generation failed: {str(e)}")
-            raise
             raise
     
     def _generate_placeholder(self, character_name: str, description: str) -> str:

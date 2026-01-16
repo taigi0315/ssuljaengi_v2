@@ -348,6 +348,13 @@ export default function CharacterImageDisplay({
                     src={currentImage.image_url}
                     alt={`${character.name} - Image ${currentImageIndex + 1}`}
                     className="max-w-full max-h-[500px] object-contain rounded-lg shadow-lg"
+                    onLoad={() => console.log('Image loaded successfully')}
+                    onError={(e) => {
+                      console.error('Image failed to load');
+                      console.error('Image URL:', currentImage.image_url);
+                      console.error('URL length:', currentImage.image_url.length);
+                      console.error('URL prefix:', currentImage.image_url.substring(0, 100));
+                    }}
                   />
                 </div>
               )}
