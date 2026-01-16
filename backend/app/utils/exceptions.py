@@ -107,3 +107,54 @@ class ExternalServiceException(APIException):
             retryable=retryable,
             retry_after=retry_after
         )
+
+
+class LLMException(APIException):
+    """
+    Raised for LLM service failures.
+    
+    Used when Gemini or other LLM services fail, timeout, or are unavailable.
+    """
+    
+    def __init__(
+        self,
+        message: str,
+        retryable: bool = True,
+        retry_after: Optional[int] = None
+    ):
+        super().__init__(
+            error_type=ErrorType.NETWORK_ERROR,
+            message=f"LLM service error: {message}",
+            retryable=retryable,
+            retry_after=retry_after
+        )
+
+
+class StoryGenerationException(APIException):
+    """
+    Raised for story generation failures.
+    
+    Used when story generation workflow fails for any reason.
+    """
+    
+    def __init__(self, message: str, retryable: bool = False):
+        super().__init__(
+            error_type=ErrorType.NETWORK_ERROR,
+            message=f"Story generation failed: {message}",
+            retryable=retryable
+        )
+
+
+class WorkflowException(APIException):
+    """
+    Raised for workflow execution failures.
+    
+    Used when LangGraph workflow encounters errors during execution.
+    """
+    
+    def __init__(self, message: str, retryable: bool = False):
+        super().__init__(
+            error_type=ErrorType.NETWORK_ERROR,
+            message=f"Workflow execution failed: {message}",
+            retryable=retryable
+        )

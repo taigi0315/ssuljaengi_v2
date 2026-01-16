@@ -21,7 +21,12 @@ from pydantic import ValidationError
 
 from app.config import get_settings
 from app.models import ErrorResponse, ErrorType
-from app.utils.exceptions import APIException
+from app.utils.exceptions import (
+    APIException,
+    LLMException,
+    StoryGenerationException,
+    WorkflowException
+)
 
 
 # Configure logging
@@ -193,6 +198,82 @@ def setup_exception_handlers(app: FastAPI) -> None:
             content={"error": error_response.model_dump()},
         )
     
+    @app.exception_handler(LLMException)
+    async def llm_exception_handler(request: Request, exc: LLMException):
+        """
+        Handle LLM service exceptions.
+        
+        Args:
+            request: The incoming request
+            exc: The LLMException that was raised
+            
+        Returns:
+            JSON response with error details
+        """
+        logger.error(f"LLM Exception: {exc.message}")
+        
+        error_response = ErrorResponse(
+            type=exc.error_type,
+            message=exc.message,
+            retryable=exc.retryable,
+            retry_after=exc.retry_after,
+        )
+        
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"error": error_response.model_dump()},
+        )
+    
+    @app.exception_handler(StoryGenerationException)
+    async def story_generation_exception_handler(request: Request, exc: StoryGenerationException):
+        """
+        Handle story generation exceptions.
+        
+        Args:
+            request: The incoming request
+            exc: The StoryGenerationException that was raised
+            
+        Returns:
+            JSON response with error details
+        """
+        logger.error(f"Story Generation Exception: {exc.message}")
+        
+        error_response = ErrorResponse(
+            type=exc.error_type,
+            message=exc.message,
+            retryable=exc.retryable,
+        )
+        
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": error_response.model_dump()},
+        )
+    
+    @app.exception_handler(WorkflowException)
+    async def workflow_exception_handler(request: Request, exc: WorkflowException):
+        """
+        Handle workflow execution exceptions.
+        
+        Args:
+            request: The incoming request
+            exc: The WorkflowException that was raised
+            
+        Returns:
+            JSON response with error details
+        """
+        logger.error(f"Workflow Exception: {exc.message}")
+        
+        error_response = ErrorResponse(
+            type=exc.error_type,
+            message=exc.message,
+            retryable=exc.retryable,
+        )
+        
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": error_response.model_dump()},
+        )
+    
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(
         request: Request,
@@ -304,8 +385,9 @@ def setup_routes(app: FastAPI) -> None:
         return {"status": "healthy"}
     
     # Import and register routers
-    from app.routers import search
+    from app.routers import search, story
     app.include_router(search.router, tags=["Search"])
+    app.include_router(story.router, tags=["Story"])
     
     logger.info("Routes configured")
 

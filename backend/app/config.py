@@ -58,6 +58,42 @@ class Settings(BaseSettings):
         ge=1
     )
     
+    # Google Gemini Configuration
+    google_api_key: str = Field(
+        ...,
+        description="Google API key for Gemini (required)",
+        min_length=1
+    )
+    gemini_model: str = Field(
+        default="gemini-2.0-flash-exp",
+        description="Gemini model name"
+    )
+    gemini_temperature: float = Field(
+        default=0.7,
+        description="Temperature for story generation",
+        ge=0.0,
+        le=2.0
+    )
+    gemini_max_tokens: int = Field(
+        default=2000,
+        description="Maximum tokens for story generation",
+        ge=100
+    )
+    
+    # Story Generation Configuration
+    story_evaluation_threshold: float = Field(
+        default=7.0,
+        description="Minimum score to accept story without rewrite",
+        ge=0.0,
+        le=10.0
+    )
+    story_max_rewrites: int = Field(
+        default=1,
+        description="Maximum number of story rewrites",
+        ge=0,
+        le=3
+    )
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -65,7 +101,7 @@ class Settings(BaseSettings):
         extra="ignore"
     )
     
-    @field_validator("reddit_client_id", "reddit_client_secret")
+    @field_validator("reddit_client_id", "reddit_client_secret", "google_api_key")
     @classmethod
     def validate_required_fields(cls, v: str, info) -> str:
         """
@@ -88,6 +124,7 @@ class Settings(BaseSettings):
         placeholder_values = [
             "your_reddit_client_id_here",
             "your_reddit_client_secret_here",
+            "your_google_api_key_here",
             "changeme",
             "placeholder"
         ]
