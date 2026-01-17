@@ -6,70 +6,74 @@ the narrative into different webtoon genres. Each mood has specific rules for
 setting translation, character design, visual aesthetic, and tone.
 """
 
-MOOD_MODIFIERS = {
-    "rofan": """
-**[NARRATIVE MODIFIER: ROMANCE FANTASY (ROFAN / ISEKAI)]**
-**Core Objective:** Completely twist the original Reddit seed into a grand romance fantasy tale filled with destiny, reincarnation, forbidden love, and dramatic reversals of fate. Even if the seed has no romantic or fantastical elements, force in isekai/reincarnation tropes and aristocratic intrigue.
-
-**Key Transformations:**
-1. Reposition the protagonist as someone who has been reincarnated/transmigrated into a new identity (villainess, abandoned princess, cursed noble, etc.).
-2. Turn everyday conflicts into high-stakes courtly or magical drama: betrayals become prophesied schemes, arguments become duels of honor, misunderstandings become tragic fate-driven obstacles.
-3. Introduce a powerful, emotionally unavailable male lead (cold duke, crown prince, grand mage) whose heart slowly thaws due to the protagonist's actions.
-4. Build toward destined, sweeping romantic climaxes: soul-bond revelations, life-saving sacrifices, or public declarations that defy social hierarchy.
-5. Infuse heavy themes of "fate," "destined love," "imperial grace," "cursed bloodline," and "reincarnation atonement."
-
-**Tone:** Dramatic, poetic, swoon-worthy, emotionally intense with a sense of grand destiny.
+STORY_GENRE_PROMPTS = {
+    "MODERN_ROMANCE_DRAMA_MANHWA": """
+Generate a contemporary Korean romance drama story with the following narrative elements:
+- Setting: Modern urban Korea (Seoul cafes, corporate offices, university campuses, apartments)
+- Tone: Emotionally nuanced with bittersweet undertones, tender yet melancholic, slow-burn intimacy
+- Character archetypes: Complex professionals or students with hidden wounds, past traumas, or emotional barriers
+- Themes: Healing through connection, second chances, quiet longing, unspoken feelings, finding comfort in vulnerability
+- Conflict: Emotional distance vs growing attraction, fear of commitment, past relationships haunting present, social or career pressures interfering with love
+- Pacing: Slow, contemplative build-up with intimate everyday moments, gradual emotional revelation
+- Story beats: Chance encounters, shared quiet moments, misunderstandings rooted in fear, tender confessions, emotional breakthroughs
+- Mood: Soft melancholy mixed with hope, realistic relationship struggles, genuine emotional depth
+- Dialogue style: Subtle, layered with subtext, emotionally restrained yet deeply felt
+Create a story that captures the aching beauty of modern love with all its complications and quiet triumphs.
 """,
 
-    "modern_romance": """
-**[NARRATIVE MODIFIER: MODERN ROMANCE (K-DRAMA STYLE)]**
-**Core Objective:** Transform the seed into a glossy, emotionally-charged contemporary romance full of slow-burn tension, dramatic coincidences, misunderstandings, and heart-fluttering reconciliations.
-
-**Key Transformations:**
-1. Elevate ordinary characters into idealized romantic leads: the protagonist becomes someone attractive yet emotionally guarded or career-focused; the love interest is usually aloof/rich/powerful with a hidden soft side.
-2. Turn conflicts into classic K-drama tropes: contract relationships, fake dating, secret identities, childhood connections, family opposition, or workplace rivalry that turns romantic.
-3. Create multiple "almost" moments and near-misses before the big emotional confession or kiss.
-4. Include external obstacles (jealous second leads, family pressure, past trauma) that make the eventual union feel earned.
-
-**Tone:** Heart-pounding, sophisticated, witty, tender, with lots of sim-kung (heart-fluttering) tension.
+    "FANTASY_ROMANCE_MANHWA": """
+Generate a fantasy romance story with magical academy or mystical world elements:
+- Setting: Enchanted academy, magical realm, or supernatural modern world with hidden magic
+- Tone: Whimsical yet emotionally charged, dreamy with underlying danger, romance intertwined with destiny
+- Character archetypes: Magically gifted protagonists with hidden powers or royal bloodlines, mysterious love interests with secrets, rivals-to-lovers dynamics
+- Themes: Forbidden love across magical hierarchies, destiny vs choice, power awakening through emotional bonds, sacrifice for love
+- Conflict: Magical threats requiring partnership, class or species divides, prophecies forcing difficult choices, dark forces threatening loved ones
+- Pacing: Balanced between romantic development and magical plot progression, alternating tender moments with dramatic reveals
+- Story beats: Magical awakening or discovery, forced proximity through quests or academy partnerships, near-death moments sparking confessions, climactic magical battles fueled by love
+- Mood: Enchanting and emotionally intense, sparkles and danger, passionate devotion within fantastical stakes
+- Dialogue style: Emotionally direct during pivotal moments, playful banter mixed with profound declarations
+Create a story where magic and romance are inseparably intertwined, where love itself becomes a power.
 """,
 
-    "slice_of_life": """
-**[NARRATIVE MODIFIER: HEALING / SLICE OF LIFE]**
-**Core Objective:** Soften and slow down the original seed into a gentle, comforting, everyday story focused on small joys, quiet growth, human connection, and emotional healing.
-
-**Key Transformations:**
-1. Drastically reduce or remove high-stakes conflict — replace it with personal struggles, small misunderstandings, or everyday inconveniences.
-2. Shift focus to warm relationships: friendships, family bonds, budding gentle romance, mentorship, or community support.
-3. Emphasize small, meaningful moments: sharing a meal, late-night talks, comforting gestures, rediscovering simple pleasures.
-4. End with quiet fulfillment, acceptance, or subtle personal growth rather than explosive drama.
-
-**Tone:** Tender, slow-paced, sentimental, warm, restorative, hopeful.
+    "HISTORY_SAGEUK_ROMANCE": """
+Generate a historical Korean period romance (Joseon era or historical dynasty setting):
+- Setting: Royal palaces, noble houses, historical villages, ancient Korea with strict social hierarchies
+- Tone: Deeply dramatic and tragic, passionate yet restrained by social conventions, intense forbidden longing
+- Character archetypes: Noble ladies, princes, royal guards, scholars, courtesans—all bound by duty and honor, star-crossed lovers from different social stations
+- Themes: Forbidden love vs duty, sacrifice for family or kingdom, love that transcends social barriers, tragic devotion, honor and passion in conflict
+- Conflict: Class divides, political intrigue threatening romance, forced marriages, family honor vs personal desire, dangerous court conspiracies
+- Pacing: Slow-burning tension with explosive emotional climaxes, weighted by historical formality and propriety
+- Story beats: Stolen glances during formal ceremonies, secret midnight meetings, politically motivated betrayals, desperate sacrifices, bittersweet or tragic endings with lasting impact
+- Mood: Heavy with longing and tragedy, sensual tension beneath formal restraint, raw emotional intensity within historical constraints
+- Dialogue style: Formal and poetic, heavy with subtext and unspoken emotion, declarations carry enormous weight
+Create a story of passionate, forbidden love set against the rigid beauty and danger of historical Korea.
 """,
 
-    "revenge": """
-**[NARRATIVE MODIFIER: REVENGE & GLOW-UP]**
-**Core Objective:** Turn the seed into a deeply satisfying revenge fantasy where the protagonist is betrayed/humiliated, then transforms into a powerful, confident version of themselves and delivers perfect comeuppance.
-
-**Key Transformations:**
-1. Introduce a clear betrayal or injustice early (even if the seed doesn't have one — invent a cruel ex, backstabbing friend/colleague, family abandonment, etc.).
-2. Give the protagonist a dramatic "glow-up" arc: emotional, social, financial, or skill-based transformation.
-3. Build toward multiple satisfying power moves, public humiliations of the antagonists, and a final devastating reveal/showdown.
-4. Make antagonists increasingly desperate, regretful, or pathetic as the protagonist rises.
-
-**Tone:** Cathartic, empowering, fast-paced, aggressive, "cider" (refreshing revenge satisfaction), boss energy.
+    "ACADEMY_SCHOOL_LIFE": """
+Generate a contemporary high school or university romance story:
+- Setting: Modern Korean school campus, classrooms, cafeterias, after-school clubs, neighborhoods near school
+- Tone: Sweet and wholesome with gentle emotional depth, youthful and hopeful, light-hearted with sincere feelings
+- Character archetypes: Relatable students—popular but kind, quiet and misunderstood, childhood friends, academic rivals, new transfer students
+- Themes: First love and self-discovery, friendship evolving into romance, overcoming insecurities together, finding courage to confess
+- Conflict: Social dynamics and peer pressure, academic competition, misunderstandings from inexperience, fear of ruining friendships, family expectations
+- Pacing: Episodic with gentle progression, everyday school life moments building gradually to emotional milestones
+- Story beats: Shared umbrella in rain, study sessions turning intimate, school festival confessions, protecting each other from bullies, awkward first dates
+- Mood: Innocent and tender, nostalgic warmth, gentle humor mixed with heartfelt sincerity
+- Dialogue style: Youthful and genuine, awkward yet endearing, emotionally honest in key moments
+Create a story capturing the pure, hopeful essence of young love blooming in the everyday magic of school life.
 """,
 
-    "high_teen": """
-**[NARRATIVE MODIFIER: HIGH TEEN / ELITE ACADEMY DRAMA]**
-**Core Objective:** Repackage the seed as a juicy, hormonal teen drama set in an elite private school/academy full of hierarchy, cliques, crushes, rivalries, and coming-of-age rebellion.
-
-**Key Transformations:**
-1. Relocate the entire story into a prestigious school setting with clear social ladder (queens/kings, scholarship students, heirs, etc.).
-2. Turn adult relationships into teen versions: bosses become student council presidents/queen bees, colleagues become classmates/rivals/best friends.
-3. Introduce classic high-teen tropes: bullying arcs that turn into redemption, secret crushes, love triangles, school festivals, talent shows, or major ranking battles.
-4. Layer surface-level bubbly/gossipy energy over deeper tension, insecurity, and desire for acceptance or revenge.
-
-**Tone:** Youthful, gossipy, dramatic, bubbly on the surface but emotionally intense underneath, full of teenage energy and petty/high-stakes school drama.
+    "ISEKAI_OTOME_FANTASY": """
+Generate an isekai otome fantasy romance story (reincarnation/transmigration into fantasy world or otome game):
+- Setting: Fantasy kingdom with nobility, magic, and otome game or novel-like world structure
+- Tone: Whimsical and romantic with comedic moments, self-aware and playful, dreamy wish-fulfillment balanced with genuine stakes
+- Character archetypes: Reincarnated protagonist with modern knowledge, charming princes or duke love interests, scheming villainess rivals, loyal knights, childhood friends with hidden feelings
+- Themes: Changing fate and rewriting destiny, modern wisdom in fantasy setting, earning love through genuine connection not game mechanics, found family and friendship
+- Conflict: Avoiding "bad endings" or original plot death flags, winning over capture targets authentically, rival characters and political schemes, balancing multiple love interests
+- Pacing: Lighthearted episodic adventures with romantic subplot progression, escalating stakes as protagonist changes the story
+- Story beats: Realization of transmigration, clever use of future knowledge, subverting expected plot points, collecting love interests through kindness, dramatic confrontations with original storyline, choosing true love
+- Mood: Playful and romantic, sparkling palace fantasy with comedic self-awareness, sweet multiple romantic routes converging
+- Dialogue style: Modern protagonist's inner monologue contrasting with formal fantasy speech, witty banter, heartfelt emotional confessions breaking through game-like scenarios
+Create a story of a modern soul navigating a fantasy romance world, finding real love while cleverly rewriting their destined fate.
 """
 }

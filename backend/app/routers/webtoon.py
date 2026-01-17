@@ -49,22 +49,34 @@ async def get_image_styles():
     """
     return [
         {
+            "id": "MODERN_ROMANCE_DRAMA_MANHWA",
+            "name": "Modern Romance Drama",
+            "description": "Contemporary Korean romance drama",
+            "preview_url": "/api/assets/images/genre/MODERN_ROMANCE_DRAMA_MANHWA.png"
+        },
+        {
+            "id": "FANTASY_ROMANCE_MANHWA",
+            "name": "Fantasy Romance",
+            "description": "Magical academy or mystical world romance",
+            "preview_url": "/api/assets/images/genre/FANTASY_ROMANCE_MANHWA.png"
+        },
+        {
             "id": "HISTORY_SAGEUK_ROMANCE",
             "name": "Historical Romance",
             "description": "Elegant sageuk style with dramatic lighting",
-            "preview_url": "/api/assets/images/HISTORY_SAGEUK_ROMANCE.png"
+            "preview_url": "/api/assets/images/genre/HISTORY_SAGEUK_ROMANCE.png"
+        },
+        {
+            "id": "ACADEMY_SCHOOL_LIFE",
+            "name": "School Life",
+            "description": "Contemporary school romance",
+            "preview_url": "/api/assets/images/genre/ACADEMY_SCHOOL_LIFE.png"
         },
         {
             "id": "ISEKAI_OTOME_FANTASY",
-            "name": "Fantasy Romance",
-            "description": "Dreamy isekai otome style with soft pastels",
-            "preview_url": "/api/assets/images/ISEKAI_OTOME_FANTASY.png"
-        },
-        {
-            "id": "MODERN_KOREAN_ROMANCE",
-            "name": "Modern Romance",
-            "description": "Contemporary K-drama style with warm tones",
-            "preview_url": "/api/assets/images/MODERN_KOREAN_ROMANCE.png"
+            "name": "Isekai Otome Fantasy",
+            "description": "Reincarnation/transmigration romance",
+            "preview_url": "/api/assets/images/genre/ISEKAI_OTOME_FANTASY.png"
         }
     ]
 

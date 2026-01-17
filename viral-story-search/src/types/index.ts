@@ -147,20 +147,25 @@ export interface RedditApiClient {
 }
 
 // Story Generation Types (Phase 2)
-export type StoryMood = 'rofan' | 'modern_romance' | 'slice_of_life' | 'revenge' | 'high_teen';
+export type StoryGenre =
+  | 'MODERN_ROMANCE_DRAMA_MANHWA'
+  | 'FANTASY_ROMANCE_MANHWA'
+  | 'HISTORY_SAGEUK_ROMANCE'
+  | 'ACADEMY_SCHOOL_LIFE'
+  | 'ISEKAI_OTOME_FANTASY';
 
-export interface StoryMoodOption {
-  id: StoryMood;
+export interface StoryGenreOption {
+  id: StoryGenre;
   name: string;
-  emoji: string;
   description: string;
+  previewImage: string;
 }
 
 export interface StoryRequest {
   postId: string;
   postTitle: string;
   postContent: string;
-  mood: StoryMood;
+  genre: StoryGenre;
   options?: Record<string, any>;
 }
 
@@ -208,6 +213,7 @@ export interface RedditPostDisplayProps {
 export interface Character {
   name: string;
   gender: string;
+  age: string;
   face: string;
   hair: string;
   body: string;
@@ -251,10 +257,10 @@ export interface GenerateCharacterImageRequest {
   character_name: string;
   description: string;
   gender: string;
-  image_style: 'HISTORY_SAGEUK_ROMANCE' | 'ISEKAI_OTOME_FANTASY' | 'MODERN_KOREAN_ROMANCE';
+  image_style: StoryGenre;
 }
 
-export type ImageStyle = 'HISTORY_SAGEUK_ROMANCE' | 'ISEKAI_OTOME_FANTASY' | 'MODERN_KOREAN_ROMANCE';
+export type ImageStyle = StoryGenre;
 
 export interface ImageStyleOption {
   id: ImageStyle;

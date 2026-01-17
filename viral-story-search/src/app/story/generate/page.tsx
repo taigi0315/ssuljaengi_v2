@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ViralPost, Story, WorkflowStatus } from '@/types';
+import { ViralPost, Story, WorkflowStatus, StoryGenre } from '@/types';
 import { generateStory, getStoryStatus, getStory } from '@/lib/apiClient';
 
 export default function StoryGeneratePage() {
   const [post, setPost] = useState<ViralPost | null>(null);
+  const [genre, setGenre] = useState<StoryGenre>('MODERN_ROMANCE_DRAMA_MANHWA');
   const [story, setStory] = useState<Story | null>(null);
   const [status, setStatus] = useState<WorkflowStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -15,9 +16,15 @@ export default function StoryGeneratePage() {
 
   const router = useRouter();
 
-  // Load selected post from sessionStorage
+  // Load selected post and genre from sessionStorage
   useEffect(() => {
     const storedPost = sessionStorage.getItem('selectedPost');
+    const storedGenre = sessionStorage.getItem('selectedGenre');
+    
+    if (storedGenre) {
+      setGenre(storedGenre as StoryGenre);
+    }
+    
     if (storedPost) {
       try {
         const parsedPost = JSON.parse(storedPost);
@@ -62,6 +69,7 @@ export default function StoryGeneratePage() {
         postId: post.id,
         postTitle: post.title,
         postContent: post.title, // Using title as content for now
+        genre: genre,
       });
 
       setWorkflowId(response.workflowId);

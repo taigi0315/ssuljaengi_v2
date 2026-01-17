@@ -9,7 +9,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from app.services.llm_config import llm_config
 from app.prompt.story_writer import STORY_WRITER_PROMPT
-from app.prompt.story_mood import MOOD_MODIFIERS
+from app.prompt.story_mood import STORY_GENRE_PROMPTS
 
 
 class RedditPost:
@@ -45,7 +45,7 @@ class StoryWriter:
             ChatPromptTemplate with mood modifier applied
         """
         # Get mood modifier (default to modern_romance if not found)
-        mood_modifier = MOOD_MODIFIERS.get(mood, MOOD_MODIFIERS["modern_romance"])
+        mood_modifier = STORY_GENRE_PROMPTS.get(mood, STORY_GENRE_PROMPTS["MODERN_ROMANCE_DRAMA_MANHWA"])
         
         # Replace the {{user_select_genre}} placeholder with the mood modifier
         combined_prompt = STORY_WRITER_PROMPT.replace("{{user_select_genre}}", mood_modifier)

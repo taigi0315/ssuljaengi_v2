@@ -1,18 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ViralPost, Story, WorkflowStatus, StoryMood } from '@/types';
+import { ViralPost, Story, WorkflowStatus, StoryGenre } from '@/types';
 import { generateStory, getStoryStatus, getStory } from '@/lib/apiClient';
-import MoodSelector from './MoodSelector';
 import RedditPostDisplay from './RedditPostDisplay';
 
 interface StoryBuilderProps {
-  post: ViralPost;
+  post: ViralPost | null;
+  customStorySeed?: string;
+  selectedGenre: StoryGenre;
   onGenerateImages?: (storyId: string) => void;
 }
 
-export default function StoryBuilder({ post, onGenerateImages }: StoryBuilderProps) {
-  const [selectedMood, setSelectedMood] = useState<StoryMood | null>(null);
+// Helper to format genre for display
+const formatGenreName = (genre: StoryGenre): string => {
+  return genre.replace(/_/g, ' ').replace(/MANHWA/g, '').trim();
+};
+
+export default function StoryBuilder({ post, customStorySeed, selectedGenre, onGenerateImages }: StoryBuilderProps) {
   const [story, setStory] = useState<Story | null>(null);
   const [status, setStatus] = useState<WorkflowStatus | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -30,20 +35,47 @@ export default function StoryBuilder({ post, onGenerateImages }: StoryBuilderPro
     }
   }, [workflowId, status]);
 
+  // Check for cached story on mount, only generate if no cache
+  useEffect(() => {
+    const cachedStory = sessionStorage.getItem('generatedStory');
+    const cachedGenre = sessionStorage.getItem('storyGenre');
+    
+    if (cachedStory && cachedGenre === selectedGenre) {
+      // Use cached story if genre matches
+      try {
+        const parsedStory = JSON.parse(cachedStory);
+        setStory(parsedStory);
+        return;
+      } catch (err) {
+        console.error('Failed to parse cached story:', err);
+      }
+    }
+    
+    // No cache or genre changed, generate new story
+    handleGenerateStory();
+  }, []);
+
   // Start story generation
   const handleGenerateStory = async () => {
-    if (!selectedMood) return;
-
     try {
       setIsGenerating(true);
       setError(null);
       setStory(null);
+      
+      // Clear any existing cache
+      sessionStorage.removeItem('generatedStory');
+      sessionStorage.removeItem('storyGenre');
+
+      // Use custom story seed or post data
+      const postId = post?.id || 'custom-seed';
+      const postTitle = customStorySeed || post?.title || '';
+      const postContent = customStorySeed || post?.title || '';
 
       const response = await generateStory({
-        postId: post.id,
-        postTitle: post.title,
-        postContent: post.title, // Using title as content for now
-        mood: selectedMood,
+        postId,
+        postTitle,
+        postContent,
+        genre: selectedGenre,
       });
 
       setWorkflowId(response.workflowId);
@@ -73,6 +105,10 @@ export default function StoryBuilder({ post, onGenerateImages }: StoryBuilderPro
         const storyData = await getStory(statusData.storyId);
         setStory(storyData.story);
         setIsGenerating(false);
+        
+        // Cache the story
+        sessionStorage.setItem('generatedStory', JSON.stringify(storyData.story));
+        sessionStorage.setItem('storyGenre', selectedGenre);
       }
 
       // If failed, show error
@@ -93,45 +129,35 @@ export default function StoryBuilder({ post, onGenerateImages }: StoryBuilderPro
     setStory(null);
     setError(null);
     setIsGenerating(false);
+    sessionStorage.removeItem('generatedStory');
+    sessionStorage.removeItem('storyGenre');
+    handleGenerateStory();
   };
 
   return (
     <div className="space-y-6">
-      {/* Selected Post Display */}
+      {/* Genre Badge - Always visible */}
+      <div className="flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+        <span className="text-sm font-semibold text-gray-700">Selected Genre:</span>
+        <span className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full text-sm font-bold shadow-md">
+          🎭 {formatGenreName(selectedGenre)}
+        </span>
+      </div>
+
+      {/* Source Display */}
       <div className="bg-white rounded-lg shadow-lg p-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
           <span>📝</span>
-          <span>Selected Post</span>
+          <span>{customStorySeed ? 'Story Seed' : 'Selected Post'}</span>
         </h2>
-        <RedditPostDisplay post={post} />
-      </div>
-
-      {/* Mood Selection */}
-      {!story && !isGenerating && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <MoodSelector
-            selectedMood={selectedMood}
-            onMoodSelect={setSelectedMood}
-          />
-
-          {/* Generate Button */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={handleGenerateStory}
-              disabled={!selectedMood}
-              className={`
-                px-8 py-4 rounded-lg font-bold text-lg transition-all
-                ${selectedMood
-                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:shadow-xl hover:scale-105'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }
-              `}
-            >
-              {selectedMood ? '✨ Create Story' : '👆 Select a mood first'}
-            </button>
+        {post ? (
+          <RedditPostDisplay post={post} />
+        ) : customStorySeed ? (
+          <div className="bg-gray-50 rounded-lg p-4">
+            <p className="text-gray-800">{customStorySeed}</p>
           </div>
-        </div>
-      )}
+        ) : null}
+      </div>
 
       {/* Loading State */}
       {isGenerating && !story && (
@@ -142,7 +168,7 @@ export default function StoryBuilder({ post, onGenerateImages }: StoryBuilderPro
               {status?.currentStep || 'Preparing'}...
             </h2>
             <p className="text-gray-600 mb-4">
-              {status?.currentStep === 'writing' && 'Creating your story from the Reddit post'}
+              {status?.currentStep === 'writing' && 'Creating your story from the seed'}
               {status?.currentStep === 'evaluating' && 'Reviewing story quality'}
               {status?.currentStep === 'rewriting' && 'Improving the story based on feedback'}
               {!status?.currentStep && 'Starting story generation'}
@@ -219,7 +245,7 @@ export default function StoryBuilder({ post, onGenerateImages }: StoryBuilderPro
               </div>
             </div>
 
-            {/* Generate Another Button */}
+            {/* Action Buttons */}
             <div className="flex gap-4 justify-center pt-4">
               <button
                 onClick={handleRetry}
@@ -231,9 +257,9 @@ export default function StoryBuilder({ post, onGenerateImages }: StoryBuilderPro
               {onGenerateImages && (
                 <button
                   onClick={() => onGenerateImages(story.id)}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all"
+                  className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-lg hover:shadow-lg transition-all transform hover:scale-105"
                 >
-                  🎨 Generate Images
+                  🎨 Let's Create Webtoon
                 </button>
               )}
             </div>

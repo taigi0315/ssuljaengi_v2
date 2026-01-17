@@ -77,7 +77,7 @@ export async function generateStory(request: StoryRequest): Promise<{ workflowId
         post_id: request.postId,
         post_title: request.postTitle,
         post_content: request.postContent,
-        mood: request.mood,
+        mood: request.genre,  // Backend still expects 'mood' key for now
         options: request.options,
       }),
     });

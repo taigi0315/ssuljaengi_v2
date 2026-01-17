@@ -8,18 +8,20 @@ using Gemini 2.5 Flash Image model with proper prompt templates.
 import logging
 import os
 import base64
-from typing import Literal
+import uuid
+from pathlib import Path
+from typing import Literal, Tuple
 from google import genai
 from app.config import get_settings
-from app.prompt.character_image import YOUTH_MALE, YOUTH_FEMALE, CHARACTER_IMAGE_TEMPLATE
-from app.prompt.image_mood import (
-    HISTORY_SAGEUK_ROMANCE,
-    ISEKAI_OTOME_FANTASY,
-    MODERN_KOREAN_ROMANCE
-)
+from app.prompt.character_image import MALE, FEMALE, CHARACTER_IMAGE_TEMPLATE
+from app.prompt.image_mood import CHARACTER_GENRE_MODIFIERS
 
 
 logger = logging.getLogger(__name__)
+
+# Cache directory for generated images
+CACHE_DIR = Path(__file__).parent.parent.parent / "cache" / "images"
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class ImageGenerator:
@@ -32,11 +34,7 @@ class ImageGenerator:
     
     def __init__(self):
         """Initialize the image generator with Gemini 2.5 Flash Image."""
-        self.image_styles = {
-            "HISTORY_SAGEUK_ROMANCE": HISTORY_SAGEUK_ROMANCE,
-            "ISEKAI_OTOME_FANTASY": ISEKAI_OTOME_FANTASY,
-            "MODERN_KOREAN_ROMANCE": MODERN_KOREAN_ROMANCE
-        }
+        self.image_styles = CHARACTER_GENRE_MODIFIERS
         
         # Configure Gemini API
         try:
@@ -55,7 +53,7 @@ class ImageGenerator:
         description: str, 
         character_name: str,
         gender: str,
-        image_style: Literal["HISTORY_SAGEUK_ROMANCE", "ISEKAI_OTOME_FANTASY", "MODERN_KOREAN_ROMANCE"]
+        image_style: str
     ) -> str:
         """
         Generate a character image from description.
@@ -81,13 +79,13 @@ class ImageGenerator:
             base_style = self._get_base_style(gender)
             
             # Get image style prompt
-            image_style_prompt = self.image_styles.get(image_style, MODERN_KOREAN_ROMANCE)
+            image_style_prompt = self.image_styles.get(image_style, self.image_styles["MODERN_ROMANCE_DRAMA_MANHWA"])
             
             # Build final prompt using template
             final_prompt = CHARACTER_IMAGE_TEMPLATE.format(
-                base_style=base_style,
+                gender_style=base_style,
                 character_description=description,
-                image_style=image_style_prompt
+                genre_style=image_style_prompt
             )
             
             logger.info(f"Final prompt length: {len(final_prompt)} characters")
@@ -124,12 +122,12 @@ class ImageGenerator:
         gender_lower = gender.lower()
         
         if "male" in gender_lower and "female" not in gender_lower:
-            return YOUTH_MALE
+            return MALE
         elif "female" in gender_lower:
-            return YOUTH_FEMALE
+            return FEMALE
         else:
             # Default to male if unclear
-            return YOUTH_MALE
+            return MALE
     
     async def _generate_with_gemini(self, prompt: str, character_name: str) -> str:
         """
@@ -186,16 +184,65 @@ class ImageGenerator:
                             mime_type = part.inline_data.mime_type
                         break
             
-            # Encode to base64
-            if isinstance(image_bytes, bytes):
-                image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-            else:
-                image_base64 = image_bytes
-            
             logger.info(f"Image generated successfully")
-            logger.info(f"Image data type: {type(image_bytes)}, length: {len(image_bytes) if image_bytes else 0}")
+            logger.info(f"Image data type: {type(image_bytes)}")
+            
+            # Encode to base64
+            image_base64 = ""
+            if isinstance(image_bytes, bytes):
+                # Check if it's already base64 encoded (simple check for common chars and length)
+                # But safer is to assume if it's bytes, it's raw data unless it only contains b64 chars
+                logger.info(f"Image bytes length: {len(image_bytes)}")
+                prefix = image_bytes[:20]
+                logger.info(f"Image bytes prefix: {prefix!r}")
+                
+                # Signatures
+                # PNG Raw: b'\x89PNG'
+                # JPEG Raw: b'\xff\xd8'
+                # PNG Base64: b'iVBORw0KGgo'
+                # JPEG Base64: b'/9j/'
+                # WebP Base64: b'UklGR'
+                
+                is_raw_image = prefix.startswith(b'\x89PNG') or prefix.startswith(b'\xff\xd8')
+                is_base64_bytes = prefix.startswith(b'iVBORw0KGgo') or prefix.startswith(b'/9j/') or prefix.startswith(b'UklGR')
+                
+                if is_raw_image:
+                    logger.info("Detected raw image headers. Encoding to base64.")
+                    image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                elif is_base64_bytes:
+                    logger.info("Detected Base64 signature in bytes. Converting to string.")
+                    image_base64 = image_bytes.decode('utf-8')
+                else:
+                    # Ambiguous case. Previous log showed b'iVBORw0KGgo' which matched is_base64_bytes.
+                    # If we fall here, it's something else.
+                    # Try to see if it decodes as utf-8 and looks like base64
+                    try:
+                        as_str = image_bytes.decode('utf-8')
+                        # Heuristic: if it has no high bits and no control chars, it's likely base64 text
+                        import string
+                        # printable = string.printable # includes whitespace
+                        # Base64 chars: A-Za-z0-9+/=
+                        # Fast check: just use it.
+                        logger.info("Ambiguous bytes. Attempting to use as Base64 string.")
+                        image_base64 = as_str
+                    except UnicodeDecodeError:
+                        # Binary data -> Encode
+                        logger.info("Ambiguous bytes failed UTF-8 decode. Treating as raw binary.")
+                        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+
+            elif isinstance(image_bytes, str):
+                logger.info("Image data is string, using as is (assuming base64).")
+                image_base64 = image_bytes
+            else:
+                 logger.warning(f"Unexpected image data type: {type(image_bytes)}")
+                 image_base64 = str(image_bytes)
+
             logger.info(f"MIME type: {mime_type}")
             logger.info(f"Base64 length: {len(image_base64)}")
+            
+            # Save image to cache folder
+            file_path = self._save_image_to_cache(image_base64, character_name, mime_type)
+            logger.info(f"Image saved to cache: {file_path}")
             
             # Return as data URL with correct MIME type
             return f"data:{mime_type};base64,{image_base64}"
@@ -203,6 +250,44 @@ class ImageGenerator:
         except Exception as e:
             logger.error(f"Gemini image generation failed: {str(e)}")
             raise
+    
+    def _save_image_to_cache(self, image_base64: str, character_name: str, mime_type: str) -> str:
+        """
+        Save a generated image to the cache folder.
+        
+        Args:
+            image_base64: Base64 encoded image data
+            character_name: Name of the character
+            mime_type: MIME type of the image
+            
+        Returns:
+            Path to the saved image file
+        """
+        try:
+            # Determine file extension from MIME type
+            ext_map = {
+                'image/png': 'png',
+                'image/jpeg': 'jpg',
+                'image/webp': 'webp',
+            }
+            ext = ext_map.get(mime_type, 'png')
+            
+            # Generate unique filename
+            safe_name = "".join(c if c.isalnum() else "_" for c in character_name)
+            filename = f"{safe_name}_{uuid.uuid4().hex[:8]}.{ext}"
+            file_path = CACHE_DIR / filename
+            
+            # Decode base64 and save to file
+            image_bytes = base64.b64decode(image_base64)
+            with open(file_path, 'wb') as f:
+                f.write(image_bytes)
+            
+            logger.info(f"Image saved to cache: {file_path}")
+            return str(file_path)
+            
+        except Exception as e:
+            logger.error(f"Failed to save image to cache: {str(e)}")
+            return ""
     
     def _generate_placeholder(self, character_name: str, description: str) -> str:
         """

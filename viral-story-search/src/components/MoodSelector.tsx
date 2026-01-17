@@ -1,42 +1,42 @@
 'use client';
 
-import { StoryMood, StoryMoodOption } from '@/types';
+import { StoryGenre, StoryGenreOption } from '@/types';
 
 interface MoodSelectorProps {
-  selectedMood: StoryMood | null;
-  onMoodSelect: (mood: StoryMood) => void;
+  selectedMood: StoryGenre | null;
+  onMoodSelect: (mood: StoryGenre) => void;
 }
 
-const MOOD_OPTIONS: StoryMoodOption[] = [
+const MOOD_OPTIONS: StoryGenreOption[] = [
   {
-    id: 'rofan',
-    name: 'RoFan (Romance Fantasy)',
-    emoji: '👑',
-    description: 'Duke/Duchess/Princess stories with European aristocracy vibes',
+    id: 'MODERN_ROMANCE_DRAMA_MANHWA',
+    name: 'Modern Romance Drama',
+    description: 'Contemporary Korean romance with emotional depth',
+    previewImage: '',
   },
   {
-    id: 'modern_romance',
-    name: 'Modern Romance (K-Drama)',
-    emoji: '💕',
-    description: 'High-end, glossy urban romance with heart-fluttering moments',
+    id: 'FANTASY_ROMANCE_MANHWA',
+    name: 'Fantasy Romance',
+    description: 'Magical academy or mystical world romance',
+    previewImage: '',
   },
   {
-    id: 'slice_of_life',
-    name: 'Slice of Life / Healing',
-    emoji: '🌿',
-    description: 'Cozy, warm, and comforting stories with gentle pacing',
+    id: 'HISTORY_SAGEUK_ROMANCE',
+    name: 'Historical Romance',
+    description: 'Elegant sageuk style with dramatic lighting',
+    previewImage: '',
   },
   {
-    id: 'revenge',
-    name: 'Revenge & Glow-up (Cider)',
-    emoji: '⚡',
-    description: 'Satisfying transformation and power moves',
+    id: 'ACADEMY_SCHOOL_LIFE',
+    name: 'School Life',
+    description: 'Contemporary high school or university romance',
+    previewImage: '',
   },
   {
-    id: 'high_teen',
-    name: 'High Teen / Preppy (Academy)',
-    emoji: '🎓',
-    description: 'Elite school drama with gossip and hierarchy',
+    id: 'ISEKAI_OTOME_FANTASY',
+    name: 'Isekai Otome Fantasy',
+    description: 'Reincarnation/transmigration into fantasy world',
+    previewImage: '',
   },
 ];
 
@@ -66,7 +66,6 @@ export default function MoodSelector({ selectedMood, onMoodSelect }: MoodSelecto
             `}
           >
             <div className="flex items-start gap-3">
-              <span className="text-4xl">{mood.emoji}</span>
               <div className="flex-1">
                 <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">
                   {mood.name}

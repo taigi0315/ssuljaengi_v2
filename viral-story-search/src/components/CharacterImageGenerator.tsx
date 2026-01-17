@@ -1,21 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { WebtoonScript, Character, CharacterImage } from '@/types';
+import { WebtoonScript, Character, CharacterImage, StoryGenre } from '@/types';
 import { generateWebtoonScript, generateCharacterImage, selectCharacterImage } from '@/lib/apiClient';
 import CharacterList from './CharacterList';
 import CharacterImageDisplay from './CharacterImageDisplay';
 
 interface CharacterImageGeneratorProps {
   storyId: string;
+  genre?: StoryGenre;
 }
 
-export default function CharacterImageGenerator({ storyId }: CharacterImageGeneratorProps) {
+export default function CharacterImageGenerator({ storyId, genre: propGenre }: CharacterImageGeneratorProps) {
   const [webtoonScript, setWebtoonScript] = useState<WebtoonScript | null>(null);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Get genre from prop or sessionStorage
+  const [genre, setGenre] = useState<StoryGenre>(
+    propGenre || (typeof window !== 'undefined' 
+      ? (sessionStorage.getItem('selectedGenre') as StoryGenre) || 'MODERN_ROMANCE_DRAMA_MANHWA'
+      : 'MODERN_ROMANCE_DRAMA_MANHWA')
+  );
 
   // Generate webtoon script on mount
   useEffect(() => {
@@ -45,8 +53,7 @@ export default function CharacterImageGenerator({ storyId }: CharacterImageGener
   const handleGenerateImage = async (
     characterName: string, 
     description: string, 
-    gender: string, 
-    imageStyle: 'HISTORY_SAGEUK_ROMANCE' | 'ISEKAI_OTOME_FANTASY' | 'MODERN_KOREAN_ROMANCE'
+    gender: string
   ) => {
     if (!webtoonScript) return;
 
@@ -59,7 +66,7 @@ export default function CharacterImageGenerator({ storyId }: CharacterImageGener
         character_name: characterName,
         description,
         gender,
-        image_style: imageStyle,
+        image_style: genre,  // Use the stored genre
       });
 
       // Update webtoon script with new image
@@ -158,9 +165,22 @@ export default function CharacterImageGenerator({ storyId }: CharacterImageGener
     );
   }
 
+  // Helper to format genre for display
+  const formatGenreName = (g: StoryGenre): string => {
+    return g.replace(/_/g, ' ').replace(/MANHWA/g, '').trim();
+  };
+
   // Main layout
   return (
     <div className="space-y-6">
+      {/* Genre Badge - Always visible */}
+      <div className="flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+        <span className="text-sm font-semibold text-gray-700">Selected Genre:</span>
+        <span className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full text-sm font-bold shadow-md">
+          🎭 {formatGenreName(genre)}
+        </span>
+      </div>
+
       <div className="bg-white rounded-lg shadow-lg p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
           <span>🎨</span>

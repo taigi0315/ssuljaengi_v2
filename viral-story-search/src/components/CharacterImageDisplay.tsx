@@ -1,43 +1,17 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Character, CharacterImage, ImageStyle, ImageStyleOption } from '@/types';
-import Image from 'next/image';
-
-// Import image assets
-import historySageukImage from '@/assets/images/HISTORY_SAGEUK_ROMANCE.png';
-import isekaiOtomeImage from '@/assets/images/ISEKAI_OTOME_FANTASY.png';
-import modernKoreanImage from '@/assets/images/MODERN_KOREAN_ROMANCE.png';
+import { Character, CharacterImage } from '@/types';
 
 interface CharacterImageDisplayProps {
   character: Character;
   images: CharacterImage[];
-  onGenerateImage: (characterName: string, description: string, gender: string, imageStyle: ImageStyle) => Promise<void>;
+  onGenerateImage: (characterName: string, description: string, gender: string) => Promise<void>;
   onSelectImage: (imageId: string) => void;
   isGenerating: boolean;
 }
 
-// Image style options with preview images
-const IMAGE_STYLE_OPTIONS: ImageStyleOption[] = [
-  {
-    id: 'HISTORY_SAGEUK_ROMANCE',
-    name: 'Historical Romance',
-    description: 'Elegant sageuk style with dramatic lighting',
-    previewImage: historySageukImage.src
-  },
-  {
-    id: 'ISEKAI_OTOME_FANTASY',
-    name: 'Fantasy Romance',
-    description: 'Dreamy isekai otome style with soft pastels',
-    previewImage: isekaiOtomeImage.src
-  },
-  {
-    id: 'MODERN_KOREAN_ROMANCE',
-    name: 'Modern Romance',
-    description: 'Contemporary K-drama style with warm tones',
-    previewImage: modernKoreanImage.src
-  }
-];
+
 
 export default function CharacterImageDisplay({
   character,
@@ -48,12 +22,12 @@ export default function CharacterImageDisplay({
 }: CharacterImageDisplayProps) {
   // Individual field states
   const [gender, setGender] = useState(character.gender || '');
+  const [age, setAge] = useState(character.age || '');
   const [face, setFace] = useState(character.face || '');
   const [hair, setHair] = useState(character.hair || '');
   const [body, setBody] = useState(character.body || '');
   const [outfit, setOutfit] = useState(character.outfit || '');
   const [mood, setMood] = useState(character.mood || '');
-  const [selectedImageStyle, setSelectedImageStyle] = useState<ImageStyle>('MODERN_KOREAN_ROMANCE');
   
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const prevImagesLengthRef = useRef(images.length);
@@ -61,6 +35,7 @@ export default function CharacterImageDisplay({
   // Reset fields when character changes
   useEffect(() => {
     setGender(character.gender || '');
+    setAge(character.age || '');
     setFace(character.face || '');
     setHair(character.hair || '');
     setBody(character.body || '');
@@ -82,6 +57,7 @@ export default function CharacterImageDisplay({
   const getCombinedDescription = () => {
     const parts = [];
     if (gender) parts.push(gender);
+    if (age) parts.push(`${age} years old`);
     if (face) parts.push(face);
     if (hair) parts.push(hair);
     if (body) parts.push(body);
@@ -92,7 +68,7 @@ export default function CharacterImageDisplay({
 
   const handleGenerate = async () => {
     const description = getCombinedDescription();
-    await onGenerateImage(character.name, description, gender, selectedImageStyle);
+    await onGenerateImage(character.name, description, gender);
   };
 
   const handlePrevious = () => {
@@ -177,6 +153,20 @@ export default function CharacterImageDisplay({
           />
         </div>
 
+        {/* Age */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Age
+          </label>
+          <input
+            type="text"
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-gray-900"
+            placeholder="e.g., 20, 30s"
+          />
+        </div>
+
         {/* Face */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -253,60 +243,6 @@ export default function CharacterImageDisplay({
           <p className="text-sm text-gray-900">
             {getCombinedDescription() || 'Fill in the fields above to see the combined description'}
           </p>
-        </div>
-      </div>
-
-      {/* Image Style Selection */}
-      <div className="space-y-3">
-        <label className="block text-sm font-semibold text-gray-700">
-          Select Image Style
-        </label>
-        <div className="grid grid-cols-3 gap-3">
-          {IMAGE_STYLE_OPTIONS.map((style) => (
-            <button
-              key={style.id}
-              onClick={() => setSelectedImageStyle(style.id)}
-              className={`
-                relative overflow-hidden rounded-lg border-2 transition-all
-                ${selectedImageStyle === style.id
-                  ? 'border-purple-600 ring-2 ring-purple-600 ring-offset-2'
-                  : 'border-gray-300 hover:border-purple-400'
-                }
-              `}
-            >
-              {/* Preview Image */}
-              <div className="aspect-square bg-gray-100">
-                <img
-                  src={style.previewImage}
-                  alt={style.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    // Fallback if image doesn't load
-                    e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3EStyle%3C/text%3E%3C/svg%3E';
-                  }}
-                />
-              </div>
-              
-              {/* Style Info */}
-              <div className="p-2 bg-white">
-                <p className="text-xs font-semibold text-gray-900 text-center">
-                  {style.name}
-                </p>
-                <p className="text-xs text-gray-600 text-center mt-1">
-                  {style.description}
-                </p>
-              </div>
-
-              {/* Selected Indicator */}
-              {selectedImageStyle === style.id && (
-                <div className="absolute top-2 right-2 bg-purple-600 text-white rounded-full p-1">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              )}
-            </button>
-          ))}
         </div>
       </div>
 

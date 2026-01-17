@@ -116,7 +116,7 @@ export default function SearchControls({ onSearch, isLoading }: SearchControlsPr
   const handleTimeRangeChange = (newRange: string) => {
     setTimeRange(newRange);
     // Invalidate cache entries for the old time range
-    searchCache.invalidate({ timeRange });
+    searchCache.invalidate({ timeRange: timeRange as '1h' | '1d' | '10d' | '100d' });
     // Clear time range error when changed
     if (validationErrors.timeRange) {
       setValidationErrors(prev => ({ ...prev, timeRange: undefined }));

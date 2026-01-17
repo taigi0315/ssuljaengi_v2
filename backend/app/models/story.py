@@ -11,7 +11,7 @@ from datetime import datetime
 
 
 # Story mood types
-StoryMood = Literal["rofan", "modern_romance", "slice_of_life", "revenge", "high_teen"]
+StoryMood = Literal["MODERN_ROMANCE_DRAMA_MANHWA", "FANTASY_ROMANCE_MANHWA", "HISTORY_SAGEUK_ROMANCE", "ACADEMY_SCHOOL_LIFE", "ISEKAI_OTOME_FANTASY"]
 
 
 class StoryRequest(BaseModel):
@@ -122,6 +122,12 @@ class Character(BaseModel):
     gender: str = Field(
         ..., 
         description="Gender of the character (e.g., male, female, non-binary).",
+        min_length=1,
+        max_length=50
+    )
+    age: str = Field(
+        ..., 
+        description="Age of the character (e.g., '20', '30', '40').",
         min_length=1,
         max_length=50
     )
@@ -338,6 +344,6 @@ class GenerateCharacterImageRequest(BaseModel):
     character_name: str = Field(..., description="Character name")
     description: str = Field(..., description="Visual description for generation")
     gender: str = Field(..., description="Character gender (male/female)")
-    image_style: Literal["HISTORY_SAGEUK_ROMANCE", "ISEKAI_OTOME_FANTASY", "MODERN_KOREAN_ROMANCE"] = Field(
-        ..., description="Image style/mood selection"
+    image_style: Literal["MODERN_ROMANCE_DRAMA_MANHWA", "FANTASY_ROMANCE_MANHWA", "HISTORY_SAGEUK_ROMANCE", "ACADEMY_SCHOOL_LIFE", "ISEKAI_OTOME_FANTASY"] = Field(
+        ..., description="Image style/genre selection"
     )

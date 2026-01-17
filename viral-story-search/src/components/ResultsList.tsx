@@ -122,20 +122,6 @@ const ResultsList: React.FC<ResultsListProps> = ({
           </div>
         ))}
       </div>
-
-      {/* Create Story Button - only show when post is selected */}
-      {selectedPost && onCreateStory && (
-        <div className="mt-8 flex justify-center animate-fadeIn">
-          <button
-            onClick={onCreateStory}
-            className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg rounded-lg shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-blue-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-3"
-          >
-            <span className="text-2xl">✨</span>
-            <span>Create Story</span>
-            <span className="text-2xl">→</span>
-          </button>
-        </div>
-      )}
     </div>
   );
 };
