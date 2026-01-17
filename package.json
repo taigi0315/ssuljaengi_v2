@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "concurrently \"cd backend && ./run.sh\" \"cd viral-story-search && npm run dev\"",
     "backend": "cd backend && ./run.sh",
-    "frontend": "cd viral-story-search && npm run dev"
+    "frontend": "cd viral-story-search && npm run dev",
+    "stop": "lsof -ti:8000,3000 | xargs kill -9; rm -f backend/data/*.json; rm -rf backend/cache/images/*",
+    "clean": "rm -f backend/data/*.json; rm -rf backend/cache/images/*"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

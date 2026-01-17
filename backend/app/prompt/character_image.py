@@ -1,17 +1,33 @@
 MALE = """
-handsome Korean man, webtoon manhwa art style,
-sharp chiseled jawline, high cheekbones, 
-intense piercing gaze, stylish hair with natural volume,
-form-fitting modern fashion, confident posture,
+handsome male character, webtoon manhwa art style,
+sharp features, stylish appearance, 
+intense expressive gaze, stylish hair with natural volume,
+modern fashion, confident posture,
 authentic Korean manhwa webtoon style character illustration, 
 """
 
 FEMALE = """
-beautiful woman, webtoon manhwa art style,
-graceful elegant appearance, 
-alluring gaze, stylish hair with natural movement,
+beautiful female character, webtoon manhwa art style,
+graceful appearance, 
+expressive gaze, stylish hair with natural movement,
 fashionable modern outfit, confident elegant posture,
 authentic Korean manhwa webtoon style character illustration, 
+"""
+
+YOUTH_MALE = """
+young male character, webtoon manhwa art style,
+youthful features, bright energy,
+expressive eyes, messy or neat hair,
+casual modern style, dynamic posture,
+authentic Korean manhwa webtoon style character illustration,
+"""
+
+YOUTH_FEMALE = """
+young female character, webtoon manhwa art style,
+youthful appearance, cute features,
+large expressive eyes, soft hair texture,
+casual modern style, cheerful posture,
+authentic Korean manhwa webtoon style character illustration,
 """
 
 CHARACTER_IMAGE_TEMPLATE = """

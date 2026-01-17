@@ -107,6 +107,14 @@ class EvaluationResult(BaseModel):
 
 
 
+class DialogueLine(BaseModel):
+    """
+    Single line of dialogue in a webtoon panel.
+    """
+    character: str = Field(..., description="Name of the character speaking.")
+    text: str = Field(..., description="The dialogue text.")
+
+
 class Character(BaseModel):
     """
     Character model with detailed physical and personality attributes.
@@ -118,6 +126,12 @@ class Character(BaseModel):
         description="The name of the character.",
         min_length=1,
         max_length=100
+    )
+    reference_tag: str = Field(
+        ...,
+        description="Minimal prompt tag (e.g., 'Ji-hoon(20s, athletic build, black hair)').",
+        min_length=1,
+        max_length=200
     )
     gender: str = Field(
         ..., 
@@ -132,33 +146,43 @@ class Character(BaseModel):
         max_length=50
     )
     face: str = Field(
-        ..., 
-        description="Facial features including jawline, face shape, eye color, skin tone, and distinctive features.",
-        min_length=5,
+        default="",
+        description="Facial features.",
         max_length=500
     )
     hair: str = Field(
-        ..., 
-        description="Hair description including length, color, style, and texture.",
-        min_length=3,
-        max_length=300
+        default="",
+        description="Hair description.",
+        max_length=500
     )
     body: str = Field(
-        ..., 
-        description="Body type, build, height, and physical characteristics.",
-        min_length=3,
-        max_length=300
+        default="",
+        description="Body type.",
+        max_length=500
     )
     outfit: str = Field(
-        ..., 
-        description="Clothing, accessories, and overall style.",
-        min_length=3,
+        default="",
+        description="Clothing description.",
         max_length=500
     )
     mood: str = Field(
-        ..., 
-        description="Character's typical mood, personality vibe, or demeanor.",
-        min_length=3,
+        default="",
+        description="Personality vibe.",
+        max_length=200
+    )
+    appearance_notes: str = Field(
+        default="", 
+        description="Detailed visual notes (optional legacy field).",
+        max_length=1000
+    )
+    typical_outfit: str = Field(
+        default="",
+        description="Legacy outfit field.",
+        max_length=500
+    )
+    personality_brief: str = Field(
+        default="",
+        description="Legacy personality field.",
         max_length=200
     )
     visual_description: str = Field(
@@ -172,13 +196,13 @@ class Character(BaseModel):
         json_schema_extra = {
             "example": {
                 "name": "Ji-hoon",
+                "reference_tag": "Ji-hoon(20s, athletic build, black hair)",
                 "gender": "male",
-                "face": "sharp jawline, dark brown eyes, olive skin tone, high cheekbones",
-                "hair": "short black hair, neatly styled with slight wave",
-                "body": "tall athletic build, broad shoulders, lean muscular frame",
-                "outfit": "tailored navy suit with white dress shirt, silver watch",
-                "mood": "confident and charismatic with a hint of mystery",
-                "visual_description": "A tall man with sharp jawline, dark brown eyes, olive skin, high cheekbones, short black hair neatly styled with slight wave, athletic build with broad shoulders and lean muscular frame, wearing a tailored navy suit with white dress shirt and silver watch, confident and charismatic demeanor with a hint of mystery"
+                "age": "20s",
+                "appearance_notes": "Sharp jawline, dark brown eyes, olive skin tone, high cheekbones. Short black hair, neatly styled with slight wave. Tall athletic build, broad shoulders, lean muscular frame.",
+                "typical_outfit": "Tailored navy suit with white dress shirt",
+                "personality_brief": "Confident",
+                "visual_description": "A tall man with sharp jawline, dark brown eyes, olive skin, high cheekbones, short black hair neatly styled with slight wave, athletic build with broad shoulders and lean muscular frame, wearing a tailored navy suit with white dress shirt, confident demeanor"
             }
         }
 
@@ -212,10 +236,56 @@ class WebtoonPanel(BaseModel):
         description="Self-contained image generation prompt with full character descriptions, not just names.",
         max_length=2000
     )
-    dialogue: Optional[str] = Field(
-        None, 
-        description="Character dialogue or sound effects for this panel.",
+    negative_prompt: str = Field(
+        default="", 
+        description="Negative prompt tokens to avoid.",
+        max_length=1000
+    )
+    composition_notes: str = Field(
+        default="", 
+        description="Notes on framing and composition.",
         max_length=500
+    )
+    environment_focus: str = Field(
+        default="", 
+        description="Primary location setting.",
+        max_length=500
+    )
+    environment_details: str = Field(
+        default="", 
+        description="Specific environmental elements.",
+        max_length=1000
+    )
+    atmospheric_conditions: str = Field(
+        default="", 
+        description="Lighting, weather, time of day.",
+        max_length=500
+    )
+    story_beat: str = Field(
+        default="", 
+        description="Narrative action in this panel.",
+        max_length=500
+    )
+    character_frame_percentage: int = Field(
+        default=40, 
+        description="Percentage of frame occupied by characters.",
+        ge=0,
+        le=100
+    )
+    environment_frame_percentage: int = Field(
+        default=60, 
+        description="Percentage of frame occupied by environment.",
+        ge=0,
+        le=100
+    )
+    character_placement_and_action: str = Field(
+        default="", 
+        description="Description of where characters are and what they are doing.",
+        max_length=1000
+    )
+    dialogue: Optional[List[dict]] = Field(
+        default=None, 
+        description="List of dialogue objects: [{'character': 'Name', 'text': 'Speech'}]",
     )
     
     class Config:
@@ -224,8 +294,8 @@ class WebtoonPanel(BaseModel):
                 "panel_number": 1,
                 "shot_type": "Medium Shot",
                 "active_character_names": ["Ji-hoon", "Hana"],
-                "visual_prompt": "Medium shot of a tall man with sharp jawline, dark brown eyes, olive skin (Ji-hoon) standing across from a woman with long wavy brown hair, bright green eyes (Hana) in a modern office with glass windows in the background, soft natural lighting",
-                "dialogue": "Ji-hoon: 'We need to talk about what happened.'"
+                "visual_prompt": "Medium shot of a tall man with sharp jawline... (Ji-hoon) ...",
+                "dialogue": [{"character": "Ji-hoon", "text": "We need to talk about what happened."}]
             }
         }
 

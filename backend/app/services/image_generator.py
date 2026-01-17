@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Literal, Tuple, List, Optional
 from google import genai
 from app.config import get_settings
-from app.prompt.character_image import MALE, FEMALE, CHARACTER_IMAGE_TEMPLATE
+from app.prompt.character_image import MALE, FEMALE, YOUTH_MALE, YOUTH_FEMALE, CHARACTER_IMAGE_TEMPLATE
 from app.prompt.image_mood import CHARACTER_GENRE_MODIFIERS
 
 
@@ -42,7 +42,7 @@ class ImageGenerator:
             api_key = settings.google_api_key
             self.client = genai.Client(api_key=api_key)
             self.use_real_generation = True
-            logger.info("Image generator initialized with Gemini 2.5 Flash Image")
+            logger.info(f"Image generator initialized with model: {settings.model_image_gen}")
         except Exception as e:
             self.client = None
             self.use_real_generation = False
@@ -75,8 +75,8 @@ class ImageGenerator:
             logger.info(f"Gender: {gender}, Style: {image_style}")
             logger.info(f"Description: {description[:100]}...")
             
-            # Select base style based on gender
-            base_style = self._get_base_style(gender)
+            # Select base style based on gender and description (for age detection)
+            base_style = self._get_base_style(gender, description)
             
             # Get image style prompt
             image_style_prompt = self.image_styles.get(image_style, self.image_styles["MODERN_ROMANCE_DRAMA_MANHWA"])
@@ -237,25 +237,59 @@ class ImageGenerator:
             logger.error(f"Scene image generation with references failed: {str(e)}", exc_info=True)
             raise Exception(f"Scene image generation failed: {str(e)}")
     
-    def _get_base_style(self, gender: str) -> str:
+    def _get_base_style(self, gender: str, description: str = "") -> str:
         """
-        Get base style based on gender.
+        Get base style based on gender and age indicators.
         
         Args:
             gender: Character gender
+            description: Character description (to check for age)
             
         Returns:
-            Base style prompt (YOUTH_MALE or YOUTH_FEMALE)
+            Base style prompt
         """
         gender_lower = gender.lower()
+        desc_lower = description.lower()
+        
+        # Check for youth indicators
+        is_youth = False
+        youth_keywords = [
+            "child", "kid", "toddler", "baby", "infant",
+            "girl", "boy", "teen", "student", "youth",
+            " 1 year", " 2 year", " 3 year", " 4 year", " 5 year",
+            " 6 year", " 7 year", " 8 year", " 9 year", " 10 year",
+            " 11 year", " 12 year", " 13 year", " 14 year", " 15 year",
+            " 16 year", " 17 year",
+            "years old"
+        ]
+        
+        # Check explicit age in description if possible (simple heuristic)
+        for keyword in youth_keywords:
+            if keyword in desc_lower:
+                # Double check "years old" - if number is > 18, it's not youth
+                if keyword == "years old":
+                    try:
+                        # Extract number before years old
+                        import re
+                        match = re.search(r'(\d+)\s+years old', desc_lower)
+                        if match:
+                            age = int(match.group(1))
+                            if age < 18:
+                                is_youth = True
+                                break
+                    except:
+                        pass
+                else:
+                    is_youth = True
+                    break
         
         if "male" in gender_lower and "female" not in gender_lower:
-            return MALE
+            return YOUTH_MALE if is_youth else MALE
         elif "female" in gender_lower:
-            return FEMALE
+            return YOUTH_FEMALE if is_youth else FEMALE
         else:
             # Default to male if unclear
-            return MALE
+            return YOUTH_MALE if is_youth else MALE
     
     async def _generate_with_gemini(self, prompt: str, character_name: str) -> str:
         """

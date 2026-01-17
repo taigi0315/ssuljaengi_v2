@@ -163,10 +163,15 @@ export default function ScriptPreview({
                   )}
                 </div>
                 <p className="text-sm text-gray-700 mb-2">{panel.visual_prompt}</p>
-                {panel.dialogue && (
+                {panel.dialogue && Array.isArray(panel.dialogue) && panel.dialogue.length > 0 && (
                   <div className="mt-2 p-2 bg-white rounded border-l-4 border-purple-400">
                     <p className="text-xs text-gray-500 mb-1">💬 Dialogue:</p>
-                    <p className="text-sm text-gray-800 italic">{panel.dialogue}</p>
+                    {panel.dialogue.map((line: any, idx: number) => (
+                      <p key={idx} className="text-sm text-gray-800">
+                        <span className="font-semibold text-purple-700">{line.character}:</span> 
+                        <span className="italic ml-1">"{line.text}"</span>
+                      </p>
+                    ))}
                   </div>
                 )}
               </div>

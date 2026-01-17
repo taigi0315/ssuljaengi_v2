@@ -10,48 +10,53 @@ export function useSessionStorage<T>(
   key: string,
   initialValue: T
 ): [T, (value: T | ((prev: T) => T)) => void, () => void] {
-  // Initialize state
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    if (typeof window === 'undefined') {
-      return initialValue;
-    }
-    try {
-      const item = window.sessionStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.warn(`Error reading sessionStorage key "${key}":`, error);
-      return initialValue;
-    }
-  });
+  // Initialize state with initialValue to match server-side rendering
+  const [storedValue, setStoredValue] = useState<T>(initialValue);
 
-  // Update sessionStorage when state changes
+  // Hydrate from storage after mount (client-side only)
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     try {
-      if (storedValue === null || storedValue === undefined) {
-        window.sessionStorage.removeItem(key);
-      } else {
-        window.sessionStorage.setItem(key, JSON.stringify(storedValue));
+      const item = window.sessionStorage.getItem(key);
+      if (item) {
+        setStoredValue(JSON.parse(item));
       }
     } catch (error) {
-      console.warn(`Error saving to sessionStorage key "${key}":`, error);
+      console.warn(`Error reading sessionStorage key "${key}":`, error);
     }
-  }, [key, storedValue]);
+  }, [key]);
 
-  // Setter function that matches useState API
+  // Setter function that updates both state and storage
   const setValue = useCallback((value: T | ((prev: T) => T)) => {
     setStoredValue((prev) => {
       const nextValue = value instanceof Function ? value(prev) : value;
+      
+      if (typeof window !== 'undefined') {
+        try {
+          if (nextValue === null || nextValue === undefined) {
+            window.sessionStorage.removeItem(key);
+          } else {
+            window.sessionStorage.setItem(key, JSON.stringify(nextValue));
+          }
+        } catch (error) {
+          console.warn(`Error saving to sessionStorage key "${key}":`, error);
+        }
+      }
+      
       return nextValue;
     });
-  }, []);
+  }, [key]);
 
   // Clear function to remove from storage
   const clearValue = useCallback(() => {
     setStoredValue(initialValue);
     if (typeof window !== 'undefined') {
-      window.sessionStorage.removeItem(key);
+      try {
+        window.sessionStorage.removeItem(key);
+      } catch (error) {
+        console.warn(`Error clearing sessionStorage key "${key}":`, error);
+      }
     }
   }, [key, initialValue]);
 

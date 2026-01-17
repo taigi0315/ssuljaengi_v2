@@ -1,0 +1,16 @@
+{
+  "75e784e8-150e-4fa7-8028-12b1f78c94e7": {
+    "status": "completed",
+    "current_step": "done",
+    "progress": 1.0,
+    "start_time": 1768674429.173653,
+    "story_id": "391d9c82-1970-4db5-b787-a5f9bf121330"
+  },
+  "6ae15fb9-0bcc-4def-a855-95b66ea8ec42": {
+    "status": "completed",
+    "current_step": "done",
+    "progress": 1.0,
+    "start_time": 1768674429.176207,
+    "story_id": "f2849d41-226a-48ac-8370-6a22a93eccb4"
+  }
+}

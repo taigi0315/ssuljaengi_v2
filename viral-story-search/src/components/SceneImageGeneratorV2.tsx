@@ -112,29 +112,42 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
   const currentBubbles = webtoonScript.dialogue_bubbles?.[currentPanel?.panel_number] || [];
 
   // Parse dialogue from panel
-  const parseDialogues = (dialogue: string | undefined): { characterName: string; text: string }[] => {
+  const parseDialogues = (dialogue: any): { characterName: string; text: string }[] => {
     if (!dialogue) return [];
     
-    // Format: "[character_name: dialogue, character_name: dialogue, ...]"
-    const dialogues: { characterName: string; text: string }[] = [];
-    const regex = /\[?([^:\]]+):\s*([^\],]+)\]?/g;
-    let match;
-    
-    while ((match = regex.exec(dialogue)) !== null) {
-      dialogues.push({
-        characterName: match[1].trim(),
-        text: match[2].trim(),
-      });
+    // Check if dialogue is already in list object format
+    if (Array.isArray(dialogue)) {
+      return dialogue.map((line: any) => ({
+        characterName: line.character || 'Character',
+        text: line.text || ''
+      }));
+    }
+
+    // Handle legacy string format
+    if (typeof dialogue === 'string') {
+      // Format: "[character_name: dialogue, character_name: dialogue, ...]"
+      const dialogues: { characterName: string; text: string }[] = [];
+      const regex = /\[?([^:\]]+):\s*([^\],]+)\]?/g;
+      let match;
+      
+      while ((match = regex.exec(dialogue)) !== null) {
+        dialogues.push({
+          characterName: match[1].trim(),
+          text: match[2].trim(),
+        });
+      }
+      
+      // If no matches, try splitting by newlines
+      if (dialogues.length === 0 && dialogue.trim()) {
+        dialogue.split('\n').filter(line => line.trim()).forEach(line => {
+          dialogues.push({ characterName: 'Character', text: line.trim() });
+        });
+      }
+      
+      return dialogues;
     }
     
-    // If no matches, try splitting by newlines
-    if (dialogues.length === 0 && dialogue.trim()) {
-      dialogue.split('\n').filter(line => line.trim()).forEach(line => {
-        dialogues.push({ characterName: 'Character', text: line.trim() });
-      });
-    }
-    
-    return dialogues;
+    return [];
   };
 
   const currentDialogues = parseDialogues(currentPanel?.dialogue);

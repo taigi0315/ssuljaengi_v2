@@ -27,15 +27,27 @@ from app.models.story import (
 )
 from app.services.webtoon_writer import webtoon_writer
 from app.services.image_generator import image_generator
+from app.workflows.webtoon_workflow import run_webtoon_workflow
 
+
+from app.config import get_settings
+from app.utils.persistence import JsonStore
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/webtoon", tags=["Webtoon"])
 
-# In-memory storage (use Redis/database in production)
-webtoon_scripts: Dict[str, dict] = {}
-character_images: Dict[str, List[dict]] = {}  # script_id -> list of images
+# Initialize persistent storage
+settings = get_settings()
+webtoon_scripts: JsonStore[dict] = JsonStore(
+    os.path.join(settings.data_dir, "webtoon_scripts.json")
+)
+character_images: JsonStore[List[dict]] = JsonStore(
+    os.path.join(settings.data_dir, "character_images.json")
+)
+scene_images: JsonStore[List[dict]] = JsonStore(
+    os.path.join(settings.data_dir, "scene_images.json")
+)
 
 # Import stories from story router
 from app.routers.story import stories
@@ -88,6 +100,10 @@ async def generate_webtoon_script(request: GenerateWebtoonRequest) -> WebtoonScr
     """
     Convert a story into a webtoon script with characters and panels.
     
+    Uses LangGraph workflow with automatic evaluation and rewriting.
+    The workflow evaluates the generated script and conditionally rewrites
+    it up to 2 times if quality thresholds aren't met.
+    
     Args:
         request: Request with story_id
         
@@ -107,8 +123,12 @@ async def generate_webtoon_script(request: GenerateWebtoonRequest) -> WebtoonScr
     story_content = story_data["content"]
     
     try:
-        # Convert story to webtoon script
-        webtoon_script = await webtoon_writer.convert_story_to_script(story_content)
+        # Use the LangGraph workflow with evaluation and rewriting
+        # This automatically evaluates the script and rewrites if needed (max 2 times)
+        webtoon_script = await run_webtoon_workflow(
+            story=story_content,
+            genre="MODERN_ROMANCE_DRAMA_MANHWA"  # Default genre
+        )
         
         # Generate unique script ID
         script_id = str(uuid.uuid4())
@@ -121,6 +141,7 @@ async def generate_webtoon_script(request: GenerateWebtoonRequest) -> WebtoonScr
             "panels": [panel.model_dump() for panel in webtoon_script.panels],
             "character_images": {}
         }
+        await webtoon_scripts.save()
         
         logger.info(f"Webtoon script created: {script_id}")
         logger.info(f"Characters: {len(webtoon_script.characters)}, Panels: {len(webtoon_script.panels)}")
@@ -177,6 +198,8 @@ async def select_character_image(script_id: str, image_id: str):
                     break
             if image_found:
                 break
+        
+        await webtoon_scripts.save()
         
         if not image_found:
             raise HTTPException(status_code=404, detail="Image not found")
@@ -239,6 +262,7 @@ async def generate_character_image(request: GenerateCharacterImageRequest) -> Ch
             character_images[image_key] = []
         
         character_images[image_key].append(character_image.model_dump())
+        await character_images.save()
         
         # Update script's character_images
         script_data = webtoon_scripts[request.script_id]
@@ -246,6 +270,7 @@ async def generate_character_image(request: GenerateCharacterImageRequest) -> Ch
             script_data["character_images"][request.character_name] = []
         
         script_data["character_images"][request.character_name].append(character_image.model_dump())
+        await webtoon_scripts.save()
         
         logger.info(f"Character image generated: {image_id}")
         
@@ -308,8 +333,6 @@ async def get_character_images(script_id: str, character_name: str) -> List[Char
     return [CharacterImage(**img) for img in images]
 
 
-# In-memory storage for scene images
-scene_images: Dict[str, List[dict]] = {}  # script_id:panel_number -> list of images
 
 
 @router.post("/scene/image")
@@ -327,7 +350,7 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
         HTTPException: If script not found or image generation fails
     """
     from app.models.story import GenerateSceneImageRequest, SceneImage
-    from app.prompt.scene_image import SCEME_IMAGE_TEMPLATE
+    from app.prompt.scene_image import SCENE_IMAGE_TEMPLATE
     
     logger.info(f"Generating scene image for panel: {request.panel_number}")
     logger.info(f"Script ID: {request.script_id}")
@@ -348,18 +371,42 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
         character_descriptions = []
         active_char_names = []
         
+        # Panel metadata containers
+        panel_metadata = {
+            "shot_type": "Wide Shot",
+            "composition_notes": "Standard composition",
+            "environment_focus": "Background",
+            "environment_details": "Detailed environment",
+            "atmospheric_conditions": "Standard lighting",
+            "character_frame_percentage": 40,
+            "environment_frame_percentage": 60,
+            "character_placement_and_action": "Characters in scene",
+            "negative_prompt": "worst quality, low quality"
+        }
+        
         for panel in panels:
             if panel["panel_number"] == request.panel_number:
                 active_char_names = panel.get("active_character_names", [])
+                
+                # Extract cinematic fields from panel
+                panel_metadata["shot_type"] = panel.get("shot_type", "Wide Shot")
+                panel_metadata["composition_notes"] = panel.get("composition_notes", "Standard composition")
+                panel_metadata["environment_focus"] = panel.get("environment_focus", "Background")
+                panel_metadata["environment_details"] = panel.get("environment_details", "Detailed environment")
+                panel_metadata["atmospheric_conditions"] = panel.get("atmospheric_conditions", "Standard lighting")
+                panel_metadata["character_frame_percentage"] = panel.get("character_frame_percentage", 40)
+                panel_metadata["environment_frame_percentage"] = panel.get("environment_frame_percentage", 60)
+                # No longer need character_placement_and_action for template as it is in visual_prompt, but good to keep if needed
+                panel_metadata["negative_prompt"] = panel.get("negative_prompt", "worst quality, low quality")
+                
                 logger.info(f"Active characters in panel {request.panel_number}: {active_char_names}")
                 
                 for char_name in active_char_names:
                     for char in characters:
                         if char["name"] == char_name:
                             # Use the programmatically built visual_description
-                            desc = f"{char_name}: {char.get('visual_description', 'A character')}"
+                            desc = f"- {char_name}: {char.get('gender', 'unknown')} character (reference image provided - appearance locked)"
                             character_descriptions.append(desc)
-                            logger.info(f"Found character description for {char_name}")
                             break
                 break
         
@@ -386,10 +433,19 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
         logger.info(f"Character descriptions for prompt:\n{character_desc_text}")
         
         # Build final prompt using the template
-        final_prompt = SCEME_IMAGE_TEMPLATE.format(
+        # Build final prompt using the template
+        # Build final prompt using the template
+        final_prompt = SCENE_IMAGE_TEMPLATE.format(
             character_description=character_desc_text,
-            genre_style=request.genre,
-            scene_description=request.visual_prompt
+            visual_prompt=request.visual_prompt,
+            negative_prompt=panel_metadata["negative_prompt"],
+            shot_type=panel_metadata["shot_type"],
+            composition_notes=panel_metadata["composition_notes"],
+            character_frame_percentage=panel_metadata["character_frame_percentage"],
+            environment_frame_percentage=panel_metadata["environment_frame_percentage"],
+            environment_focus=panel_metadata["environment_focus"],
+            environment_details=panel_metadata["environment_details"],
+            atmospheric_conditions=panel_metadata["atmospheric_conditions"]
         )
         
         logger.info(f"Final scene prompt (first 500 chars): {final_prompt[:500]}")
@@ -429,6 +485,7 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
             scene_images[image_key] = []
         
         scene_images[image_key].append(scene_image.model_dump())
+        await scene_images.save()
         
         logger.info(f"Scene image generated: {image_id}")
         
@@ -466,6 +523,9 @@ async def select_scene_image(script_id: str, panel_number: int, image_id: str):
             img["is_selected"] = True
             image_found = True
             break
+    
+    if image_found:
+        await scene_images.save()
     
     if not image_found:
         raise HTTPException(status_code=404, detail="Image not found")

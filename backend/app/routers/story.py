@@ -23,13 +23,22 @@ from app.models.story import (
 from app.workflows.story_workflow import story_workflow
 
 
+import os
+from app.config import get_settings
+from app.utils.persistence import JsonStore
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/story", tags=["Story"])
 
-# In-memory storage (use Redis in production)
-workflows: Dict[str, dict] = {}
-stories: Dict[str, dict] = {}
+# Initialize persistent storage
+settings = get_settings()
+workflows: JsonStore[dict] = JsonStore(
+    os.path.join(settings.data_dir, "workflows.json")
+)
+stories: JsonStore[dict] = JsonStore(
+    os.path.join(settings.data_dir, "stories.json")
+)
 
 
 @router.post("/generate")
@@ -60,6 +69,7 @@ async def generate_story(request: StoryRequest) -> dict:
         "progress": 0.0,
         "start_time": time.time()
     }
+    await workflows.save()
     
     # Start workflow in background
     asyncio.create_task(run_workflow(workflow_id, request))
@@ -86,6 +96,7 @@ async def run_workflow(workflow_id: str, request: StoryRequest):
             "current_step": "writing",
             "progress": 0.1
         })
+        await workflows.save()
         
         logger.info(f"Workflow {workflow_id}: Starting writer node")
         
@@ -120,6 +131,7 @@ async def run_workflow(workflow_id: str, request: StoryRequest):
                 "error": result["error"],
                 "progress": 0.0
             })
+            await workflows.save()
             logger.error(f"Workflow {workflow_id} failed: {result['error']}")
             return
         
@@ -141,6 +153,7 @@ async def run_workflow(workflow_id: str, request: StoryRequest):
                 "post_title": request.post_title
             }
         }
+        await stories.save()
         
         # Update workflow status
         workflows[workflow_id].update({
@@ -149,6 +162,7 @@ async def run_workflow(workflow_id: str, request: StoryRequest):
             "progress": 1.0,
             "story_id": story_id
         })
+        await workflows.save()
         
         logger.info(f"Workflow {workflow_id}: Story saved with ID {story_id}")
         
@@ -159,6 +173,7 @@ async def run_workflow(workflow_id: str, request: StoryRequest):
             "error": str(e),
             "progress": 0.0
         })
+        await workflows.save()
 
 
 @router.get("/status/{workflow_id}")

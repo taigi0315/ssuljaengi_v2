@@ -36,14 +36,22 @@ export default function CharacterImageDisplay({
   useEffect(() => {
     setGender(character.gender || '');
     setAge(character.age || '');
-    setFace(character.face || '');
-    setHair(character.hair || '');
-    setBody(character.body || '');
-    setOutfit(character.outfit || '');
-    setMood(character.mood || '');
+    
+    // Map new fields to old UI fields if old ones are missing
+    setFace(character.face || character.appearance_notes || ''); 
+    setHair(character.hair || ''); 
+    setBody(character.body || ''); 
+    
+    // If we have appearance_notes but no specific hair/body/face, we might want to just put it all in one field or split it.
+    // For now, let's put appearance_notes in 'face' as a catch-all if face is empty, to ensure visibility.
+    // Better yet, let's just use what we have.
+    
+    setOutfit(character.outfit || character.typical_outfit || '');
+    setMood(character.mood || character.personality_brief || '');
+    
     setCurrentImageIndex(0);
     prevImagesLengthRef.current = images.length;
-  }, [character.name]);
+  }, [character]);
 
   // Only update index when a NEW image is added (length increases)
   useEffect(() => {

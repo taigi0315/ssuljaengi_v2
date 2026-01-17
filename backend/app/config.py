@@ -58,6 +58,12 @@ class Settings(BaseSettings):
         ge=1
     )
     
+    # Persistence Configuration
+    data_dir: str = Field(
+        default="data",
+        description="Directory for persistent data storage"
+    )
+    
     # Google Gemini Configuration
     google_api_key: str = Field(
         ...,
@@ -96,6 +102,32 @@ class Settings(BaseSettings):
         description="Maximum number of story rewrites",
         ge=0,
         le=3
+    )
+    
+    # Webtoon Script Evaluation Configuration
+    webtoon_evaluation_threshold: float = Field(
+        default=7.0,
+        description="Minimum score to accept webtoon script without rewrite",
+        ge=0.0,
+        le=10.0
+    )
+    webtoon_max_rewrites: int = Field(
+        default=2,
+        description="Maximum number of webtoon script rewrites",
+        ge=0,
+        le=3
+    )
+    webtoon_min_scenes: int = Field(
+        default=8,
+        description="Minimum number of scenes in webtoon script",
+        ge=4,
+        le=20
+    )
+    webtoon_dialogue_coverage: float = Field(
+        default=0.6,
+        description="Minimum percentage of scenes with dialogue",
+        ge=0.0,
+        le=1.0
     )
     
     model_config = SettingsConfigDict(
