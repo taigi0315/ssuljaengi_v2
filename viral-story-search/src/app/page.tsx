@@ -2,30 +2,52 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { SearchControls, ResultsList, ErrorMessage, GenreSelector } from '@/components';
+import { SearchControls, ResultsList, ErrorMessage, GenreSelector, SceneImageGenerator, VideoGenerator } from '@/components';
 import StoryTabs from '@/components/StoryTabs';
 import StoryBuilder from '@/components/StoryBuilder';
 import CharacterImageGenerator from '@/components/CharacterImageGenerator';
-import { SearchCriteria, ViralPost, ErrorState, StoryGenre } from '@/types';
+import ScriptPreview from '@/components/ScriptPreview';
+import { SearchCriteria, ViralPost, ErrorState, StoryGenre, WebtoonScript } from '@/types';
 import { searchCache } from '@/utils/searchCache';
 import { debounce } from '@/utils/debounce';
 import { searchPosts } from '@/lib/apiClient';
+import { useSessionStorage, SESSION_KEYS } from '@/hooks/useSessionStorage';
 
 export default function Home() {
+  // Global state management for search data
   // Global state management for search data
   const [posts, setPosts] = useState<ViralPost[]>([]);
   const [searchCriteria, setSearchCriteria] = useState<SearchCriteria | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ErrorState | string | null>(null);
   
-  // Selection state for story generation
-  const [selectedPost, setSelectedPost] = useState<ViralPost | null>(null);
-  const [customStorySeed, setCustomStorySeed] = useState<string>('');
-  const [selectedGenre, setSelectedGenre] = useState<StoryGenre | null>(null);
-  const [generatedStoryId, setGeneratedStoryId] = useState<string | null>(null);
+  // Selection state for story generation - Persistent
+  const [selectedPost, setSelectedPost] = useSessionStorage<ViralPost | null>(
+    SESSION_KEYS.SELECTED_POST, 
+    null
+  );
+  const [customStorySeed, setCustomStorySeed] = useSessionStorage<string>(
+    SESSION_KEYS.CUSTOM_STORY_SEED, 
+    ''
+  );
+  const [selectedGenre, setSelectedGenre] = useSessionStorage<StoryGenre | null>(
+    SESSION_KEYS.SELECTED_GENRE, 
+    null
+  );
+  const [generatedStoryId, setGeneratedStoryId] = useSessionStorage<string | null>(
+    SESSION_KEYS.GENERATED_STORY_ID, 
+    null
+  );
+  const [webtoonScript, setWebtoonScript] = useSessionStorage<WebtoonScript | null>(
+    SESSION_KEYS.WEBTOON_SCRIPT, 
+    null
+  );
   
-  // Tab state
-  const [activeTab, setActiveTab] = useState<'search' | 'generate' | 'images'>('search');
+  // Tab state - persistent
+  const [activeTab, setActiveTab] = useSessionStorage<'search' | 'generate' | 'script' | 'images' | 'scenes' | 'video'>(
+    SESSION_KEYS.ACTIVE_TAB, 
+    'search'
+  );
   
   const router = useRouter();
 
@@ -103,37 +125,76 @@ export default function Home() {
   // Handle create story navigation
   const handleCreateStory = useCallback(() => {
     if ((selectedPost || customStorySeed.trim()) && selectedGenre) {
-      // Store selected data in sessionStorage for persistence
-      if (selectedPost) {
-        sessionStorage.setItem('selectedPost', JSON.stringify(selectedPost));
-      }
-      sessionStorage.setItem('selectedGenre', selectedGenre);
-      if (customStorySeed.trim()) {
-        sessionStorage.setItem('customStorySeed', customStorySeed);
-      }
+      // Use useSessionStorage hook logic, no need for manual setItem here
+      // Just switching tab triggers re-render and saving happens automatically in useEffect if values changed
+      // But values are already set via setters (setSelectedPost etc) which trigger save.
+      
+      // Explicitly clear generated story if we are starting a NEW story
+      // (This logic might need refinement if we want to "resume" creation?)
+      // For now, assuming "Create Story" button implies "Start Fresh" or "Continue with selection"
+      
+      // If we want to force clear previous results when clicking Create Story:
+      // But we are using persistent state... 
+      // Actually, if I select a new post, `generatedStoryId` might still be the OLD one unless I clear it.
+      // So I shoud clear derived state.
+      setGeneratedStoryId(null);
+      setWebtoonScript(null);
+      
       // Switch to story building tab
       setActiveTab('generate');
     }
-  }, [selectedPost, customStorySeed, selectedGenre]);
+  }, [selectedPost, customStorySeed, selectedGenre, setGeneratedStoryId, setWebtoonScript, setActiveTab]);
 
   // Handle tab change
-  const handleTabChange = useCallback((tab: 'search' | 'generate' | 'images') => {
+  const handleTabChange = useCallback((tab: 'search' | 'generate' | 'script' | 'images' | 'scenes' | 'video') => {
     if (tab === 'generate' && !(selectedPost || customStorySeed.trim()) && !selectedGenre) {
-      // Don't allow switching to generate tab without source and genre
       return;
     }
-    if (tab === 'images' && !generatedStoryId) {
-      // Don't allow switching to images tab without a generated story
+    if (tab === 'script' && !generatedStoryId) {
+      return;
+    }
+    if (tab === 'images' && !webtoonScript) {
+      return;
+    }
+    if (tab === 'scenes' && !webtoonScript) {
+      return;
+    }
+    if (tab === 'video' && !webtoonScript) {
       return;
     }
     setActiveTab(tab);
-  }, [selectedPost, customStorySeed, selectedGenre, generatedStoryId]);
+  }, [selectedPost, customStorySeed, selectedGenre, generatedStoryId, webtoonScript]);
 
-  // Handle generate images
+  // Handle story generation complete - go to script tab
   const handleGenerateImages = useCallback((storyId: string) => {
     setGeneratedStoryId(storyId);
-    setActiveTab('images');
+    setActiveTab('script');
   }, []);
+
+  // Handle webtoon script generated (called from ScriptPreview)
+  const handleScriptGenerated = useCallback((script: WebtoonScript) => {
+    setWebtoonScript(script);
+  }, [setWebtoonScript]);
+
+  // Handle script update (from Character/Scene generators)
+  const handleScriptUpdate = useCallback((script: WebtoonScript) => {
+    setWebtoonScript(script);
+  }, [setWebtoonScript]);
+
+  // Handle proceed to characters (called from ScriptPreview)
+  const handleProceedToCharacters = useCallback(() => {
+    setActiveTab('images');
+  }, [setActiveTab]);
+
+  // Handle proceed to scenes (called from CharacterImageGenerator)
+  const handleProceedToScenes = useCallback(() => {
+    setActiveTab('scenes');
+  }, [setActiveTab]);
+
+  // Handle proceed to video (called from SceneImageGenerator)
+  const handleProceedToVideo = useCallback(() => {
+    setActiveTab('video');
+  }, [setActiveTab]);
 
   // Check if can proceed to create story
   const canCreateStory = (selectedPost || customStorySeed.trim()) && selectedGenre;
@@ -158,6 +219,7 @@ export default function Home() {
         onTabChange={handleTabChange}
         hasSelectedPost={!!(selectedPost || customStorySeed.trim())}
         hasGeneratedStory={!!generatedStoryId}
+        hasWebtoonScript={!!webtoonScript}
       />
 
       {/* Main Content */}
@@ -178,35 +240,28 @@ export default function Home() {
             {(searchCriteria || isLoading) && !error && (
               <ResultsList
                 posts={posts}
-                searchCriteria={searchCriteria || { timeRange: '1d', subreddits: [], postCount: 20 }}
+                searchCriteria={searchCriteria!}
                 isLoading={isLoading}
                 error={null}
                 selectedPost={selectedPost}
                 onPostSelect={handlePostSelect}
-                onCreateStory={handleCreateStory}
               />
             )}
 
-            {/* OR Divider */}
+            {/* Custom Story Seed Input */}
             <div className="mt-8 max-w-4xl mx-auto">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-300"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100 text-gray-500 font-medium">
+                  <span className="px-4 bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100 text-gray-500">
                     OR type your own story seed
                   </span>
                 </div>
               </div>
-            </div>
-
-            {/* Custom Story Seed Input */}
-            <div className="mt-6 max-w-4xl mx-auto">
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <label className="block text-lg font-bold text-gray-900 mb-3">
-                  ✍️ Write Your Own Story Seed
-                </label>
+              
+              <div className="mt-6">
                 <textarea
                   value={customStorySeed}
                   onChange={(e) => {
@@ -215,20 +270,18 @@ export default function Home() {
                       setSelectedPost(null); // Clear selected post when typing custom seed
                     }
                   }}
-                  placeholder="Enter your story idea, concept, or seed here... (e.g., 'A corporate executive discovers that her rival is actually her long-lost childhood friend')"
-                  className="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent resize-none text-gray-900"
+                  placeholder="Enter your story idea here... (e.g., 'A young woman discovers she can read minds after a lightning strike')"
+                  className="w-full p-4 text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent resize-none h-32"
                 />
               </div>
             </div>
 
-            {/* Genre Selection */}
-            <div className="mt-8 max-w-6xl mx-auto">
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <GenreSelector
-                  selectedGenre={selectedGenre}
-                  onGenreSelect={setSelectedGenre}
-                />
-              </div>
+            {/* Genre Selector */}
+            <div className="mt-8 max-w-4xl mx-auto">
+              <GenreSelector
+                selectedGenre={selectedGenre}
+                onGenreSelect={setSelectedGenre}
+              />
             </div>
 
             {/* Create Story Button */}
@@ -269,12 +322,57 @@ export default function Home() {
               </div>
             )}
           </>
-        ) : (
+        ) : activeTab === 'script' ? (
+          <>
+            {/* Script Preview Tab */}
+            {generatedStoryId && selectedGenre && (
+              <div className="max-w-7xl mx-auto">
+                <ScriptPreview
+                  storyId={generatedStoryId}
+                  genre={selectedGenre}
+                  webtoonScript={webtoonScript}
+                  onScriptGenerated={handleScriptGenerated}
+                  onProceedToCharacters={handleProceedToCharacters}
+                />
+              </div>
+            )}
+          </>
+        ) : activeTab === 'images' ? (
           <>
             {/* Character Images Tab */}
-            {generatedStoryId && (
+            {webtoonScript && (
               <div className="max-w-7xl mx-auto">
-                <CharacterImageGenerator storyId={generatedStoryId} />
+                <CharacterImageGenerator 
+                  storyId={generatedStoryId!}
+                  webtoonScript={webtoonScript}
+                  onUpdateScript={handleScriptUpdate}
+                  onProceedToScenes={handleProceedToScenes}
+                />
+              </div>
+            )}
+          </>
+        ) : activeTab === 'scenes' ? (
+          <>
+            {/* Scene Images Tab */}
+            {webtoonScript && (
+              <div className="max-w-7xl mx-auto">
+                <SceneImageGenerator 
+                  webtoonScript={webtoonScript} 
+                  onUpdateScript={handleScriptUpdate}
+                  onProceedToVideo={handleProceedToVideo}
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Video Generator Tab */}
+            {webtoonScript && selectedGenre && (
+              <div className="max-w-7xl mx-auto">
+                <VideoGenerator 
+                  webtoonScript={webtoonScript}
+                  genre={selectedGenre}
+                />
               </div>
             )}
           </>

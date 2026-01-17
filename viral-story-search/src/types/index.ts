@@ -230,12 +230,24 @@ export interface WebtoonPanel {
   dialogue?: string;
 }
 
+export interface DialogueBubble {
+  id: string;
+  text: string;
+  characterName: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+}
+
 export interface WebtoonScript {
   script_id: string;
   story_id: string;
   characters: Character[];
   panels: WebtoonPanel[];
   character_images: Record<string, CharacterImage[]>;
+  scene_images: Record<number, SceneImage[]>;
+  dialogue_bubbles: Record<number, DialogueBubble[]>;
   created_at: string;
 }
 
@@ -267,4 +279,26 @@ export interface ImageStyleOption {
   name: string;
   description: string;
   previewImage: string;
+}
+
+// Scene Image Generation Types (Page 4)
+export interface SceneImage {
+  id: string;
+  panel_number: number;
+  image_url: string;
+  prompt_used: string;
+  is_selected: boolean;
+  created_at: string;
+}
+
+export interface GenerateSceneImageRequest {
+  script_id: string;
+  panel_number: number;
+  visual_prompt: string;
+  genre: string;
+}
+
+export interface SceneImageResponse {
+  image: SceneImage;
+  generation_time: number;
 }

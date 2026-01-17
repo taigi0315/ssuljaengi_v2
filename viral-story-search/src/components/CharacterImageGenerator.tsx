@@ -2,53 +2,43 @@
 
 import { useState, useEffect } from 'react';
 import { WebtoonScript, Character, CharacterImage, StoryGenre } from '@/types';
-import { generateWebtoonScript, generateCharacterImage, selectCharacterImage } from '@/lib/apiClient';
+import { generateCharacterImage, selectCharacterImage } from '@/lib/apiClient';
 import CharacterList from './CharacterList';
 import CharacterImageDisplay from './CharacterImageDisplay';
 
 interface CharacterImageGeneratorProps {
   storyId: string;
+  webtoonScript: WebtoonScript;
   genre?: StoryGenre;
+  onUpdateScript?: (script: WebtoonScript) => void;
+  onProceedToScenes?: () => void;
 }
 
-export default function CharacterImageGenerator({ storyId, genre: propGenre }: CharacterImageGeneratorProps) {
-  const [webtoonScript, setWebtoonScript] = useState<WebtoonScript | null>(null);
+export default function CharacterImageGenerator({ 
+  storyId, 
+  webtoonScript,
+  genre: propGenre, 
+  onUpdateScript,
+  onProceedToScenes 
+}: CharacterImageGeneratorProps) {
+  // Use the passed script as source of truth
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
-  const [isGeneratingScript, setIsGeneratingScript] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Get genre from prop or sessionStorage
-  const [genre, setGenre] = useState<StoryGenre>(
+  const [genre] = useState<StoryGenre>(
     propGenre || (typeof window !== 'undefined' 
       ? (sessionStorage.getItem('selectedGenre') as StoryGenre) || 'MODERN_ROMANCE_DRAMA_MANHWA'
       : 'MODERN_ROMANCE_DRAMA_MANHWA')
   );
 
-  // Generate webtoon script on mount
+  // Auto-select first character on mount
   useEffect(() => {
-    generateScript();
-  }, [storyId]);
-
-  const generateScript = async () => {
-    try {
-      setIsGeneratingScript(true);
-      setError(null);
-
-      const script = await generateWebtoonScript(storyId);
-      setWebtoonScript(script);
-
-      // Auto-select first character
-      if (script.characters.length > 0) {
-        setSelectedCharacter(script.characters[0]);
-      }
-    } catch (err) {
-      console.error('Script generation error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to generate webtoon script');
-    } finally {
-      setIsGeneratingScript(false);
+    if (webtoonScript.characters.length > 0 && !selectedCharacter) {
+      setSelectedCharacter(webtoonScript.characters[0]);
     }
-  };
+  }, [webtoonScript.characters, selectedCharacter]);
 
   const handleGenerateImage = async (
     characterName: string, 
@@ -70,20 +60,20 @@ export default function CharacterImageGenerator({ storyId, genre: propGenre }: C
       });
 
       // Update webtoon script with new image
-      setWebtoonScript(prev => {
-        if (!prev) return prev;
-
-        const updatedImages = { ...prev.character_images };
+      // Update webtoon script with new image
+      if (webtoonScript && onUpdateScript) {
+        const updatedImages = { ...webtoonScript.character_images };
         if (!updatedImages[characterName]) {
           updatedImages[characterName] = [];
         }
         updatedImages[characterName].push(image);
 
-        return {
-          ...prev,
+        const newScript = {
+          ...webtoonScript,
           character_images: updatedImages,
         };
-      });
+        onUpdateScript(newScript);
+      }
     } catch (err) {
       console.error('Image generation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate character image');
@@ -106,10 +96,9 @@ export default function CharacterImageGenerator({ storyId, genre: propGenre }: C
       await selectCharacterImage(webtoonScript.script_id, imageId);
       
       // Update local state to reflect selection
-      setWebtoonScript(prev => {
-        if (!prev) return prev;
-        
-        const updatedImages = { ...prev.character_images };
+      // Update script with new selection
+      if (webtoonScript && onUpdateScript) {
+        const updatedImages = { ...webtoonScript.character_images };
         
         // Deselect all images for all characters, then select the chosen one
         Object.keys(updatedImages).forEach(charName => {
@@ -119,46 +108,32 @@ export default function CharacterImageGenerator({ storyId, genre: propGenre }: C
           }));
         });
         
-        return { ...prev, character_images: updatedImages };
-      });
+        const newScript = { ...webtoonScript, character_images: updatedImages };
+        onUpdateScript(newScript);
+      }
     } catch (err) {
       console.error('Select image error:', err);
       setError(err instanceof Error ? err.message : 'Failed to select image');
     }
   };
 
-  // Loading state
-  if (isGeneratingScript) {
-    return (
-      <div className="bg-white rounded-lg shadow-lg p-8">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 mb-4"></div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Converting Story to Webtoon Script...
-          </h2>
-          <p className="text-gray-600">
-            Analyzing characters and breaking down scenes
-          </p>
-        </div>
-      </div>
-    );
-  }
 
-  // Error state
-  if (error && !webtoonScript) {
+
+  // Error state - only for image generation errors
+  if (error) {
     return (
       <div className="bg-white rounded-lg shadow-lg p-8">
         <div className="text-center">
-          <div className="text-6xl mb-4">❌</div>
+          <div className="text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Script Generation Failed
+            Image Generation Error
           </h2>
           <p className="text-red-600 mb-6">{error}</p>
           <button
-            onClick={generateScript}
+            onClick={() => setError(null)}
             className="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors"
           >
-            Try Again
+            Dismiss
           </button>
         </div>
       </div>
@@ -254,6 +229,19 @@ export default function CharacterImageGenerator({ storyId, genre: propGenre }: C
               </span>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Proceed to Scene Image Generation */}
+      {onProceedToScenes && (
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => onProceedToScenes()}
+            className="px-10 py-4 rounded-lg font-bold text-lg bg-gradient-to-r from-green-500 to-teal-500 text-white hover:shadow-xl hover:scale-105 transition-all"
+          >
+            🖼️ Proceed to Scene Images →
+          </button>
+          <p className="mt-2 text-sm text-gray-500">Generate images for each scene panel</p>
         </div>
       )}
     </div>

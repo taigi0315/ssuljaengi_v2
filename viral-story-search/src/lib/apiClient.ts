@@ -388,3 +388,120 @@ export async function getCharacterImages(scriptId: string, characterName: string
     throw new Error('Failed to get character images');
   }
 }
+
+/**
+ * Generate an image for a scene/panel
+ * @param request Request with script_id, panel_number, visual_prompt, genre
+ * @returns SceneImage with image URL
+ * @throws Error if the request fails
+ */
+export async function generateSceneImage(request: import('@/types').GenerateSceneImageRequest): Promise<import('@/types').SceneImage> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/scene/image`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        script_id: request.script_id,
+        panel_number: request.panel_number,
+        visual_prompt: request.visual_prompt,
+        genre: request.genre,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: { message: 'Scene image generation failed' },
+      }));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    return {
+      id: data.id,
+      panel_number: data.panel_number,
+      image_url: data.image_url,
+      prompt_used: data.prompt_used,
+      is_selected: data.is_selected,
+      created_at: data.created_at,
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to generate scene image');
+  }
+}
+
+/**
+ * Get all images for a scene/panel
+ * @param scriptId Script ID
+ * @param panelNumber Panel number
+ * @returns Array of SceneImage
+ * @throws Error if the request fails
+ */
+export async function getSceneImages(scriptId: string, panelNumber: number): Promise<import('@/types').SceneImage[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/scene/${scriptId}/${panelNumber}/images`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: { message: 'Failed to get scene images' },
+      }));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    return data.map((img: any) => ({
+      id: img.id,
+      panel_number: img.panel_number,
+      image_url: img.image_url,
+      prompt_used: img.prompt_used,
+      is_selected: img.is_selected,
+      created_at: img.created_at,
+    }));
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to get scene images');
+  }
+}
+
+/**
+ * Select a scene image as the final version
+ * @param scriptId Script ID
+ * @param panelNumber Panel number
+ * @param imageId Image ID to select
+ * @throws Error if the request fails
+ */
+export async function selectSceneImage(scriptId: string, panelNumber: number, imageId: string): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/scene/image/select?script_id=${scriptId}&panel_number=${panelNumber}&image_id=${imageId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: { message: 'Failed to select scene image' },
+      }));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to select scene image');
+  }
+}

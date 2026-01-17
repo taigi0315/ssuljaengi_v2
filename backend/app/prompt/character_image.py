@@ -1,44 +1,40 @@
 MALE = """
-handsome Krean man, very tall elegant stature 183cm, statuesque supermodel-like male figure, 
-extremely long toned legs, dramatically elongated graceful proportions,
-broad shoulders, narrow waist, sharp V-shaped athletic torso, 
-flawless smooth skin, sharp chiseled jawline, high cheekbones, 
-intense piercing gaze, half-lidded eyes, subtle rosy cheek flush, 
-confident slight smirk or teasing expression, 
-stylish hair with natural movement and volume,
-form-fitting modern fashion that accentuates broad shoulders slim waist and long legs, 
-perfect confident posture with slight swagger,
-authentic Korean manhwa webtoon style character model sheet, 
-full body front view largest and most prominent, 
-masterpiece best quality professional Naver webtoon illustration
+handsome Korean man, webtoon manhwa art style,
+sharp chiseled jawline, high cheekbones, 
+intense piercing gaze, stylish hair with natural volume,
+form-fitting modern fashion, confident posture,
+authentic Korean manhwa webtoon style character illustration, 
 """
 
 FEMALE = """
-beautiful woman, tall elegant stature 172cm, fitting-model like figure, 
-extremely long toned legs, dramatically elongated graceful proportions,
-hourglass silhouette with prominent full natural breasts, narrow small waist, wide hips, 
-flawless smooth skin, 
-alluring intense gaze, half-lidded smoldering eyes, subtle rosy cheek flush, 
-confident teasing yet soft inviting expression,
-long flowing hair with natural movement,
-form-fitting modern fashion that highlights long legs and feminine curves with tasteful cleavage, 
-perfect elegant posture,
-authentic Korean manhwa webtoon style character model sheet, 
-full body front view largest and most prominent,
-masterpiece best quality ultra-detailed professional Naver webtoon illustration style
+beautiful woman, webtoon manhwa art style,
+graceful elegant appearance, 
+alluring gaze, stylish hair with natural movement,
+fashionable modern outfit, confident elegant posture,
+authentic Korean manhwa webtoon style character illustration, 
 """
 
 CHARACTER_IMAGE_TEMPLATE = """
-GENDER_STYLE: {gender_style}
+full body front view, largest and most prominent, 
+masterpiece best quality professional Naver webtoon illustration
 
-CHARACTER_DESCRIPTION: {character_description}
+BASE_STYLE: {gender_style}
 
-GENRE_STYLE: {genre_style}
+CHARACTER_DETAILS (USE THESE EXACT DESCRIPTIONS):
+{character_description}
+
+ART_STYLE_REFERENCE: {genre_style}
+
+IMPORTANT: Follow the CHARACTER_DETAILS exactly for body type, height, and build.
+Do not add conflicting physical attributes.
+
+NEGATIVE: text, watermark, signature, logo, conflicting descriptions
 """
 
 # CHARACTER_IMAGE_TEMPLATE EXAMPLE
-# GENDER_STYLE = {MALE}
+# BASE_STYLE = {MALE}
 
-# CHARACTER_DESCRIPTION = {DESCRIPTION FROM LLM RESPONSE}
+# CHARACTER_DETAILS = {DESCRIPTION FROM LLM RESPONSE}
 
-# GENRE_STYLE = {GENRE_STYLE FROM image_mood.py}
+# ART_STYLE_REFERENCE = {GENRE_STYLE FROM image_mood.py}
+

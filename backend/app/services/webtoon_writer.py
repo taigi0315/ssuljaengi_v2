@@ -31,6 +31,40 @@ class WebtoonWriter:
         self.llm = llm_config.get_model()
         self.parser = JsonOutputParser(pydantic_object=WebtoonScript)
     
+    def _build_visual_description(self, char: dict) -> str:
+        """
+        Programmatically build visual_description from character attributes.
+        
+        This replaces the LLM-generated visual_description to ensure consistency
+        and reduce LLM workload.
+        
+        Args:
+            char: Character dict with gender, age, face, hair, body, outfit, mood
+            
+        Returns:
+            Complete visual description string
+        """
+        parts = []
+        
+        # Build description in natural order
+        if char.get("gender"):
+            parts.append(char["gender"])
+        if char.get("age"):
+            parts.append(f"{char['age']} years old")
+        if char.get("face"):
+            parts.append(char["face"])
+        if char.get("hair"):
+            parts.append(char["hair"])
+        if char.get("body"):
+            parts.append(char["body"])
+        if char.get("outfit"):
+            parts.append(f"wearing {char['outfit']}")
+        if char.get("mood"):
+            parts.append(f"{char['mood']} demeanor")
+        
+        return ", ".join(parts) if parts else "A character in the story"
+    
+    
     def _fill_missing_fields_in_dict(self, result: dict) -> dict:
         """
         Fill in missing fields in the raw dict BEFORE Pydantic validation.
@@ -95,22 +129,21 @@ class WebtoonWriter:
             if "name" not in char:
                 char["name"] = "Unknown Character"
             
-            # Ensure visual_description exists
-            if "visual_description" not in char or not char["visual_description"]:
-                char["visual_description"] = "A character in the story"
-            
             # Try to infer gender if missing
             if "gender" not in char or not char["gender"]:
-                desc_lower = char.get("visual_description", "").lower()
-                if "woman" in desc_lower or "female" in desc_lower or "she" in desc_lower:
+                # Try to infer from other fields
+                all_text = f"{char.get('face', '')} {char.get('body', '')} {char.get('mood', '')}".lower()
+                if "woman" in all_text or "female" in all_text or "she" in all_text:
                     char["gender"] = "female"
-                elif "man" in desc_lower or "male" in desc_lower or "he" in desc_lower:
+                elif "man" in all_text or "male" in all_text or "he" in all_text:
                     char["gender"] = "male"
                 else:
                     char["gender"] = "unknown"
                 logger.warning(f"Character {char['name']} had missing gender, inferred: {char['gender']}")
             
             # Fill other missing fields with placeholders
+            if "age" not in char or not char["age"]:
+                char["age"] = "adult"
             if "face" not in char or not char["face"]:
                 char["face"] = "distinctive features"
             if "hair" not in char or not char["hair"]:
@@ -121,6 +154,11 @@ class WebtoonWriter:
                 char["outfit"] = "casual attire"
             if "mood" not in char or not char["mood"]:
                 char["mood"] = "neutral demeanor"
+            
+            # Build visual_description programmatically from all fields
+            # This replaces the LLM-generated visual_description
+            char["visual_description"] = self._build_visual_description(char)
+            logger.info(f"Built visual_description for {char['name']}: {char['visual_description'][:100]}...")
         
         return result
     

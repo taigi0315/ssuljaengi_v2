@@ -18,3 +18,11 @@ export { default as StoryTabs } from './StoryTabs';
 export { default as MoodSelector } from './MoodSelector';
 export { default as GenreSelector } from './GenreSelector';
 export { default as StoryBuilder } from './StoryBuilder';
+
+// Scene image generation components
+export { default as SceneImageGenerator } from './SceneImageGeneratorV2';
+export { default as SceneSidebar } from './SceneSidebar';
+export { default as ScenePromptEditor } from './ScenePromptEditor';
+export { default as SceneImageCanvas } from './SceneImageCanvas';
+export { default as SceneContextPanel } from './SceneContextPanel';
+export { default as VideoGenerator } from './VideoGenerator';

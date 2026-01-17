@@ -45,6 +45,10 @@ async def generate_story(request: StoryRequest) -> dict:
     """
     workflow_id = str(uuid.uuid4())
     
+    # Ensure post_id exists
+    if not request.post_id:
+        request.post_id = f"custom_{str(uuid.uuid4())[:8]}"
+    
     logger.info(f"Starting story generation workflow: {workflow_id}")
     logger.info(f"Post: {request.post_title}")
     logger.info(f"Mood: {request.mood}")

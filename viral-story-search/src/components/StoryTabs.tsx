@@ -1,22 +1,29 @@
 'use client';
 
 interface StoryTabsProps {
-  activeTab: 'search' | 'generate' | 'images';
-  onTabChange: (tab: 'search' | 'generate' | 'images') => void;
+  activeTab: 'search' | 'generate' | 'script' | 'images' | 'scenes' | 'video';
+  onTabChange: (tab: 'search' | 'generate' | 'script' | 'images' | 'scenes' | 'video') => void;
   hasSelectedPost: boolean;
   hasGeneratedStory: boolean;
+  hasWebtoonScript?: boolean;
 }
 
-export default function StoryTabs({ activeTab, onTabChange, hasSelectedPost, hasGeneratedStory }: StoryTabsProps) {
+export default function StoryTabs({ 
+  activeTab, 
+  onTabChange, 
+  hasSelectedPost, 
+  hasGeneratedStory,
+  hasWebtoonScript = false,
+}: StoryTabsProps) {
   return (
     <div className="bg-white border-b border-gray-200">
       <div className="container mx-auto px-4">
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto">
           {/* Tab 1: Story Finding */}
           <button
             onClick={() => onTabChange('search')}
             className={`
-              px-6 py-4 font-semibold text-sm sm:text-base transition-all relative
+              px-4 sm:px-6 py-4 font-semibold text-sm sm:text-base transition-all relative whitespace-nowrap
               ${activeTab === 'search'
                 ? 'text-purple-600 border-b-2 border-purple-600'
                 : 'text-gray-600 hover:text-gray-900'
@@ -34,7 +41,7 @@ export default function StoryTabs({ activeTab, onTabChange, hasSelectedPost, has
             onClick={() => onTabChange('generate')}
             disabled={!hasSelectedPost}
             className={`
-              px-6 py-4 font-semibold text-sm sm:text-base transition-all relative
+              px-4 sm:px-6 py-4 font-semibold text-sm sm:text-base transition-all relative whitespace-nowrap
               ${activeTab === 'generate'
                 ? 'text-purple-600 border-b-2 border-purple-600'
                 : hasSelectedPost
@@ -46,19 +53,16 @@ export default function StoryTabs({ activeTab, onTabChange, hasSelectedPost, has
             <div className="flex items-center gap-2">
               <span className="text-lg">✨</span>
               <span>Story Building</span>
-              {!hasSelectedPost && (
-                <span className="text-xs bg-gray-200 px-2 py-1 rounded">Select a post first</span>
-              )}
             </div>
           </button>
 
-          {/* Tab 3: Character Images */}
+          {/* Tab 3: Script Preview (NEW) */}
           <button
-            onClick={() => onTabChange('images')}
+            onClick={() => onTabChange('script')}
             disabled={!hasGeneratedStory}
             className={`
-              px-6 py-4 font-semibold text-sm sm:text-base transition-all relative
-              ${activeTab === 'images'
+              px-4 sm:px-6 py-4 font-semibold text-sm sm:text-base transition-all relative whitespace-nowrap
+              ${activeTab === 'script'
                 ? 'text-purple-600 border-b-2 border-purple-600'
                 : hasGeneratedStory
                   ? 'text-gray-600 hover:text-gray-900'
@@ -67,11 +71,68 @@ export default function StoryTabs({ activeTab, onTabChange, hasSelectedPost, has
             `}
           >
             <div className="flex items-center gap-2">
+              <span className="text-lg">📖</span>
+              <span>Webtoon Script</span>
+            </div>
+          </button>
+
+          {/* Tab 4: Character Images */}
+          <button
+            onClick={() => onTabChange('images')}
+            disabled={!hasWebtoonScript}
+            className={`
+              px-4 sm:px-6 py-4 font-semibold text-sm sm:text-base transition-all relative whitespace-nowrap
+              ${activeTab === 'images'
+                ? 'text-purple-600 border-b-2 border-purple-600'
+                : hasWebtoonScript
+                  ? 'text-gray-600 hover:text-gray-900'
+                  : 'text-gray-400 cursor-not-allowed'
+              }
+            `}
+          >
+            <div className="flex items-center gap-2">
               <span className="text-lg">🎨</span>
-              <span>Character Images</span>
-              {!hasGeneratedStory && (
-                <span className="text-xs bg-gray-200 px-2 py-1 rounded">Generate story first</span>
-              )}
+              <span>Characters</span>
+            </div>
+          </button>
+
+          {/* Tab 5: Scene Images */}
+          <button
+            onClick={() => onTabChange('scenes')}
+            disabled={!hasWebtoonScript}
+            className={`
+              px-4 sm:px-6 py-4 font-semibold text-sm sm:text-base transition-all relative whitespace-nowrap
+              ${activeTab === 'scenes'
+                ? 'text-purple-600 border-b-2 border-purple-600'
+                : hasWebtoonScript
+                  ? 'text-gray-600 hover:text-gray-900'
+                  : 'text-gray-400 cursor-not-allowed'
+              }
+            `}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🖼️</span>
+              <span>Scene Images</span>
+            </div>
+          </button>
+
+          {/* Tab 6: Final Video */}
+          <button
+            onClick={() => onTabChange('video')}
+            disabled={!hasWebtoonScript}
+            className={`
+              px-4 sm:px-6 py-4 font-semibold text-sm sm:text-base transition-all relative whitespace-nowrap
+              ${activeTab === 'video'
+                ? 'text-purple-600 border-b-2 border-purple-600'
+                : hasWebtoonScript
+                  ? 'text-gray-600 hover:text-gray-900'
+                  : 'text-gray-400 cursor-not-allowed'
+              }
+            `}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🎬</span>
+              <span>Final Video</span>
             </div>
           </button>
         </div>
@@ -79,3 +140,4 @@ export default function StoryTabs({ activeTab, onTabChange, hasSelectedPost, has
     </div>
   );
 }
+

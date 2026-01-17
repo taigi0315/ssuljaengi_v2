@@ -19,8 +19,10 @@ import os
 from app.models.story import (
     GenerateWebtoonRequest,
     GenerateCharacterImageRequest,
+    GenerateSceneImageRequest,
     WebtoonScriptResponse,
     CharacterImage,
+    SceneImage,
     WebtoonScript
 )
 from app.services.webtoon_writer import webtoon_writer
@@ -304,3 +306,188 @@ async def get_character_images(script_id: str, character_name: str) -> List[Char
     images = character_images.get(image_key, [])
     
     return [CharacterImage(**img) for img in images]
+
+
+# In-memory storage for scene images
+scene_images: Dict[str, List[dict]] = {}  # script_id:panel_number -> list of images
+
+
+@router.post("/scene/image")
+async def generate_scene_image(request: "GenerateSceneImageRequest"):
+    """
+    Generate an image for a scene/panel.
+    
+    Args:
+        request: Request with script_id, panel_number, visual_prompt, and genre
+        
+    Returns:
+        SceneImage with image URL and metadata
+        
+    Raises:
+        HTTPException: If script not found or image generation fails
+    """
+    from app.models.story import GenerateSceneImageRequest, SceneImage
+    from app.prompt.scene_image import SCEME_IMAGE_TEMPLATE
+    
+    logger.info(f"Generating scene image for panel: {request.panel_number}")
+    logger.info(f"Script ID: {request.script_id}")
+    logger.info(f"Genre: {request.genre}")
+    
+    # Check if script exists
+    if request.script_id not in webtoon_scripts:
+        logger.error(f"Script {request.script_id} not found in storage")
+        raise HTTPException(status_code=404, detail="Webtoon script not found")
+    
+    try:
+        script_data = webtoon_scripts[request.script_id]
+        characters = script_data["characters"]
+        panels = script_data["panels"]
+        character_images_in_script = script_data.get("character_images", {})
+        
+        # Find active characters for this panel and build character descriptions
+        character_descriptions = []
+        active_char_names = []
+        
+        for panel in panels:
+            if panel["panel_number"] == request.panel_number:
+                active_char_names = panel.get("active_character_names", [])
+                logger.info(f"Active characters in panel {request.panel_number}: {active_char_names}")
+                
+                for char_name in active_char_names:
+                    for char in characters:
+                        if char["name"] == char_name:
+                            # Use the programmatically built visual_description
+                            desc = f"{char_name}: {char.get('visual_description', 'A character')}"
+                            character_descriptions.append(desc)
+                            logger.info(f"Found character description for {char_name}")
+                            break
+                break
+        
+        # Collect selected reference images for active characters
+        reference_images = []
+        for char_name in active_char_names:
+            images_for_char = character_images_in_script.get(char_name, [])
+            for img in images_for_char:
+                if img.get("is_selected", False):
+                    image_url = img.get("image_url", "")
+                    if image_url and image_url.startswith("data:"):
+                        reference_images.append(image_url)
+                        logger.info(f"Added reference image for {char_name}")
+                    break  # Only take the selected one per character
+        
+        logger.info(f"Found {len(reference_images)} selected character reference images")
+        
+        # Build character description text
+        if character_descriptions:
+            character_desc_text = "\n".join(character_descriptions)
+        else:
+            character_desc_text = "No specific character reference - generate generic scene"
+        
+        logger.info(f"Character descriptions for prompt:\n{character_desc_text}")
+        
+        # Build final prompt using the template
+        final_prompt = SCEME_IMAGE_TEMPLATE.format(
+            character_description=character_desc_text,
+            genre_style=request.genre,
+            scene_description=request.visual_prompt
+        )
+        
+        logger.info(f"Final scene prompt (first 500 chars): {final_prompt[:500]}")
+        
+        # Generate image using the appropriate method
+        if reference_images:
+            # Use multimodal generation with reference images
+            logger.info(f"Using multimodal generation with {len(reference_images)} reference images")
+            image_url = await image_generator.generate_scene_image_with_references(
+                prompt=final_prompt,
+                reference_images=reference_images,
+                image_style=request.genre
+            )
+        else:
+            # Fallback to text-only generation
+            logger.info("No reference images, using text-only generation")
+            image_url = await image_generator.generate_character_image(
+                description=final_prompt,
+                character_name=f"scene_{request.panel_number}",
+                gender="neutral",
+                image_style=request.genre
+            )
+        
+        # Create image record
+        image_id = str(uuid.uuid4())
+        scene_image = SceneImage(
+            id=image_id,
+            panel_number=request.panel_number,
+            image_url=image_url,
+            prompt_used=request.visual_prompt,
+            is_selected=False
+        )
+        
+        # Store image
+        image_key = f"{request.script_id}:{request.panel_number}"
+        if image_key not in scene_images:
+            scene_images[image_key] = []
+        
+        scene_images[image_key].append(scene_image.model_dump())
+        
+        logger.info(f"Scene image generated: {image_id}")
+        
+        return scene_image
+        
+    except Exception as e:
+        logger.error(f"Scene image generation failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Scene image generation failed: {str(e)}")
+
+
+@router.post("/scene/image/select")
+async def select_scene_image(script_id: str, panel_number: int, image_id: str):
+    """
+    Mark a scene image as selected.
+    
+    Args:
+        script_id: Webtoon script ID
+        panel_number: Panel number
+        image_id: Image ID to select
+        
+    Returns:
+        Success message
+    """
+    image_key = f"{script_id}:{panel_number}"
+    
+    if image_key not in scene_images:
+        raise HTTPException(status_code=404, detail="No images found for this scene")
+    
+    image_found = False
+    for img in scene_images[image_key]:
+        if img["id"] == image_id:
+            # Deselect all others
+            for other in scene_images[image_key]:
+                other["is_selected"] = False
+            img["is_selected"] = True
+            image_found = True
+            break
+    
+    if not image_found:
+        raise HTTPException(status_code=404, detail="Image not found")
+    
+    return {"message": "Scene image selected", "image_id": image_id}
+
+
+@router.get("/scene/{script_id}/{panel_number}/images")
+async def get_scene_images(script_id: str, panel_number: int):
+    """
+    Get all generated images for a specific scene/panel.
+    
+    Args:
+        script_id: Webtoon script ID
+        panel_number: Panel number
+        
+    Returns:
+        List of SceneImage objects
+    """
+    from app.models.story import SceneImage
+    
+    image_key = f"{script_id}:{panel_number}"
+    images = scene_images.get(image_key, [])
+    
+    return [SceneImage(**img) for img in images]

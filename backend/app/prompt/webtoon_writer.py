@@ -31,12 +31,11 @@ You must output a valid JSON object matching this structure:
     * `body`: Body type (e.g., "tall and athletic build, broad shoulders")
     * `outfit`: Clothing (e.g., "tailored navy suit with white shirt")
     * `mood`: Personality vibe (e.g., "confident and charismatic")
-    * `visual_description`: Complete description combining all above (e.g., "A tall man with sharp jawline, dark brown eyes, olive skin, short black hair neatly styled, athletic build with broad shoulders, wearing a tailored navy suit with white shirt, confident and charismatic demeanor")
 
 2.  **panels**: A list of 8-16 scene objects.
     * `panel_number`: Integer.
     * `shot_type`: Camera angle (Dutch Angle, Bird's Eye, Extreme Close-up, etc.).
     * `active_character_names`: A list of strings of who is in the shot (for reference matching).
     * `visual_prompt`: The MASTER PROMPT for the image generator. **REMEMBER: Replace names with descriptions here.**
-    * `dialogue`: (Optional) Text bubble content.
+    * `dialogue`: (Optional) Text bubble content. e.g) [character_name: dialogue, character_name: dialogue, ...]
 """

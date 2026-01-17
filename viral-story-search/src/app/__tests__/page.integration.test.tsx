@@ -15,6 +15,15 @@ import { ViralPost } from '@/types';
 const mockFetch = jest.fn();
 global.fetch = mockFetch as any;
 
+// Mock Next.js router
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+  }),
+}));
+
 describe('Complete Search Flow Integration Tests', () => {
   beforeEach(() => {
     // Reset mocks before each test
@@ -96,14 +105,18 @@ describe('Complete Search Flow Integration Tests', () => {
       resolveSearch!({
         ok: true,
         json: async () => ({
-          posts: mockPosts,
-          totalFound: 2,
-          searchCriteria: {
-            timeRange: '1d',
+          posts: mockPosts.map(p => ({
+             ...p,
+             viral_score: p.viralScore,
+             created_at: p.createdAt.toISOString()
+          })),
+          total_found: 2,
+          search_criteria: {
+            time_range: '1d',
             subreddits: ['AmItheAsshole', 'tifu'],
-            postCount: 20,
+            post_count: 20,
           },
-          executionTime: 1234,
+          execution_time: 1234,
         }),
       });
 
@@ -129,16 +142,16 @@ describe('Complete Search Flow Integration Tests', () => {
 
       // Verify API was called with correct parameters
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/search',
+        'http://localhost:8000/search',
         expect.objectContaining({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            timeRange: '1d',
+            time_range: '1d',
             subreddits: ['AmItheAsshole', 'tifu'],
-            postCount: 20,
+            post_count: 20,
           }),
         })
       );
@@ -152,13 +165,13 @@ describe('Complete Search Flow Integration Tests', () => {
         ok: true,
         json: async () => ({
           posts: [],
-          totalFound: 0,
-          searchCriteria: {
-            timeRange: '1d',
+          total_found: 0,
+          search_criteria: {
+            time_range: '1d',
             subreddits: ['AmItheAsshole'],
-            postCount: 50,
+            post_count: 50,
           },
-          executionTime: 1000,
+          execution_time: 1000,
         }),
       });
 
@@ -179,12 +192,12 @@ describe('Complete Search Flow Integration Tests', () => {
       // Wait for search to complete
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
-          '/api/search',
+          'http://localhost:8000/search',
           expect.objectContaining({
             body: JSON.stringify({
-              timeRange: '1d',
+              time_range: '1d',
               subreddits: ['AmItheAsshole'],
-              postCount: 50,
+              post_count: 50,
             }),
           })
         );
@@ -196,13 +209,13 @@ describe('Complete Search Flow Integration Tests', () => {
         ok: true,
         json: async () => ({
           posts: [],
-          totalFound: 0,
-          searchCriteria: {
-            timeRange: '10d',
+          total_found: 0,
+          search_criteria: {
+            time_range: '10d',
             subreddits: ['tifu'],
-            postCount: 20,
+            post_count: 20,
           },
-          executionTime: 1000,
+          execution_time: 1000,
         }),
       });
 
@@ -223,12 +236,12 @@ describe('Complete Search Flow Integration Tests', () => {
       // Wait for search to complete
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
-          '/api/search',
+          'http://localhost:8000/search',
           expect.objectContaining({
             body: JSON.stringify({
-              timeRange: '10d',
+              time_range: '10d',
               subreddits: ['tifu'],
-              postCount: 20,
+              post_count: 20,
             }),
           })
         );
@@ -258,14 +271,18 @@ describe('Complete Search Flow Integration Tests', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          posts: mockPosts,
-          totalFound: 1,
-          searchCriteria: {
-            timeRange: '1d',
+          posts: mockPosts.map(p => ({
+             ...p,
+             viral_score: p.viralScore,
+             created_at: p.createdAt.toISOString()
+          })),
+          total_found: 1,
+          search_criteria: {
+            time_range: '1d',
             subreddits: ['AmItheAsshole'],
-            postCount: 20,
+            post_count: 20,
           },
-          executionTime: 1000,
+          execution_time: 1000,
         }),
       });
 
@@ -317,14 +334,18 @@ describe('Complete Search Flow Integration Tests', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          posts: mockPosts,
-          totalFound: 1,
-          searchCriteria: {
-            timeRange: '1d',
+          posts: mockPosts.map(p => ({
+             ...p,
+             viral_score: p.viralScore,
+             created_at: p.createdAt.toISOString()
+          })),
+          total_found: 1,
+          search_criteria: {
+            time_range: '1d',
             subreddits: ['AmItheAsshole'],
-            postCount: 20,
+            post_count: 20,
           },
-          executionTime: 1000,
+          execution_time: 1000,
         }),
       });
 
@@ -384,13 +405,13 @@ describe('Complete Search Flow Integration Tests', () => {
         ok: true,
         json: async () => ({
           posts: [],
-          totalFound: 0,
-          searchCriteria: {
-            timeRange: '1d',
+          total_found: 0,
+          search_criteria: {
+            time_range: '1d',
             subreddits: ['AmItheAsshole'],
-            postCount: 20,
+            post_count: 20,
           },
-          executionTime: 1000,
+          execution_time: 1000,
         }),
       });
 
@@ -473,14 +494,18 @@ describe('Complete Search Flow Integration Tests', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          posts: mockPosts,
-          totalFound: 1,
-          searchCriteria: {
-            timeRange: '1d',
+          posts: mockPosts.map(p => ({
+             ...p,
+             viral_score: p.viralScore,
+             created_at: p.createdAt.toISOString()
+          })),
+          total_found: 1,
+          search_criteria: {
+            time_range: '1d',
             subreddits: ['AmItheAsshole'],
-            postCount: 20,
+            post_count: 20,
           },
-          executionTime: 1000,
+          execution_time: 1000,
         }),
       });
 
@@ -529,13 +554,13 @@ describe('Complete Search Flow Integration Tests', () => {
         ok: true,
         json: async () => ({
           posts: [],
-          totalFound: 0,
-          searchCriteria: {
-            timeRange: '1d',
+          total_found: 0,
+          search_criteria: {
+            time_range: '1d',
             subreddits: ['AmItheAsshole'],
-            postCount: 20,
+            post_count: 20,
           },
-          executionTime: 1000,
+          execution_time: 1000,
         }),
       });
 
@@ -602,14 +627,18 @@ describe('Complete Search Flow Integration Tests', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          posts: mockPosts,
-          totalFound: 3,
-          searchCriteria: {
-            timeRange: '1d',
+          posts: mockPosts.map(p => ({
+             ...p,
+             viral_score: p.viralScore,
+             created_at: p.createdAt.toISOString()
+          })),
+          total_found: 3,
+          search_criteria: {
+            time_range: '1d',
             subreddits: ['AmItheAsshole', 'tifu', 'relationship_advice'],
-            postCount: 20,
+            post_count: 20,
           },
-          executionTime: 1500,
+          execution_time: 1500,
         }),
       });
 
@@ -636,12 +665,12 @@ describe('Complete Search Flow Integration Tests', () => {
 
       // Verify API was called with all three subreddits
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/search',
+        'http://localhost:8000/search',
         expect.objectContaining({
           body: JSON.stringify({
-            timeRange: '1d',
+            time_range: '1d',
             subreddits: ['AmItheAsshole', 'tifu', 'relationship_advice'],
-            postCount: 20,
+            post_count: 20,
           }),
         })
       );

@@ -25,7 +25,7 @@ class StoryRequest(BaseModel):
         mood: Story mood/style selection
         options: Optional configuration for story generation
     """
-    post_id: str = Field(..., description="Reddit post ID")
+    post_id: Optional[str] = Field(default=None, description="Reddit post ID (optional for custom stories)")
     post_title: str = Field(..., description="Reddit post title", min_length=1)
     post_content: str = Field(..., description="Reddit post content")
     mood: StoryMood = Field(..., description="Story mood/style")
@@ -347,3 +347,39 @@ class GenerateCharacterImageRequest(BaseModel):
     image_style: Literal["MODERN_ROMANCE_DRAMA_MANHWA", "FANTASY_ROMANCE_MANHWA", "HISTORY_SAGEUK_ROMANCE", "ACADEMY_SCHOOL_LIFE", "ISEKAI_OTOME_FANTASY"] = Field(
         ..., description="Image style/genre selection"
     )
+
+
+class GenerateSceneImageRequest(BaseModel):
+    """
+    Request model for scene image generation.
+    
+    Attributes:
+        script_id: ID of the webtoon script
+        panel_number: Panel number to generate image for
+        visual_prompt: Visual prompt (possibly edited by user)
+        genre: Genre/style for image generation
+    """
+    script_id: str = Field(..., description="Webtoon script ID")
+    panel_number: int = Field(..., description="Panel number", ge=1)
+    visual_prompt: str = Field(..., description="Visual prompt for generation")
+    genre: str = Field(..., description="Genre/style selection")
+
+
+class SceneImage(BaseModel):
+    """
+    Model for generated scene images.
+    
+    Attributes:
+        id: Unique identifier for the image
+        panel_number: Panel number this image belongs to
+        image_url: URL or base64 encoded image data
+        prompt_used: The prompt used to generate this image
+        is_selected: Whether this is the selected final image
+        created_at: Timestamp when the image was created
+    """
+    id: str = Field(..., description="Unique image ID")
+    panel_number: int = Field(..., description="Panel number")
+    image_url: str = Field(..., description="Image URL or base64 data")
+    prompt_used: str = Field(..., description="Prompt used for generation")
+    is_selected: bool = Field(default=False, description="Is this the selected image")
+    created_at: datetime = Field(default_factory=datetime.now, description="Creation timestamp")

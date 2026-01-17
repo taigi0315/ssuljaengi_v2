@@ -10,7 +10,7 @@ import os
 import base64
 import uuid
 from pathlib import Path
-from typing import Literal, Tuple
+from typing import Literal, Tuple, List, Optional
 from google import genai
 from app.config import get_settings
 from app.prompt.character_image import MALE, FEMALE, CHARACTER_IMAGE_TEMPLATE
@@ -92,22 +92,150 @@ class ImageGenerator:
             
             # Try to generate with Gemini Imagen if available
             if self.use_real_generation:
-                try:
-                    image_url = await self._generate_with_gemini(final_prompt, character_name)
-                    logger.info(f"Image generated with Gemini for {character_name}")
-                    return image_url
-                except Exception as e:
-                    logger.warning(f"Gemini generation failed, using placeholder: {str(e)}")
-            
-            # Fallback to placeholder
-            placeholder_url = self._generate_placeholder(character_name, description)
-            logger.info(f"Using placeholder image for {character_name}")
-            
-            return placeholder_url
+                # Direct call, let exception propagate as requested
+                image_url = await self._generate_with_gemini(final_prompt, character_name)
+                logger.info(f"Image generated with Gemini for {character_name}")
+                return image_url
+            else:
+                raise Exception("Gemini API not initialized, cannot generate image.")
             
         except Exception as e:
             logger.error(f"Image generation failed: {str(e)}", exc_info=True)
             raise Exception(f"Image generation failed: {str(e)}")
+    
+    async def generate_scene_image_with_references(
+        self,
+        prompt: str,
+        reference_images: List[str],
+        image_style: str
+    ) -> str:
+        """
+        Generate a scene image with character reference images for consistency.
+        
+        Args:
+            prompt: Scene description prompt with character descriptions
+            reference_images: List of base64 data URLs of selected character images
+            image_style: Image style/mood selection
+            
+        Returns:
+            Base64 encoded image data URL
+            
+        Raises:
+            Exception: If image generation fails
+        """
+        try:
+            logger.info(f"Generating scene image with {len(reference_images)} reference images")
+            logger.info(f"Style: {image_style}")
+            logger.info(f"Prompt (first 200 chars): {prompt[:200]}...")
+            
+            if not self.use_real_generation:
+                raise Exception("Gemini API not initialized, cannot generate image.")
+            
+            # Get model name from settings
+            settings = get_settings()
+            model_name = settings.model_image_gen
+            
+            logger.info(f"Using model: {model_name}")
+            
+            # Build multimodal contents with reference images
+            contents = []
+            
+            # Add reference images first using correct Part format
+            for i, image_url in enumerate(reference_images):
+                try:
+                    # Extract base64 data from data URL
+                    if image_url.startswith('data:'):
+                        # Format: data:image/png;base64,xxxxx
+                        parts = image_url.split(',', 1)
+                        if len(parts) == 2:
+                            mime_part = parts[0]  # data:image/png;base64
+                            image_data = parts[1]  # base64 data
+                            
+                            # Extract MIME type
+                            mime_type = "image/png"
+                            if "image/" in mime_part:
+                                mime_type = mime_part.split(';')[0].replace('data:', '')
+                            
+                            # Decode base64 to bytes
+                            image_bytes = base64.b64decode(image_data)
+                            
+                            # Use types.Part.from_bytes for correct format
+                            from google.genai import types
+                            image_part = types.Part.from_bytes(
+                                data=image_bytes,
+                                mime_type=mime_type
+                            )
+                            contents.append(image_part)
+                            logger.info(f"Added reference image {i+1} ({mime_type}, {len(image_bytes)} bytes)")
+                except Exception as e:
+                    logger.warning(f"Failed to process reference image {i+1}: {str(e)}")
+            
+            # Add the text prompt
+            contents.append(prompt)
+            
+            logger.info(f"Total contents parts: {len(contents)}")
+            
+            # Generate with multimodal input
+            response = self.client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config={
+                    "safety_settings": [
+                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_LOW_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+                    ],
+                }
+            )
+            
+            # Extract image from response
+            image_bytes = None
+            if response.candidates and response.candidates[0].content.parts:
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        image_bytes = part.inline_data.data
+                        break
+            
+            if not image_bytes:
+                logger.error(f"No image in response. Candidates: {response.candidates}")
+                raise Exception("No image data in response")
+            
+            # Get MIME type
+            mime_type = 'image/png'
+            if response.candidates and response.candidates[0].content.parts:
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        if hasattr(part.inline_data, 'mime_type'):
+                            mime_type = part.inline_data.mime_type
+                        break
+            
+            # Process bytes to base64
+            if isinstance(image_bytes, bytes):
+                prefix = image_bytes[:20]
+                is_raw_image = prefix.startswith(b'\x89PNG') or prefix.startswith(b'\xff\xd8')
+                
+                if is_raw_image:
+                    image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                else:
+                    try:
+                        image_base64 = image_bytes.decode('utf-8')
+                    except UnicodeDecodeError:
+                        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+            elif isinstance(image_bytes, str):
+                image_base64 = image_bytes
+            else:
+                raise Exception(f"Unexpected image data type: {type(image_bytes)}")
+            
+            # Save to cache
+            self._save_image_to_cache(image_base64, "scene", mime_type)
+            
+            logger.info(f"Scene image generated successfully with references")
+            return f"data:{mime_type};base64,{image_base64}"
+            
+        except Exception as e:
+            logger.error(f"Scene image generation with references failed: {str(e)}", exc_info=True)
+            raise Exception(f"Scene image generation failed: {str(e)}")
     
     def _get_base_style(self, gender: str) -> str:
         """
@@ -165,14 +293,20 @@ class ImageGenerator:
             )
             
             # Extract image from response - check candidates first
+            # Extract image from response - check candidates first
             image_bytes = None
             if response.candidates and response.candidates[0].content.parts:
                 for part in response.candidates[0].content.parts:
                     if hasattr(part, 'inline_data') and part.inline_data:
                         image_bytes = part.inline_data.data
                         break
+                    if hasattr(part, 'text') and part.text:
+                        logger.warning(f"Text in response instead of image: {part.text[:200]}...")
             
             if not image_bytes:
+                logger.error(f"Full response candidate: {response.candidates[0] if response.candidates else 'No candidates'}")
+                if response.prompt_feedback:
+                    logger.error(f"Prompt feedback: {response.prompt_feedback}")
                 raise Exception("No image data in response")
             
             # Get MIME type
