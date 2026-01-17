@@ -1,11 +1,22 @@
 SCENE_IMAGE_TEMPLATE = """
+**CRITICAL MANDATORY REQUIREMENT - READ FIRST**
+ASPECT RATIO: VERTICAL 9:16 (Portrait Mode) - THIS IS NON-NEGOTIABLE
+- Generate a TALL VERTICAL image, NOT square (1:1), NOT horizontal
+- Height must be significantly greater than width
+- Ratio: 9 (width) : 16 (height) - Portrait/Vertical orientation
+- Optimized for mobile vertical scrolling webtoon format
+
 [Character reference handling section]
 {character_description}
 
-[Shot composition section]
-Shot Type: {shot_type}
-Composition Rule: {composition_notes}
-Frame Allocation: Characters {character_frame_percentage}%, Environment {environment_frame_percentage}%
+**MANDATORY CAMERA SETTINGS - MUST FOLLOW EXACTLY**
+[Shot composition section - HIGH PRIORITY]
+CAMERA ANGLE/SHOT TYPE: {shot_type}
+- You MUST strictly follow this camera angle
+- The shot type defines the framing, distance, and perspective
+- Examples: Wide Shot = show full environment + small characters, Close-up = face fills frame, Over-the-shoulder = POV from behind one character
+COMPOSITION: {composition_notes}
+FRAME ALLOCATION: Characters {character_frame_percentage}%, Environment {environment_frame_percentage}%
 
 [Environment context section]
 Primary Setting: {environment_focus}
@@ -15,15 +26,19 @@ Atmospheric Conditions: {atmospheric_conditions}
 [Master visual prompt]
 {visual_prompt}
 
-[Negative prompt]
-{negative_prompt}
+[Visual SFX Effects - Apply if specified]
+{sfx_description}
 
-[Technical parameters]
-- Aspect Ratio: 9:16
+[Negative prompt]
+{negative_prompt}, square image, 1:1 ratio, horizontal orientation, landscape mode
+
+[Technical parameters - MANDATORY]
+- Aspect Ratio: 9:16 VERTICAL (CRITICAL - must be portrait orientation)
 - Character Reference Weight: 0.65
 - Focus Priority: Environment first, then characters
+- Orientation: PORTRAIT / VERTICAL (not landscape)
 
-Generate the image following these instructions precisely.
+Generate the image following these instructions precisely. The image MUST be vertical 9:16.
 """
 
 

@@ -20,7 +20,7 @@ Modern webtoons use DIALOGUE and CHARACTER INTERACTION to drive stories, not jus
 
 2. **DIALOGUE-DRIVEN STORYTELLING:**
    - **EVERY scene should have dialogue** (except establishing shots)
-   - Use 2-5 dialogue lines per scene to show character dynamics
+   - Use 3-8 dialogue lines per scene to show character dynamics and emotions
    - Dialogue reveals personality, advances plot, creates emotional beats
    - Multiple dialogue lines in one scene = conversation happening over one image
    - Format: The image shows the scene, dialogue bubbles appear sequentially (3-5 sec total per scene)
@@ -51,8 +51,11 @@ Modern webtoons use DIALOGUE and CHARACTER INTERACTION to drive stories, not jus
 
 Every `visual_prompt` must be a COMPLETE, READY-TO-USE prompt of 150-250 words following this exact formula:
 
+**MANDATORY: ALWAYS START WITH "vertical 9:16 webtoon panel" - THIS IS NON-NEGOTIABLE**
+Images must be TALL VERTICAL format (portrait orientation), NOT square, NOT horizontal.
+
 ```
-{{shot_type}}, {{composition_rule}}, {{environment_details (40% of words)}}, {{character_placement_and_action (30% of words)}}, {{atmospheric_conditions (20% of words)}}, {{style_tags (10% of words)}}
+{{shot_type}}, vertical 9:16 webtoon panel, {{composition_rule}}, {{environment_details (40% of words)}}, {{character_placement_and_action (30% of words)}}, {{atmospheric_conditions (20% of words)}}, {{style_tags (10% of words)}}
 ```
 
 **TEMPLATE:**
@@ -87,7 +90,21 @@ Across your 8-12 scenes, you MUST include variety:
 - 2-3 Wide/Establishing shots (world-building, transitions)
 - 4-5 Medium shots (conversations, interactions)
 - 1-2 Close-ups (emotional peaks only)
-- 1-2 Dynamic angles (over-shoulder, low angle, Dutch angle)
+- 2-3 Dynamic angles (see options below)
+
+**CAMERA ANGLE OPTIONS (Use descriptively):**
+- Wide Shot / Establishing Shot - full environment, characters small
+- Medium Shot - waist-up view, conversational
+- Close-up - face/expression focus
+- Over-the-Shoulder Shot - POV from behind one character looking at another
+- Low Angle Shot - camera below, looking up (power/intimidation)
+- High Angle / Bird's Eye - camera above, looking down (vulnerability)
+- Dutch Angle / Tilted - diagonal frame (tension/unease)
+- Two-Shot - both characters equally framed
+- POV Shot - first-person perspective
+
+**COMPOUND CAMERA SETTINGS ALLOWED:**
+You can combine settings, e.g., "Over-the-shoulder medium shot" or "Low angle wide shot"
 
 **Forbidden:** More than 2 consecutive medium shots without variation.
 
@@ -119,11 +136,44 @@ Dialogue is an **array of objects** with sequential order. Multiple dialogue lin
 ```
 
 **Dialogue Guidelines:**
-- 2-5 lines per scene with dialogue (sweet spot: 3)
+- 3-8 lines per scene with dialogue (sweet spot: 5)
 - Each line under 15 words (bubble constraint)
 - Dialogue should reveal emotion, create tension, advance plot
 - Last line in scene often has emotional impact
 - Use "order" field to show sequence (1, 2, 3...)
+
+---
+
+**SFX (Special Effects) GUIDELINES:**
+
+Add visual SFX to enhance mood and story impact. Use sparingly but effectively:
+
+**SFX TYPES:**
+- `speed_lines` - Motion/action emphasis, running, sudden movement
+- `impact` - Collision, hit effects, dramatic realization
+- `emotion_bubbles` - Hearts, anger marks, sweat drops, exclamation marks
+- `sparkles` - Romance moments, beauty emphasis, magical elements
+- `motion_blur` - Fast movement, time passing
+- `screen_tone` - Dramatic shading, mood emphasis
+- `light_rays` - Divine/dramatic lighting, revelation moments
+
+**WHEN TO USE SFX:**
+- Action scenes: speed_lines, impact, motion_blur
+- Romantic moments: sparkles, light_rays
+- Emotional peaks: emotion_bubbles, screen_tone
+- Dramatic reveals: light_rays, impact
+
+**SFX EXAMPLE:**
+```json
+"sfx_effects": [
+  {{
+    "type": "sparkles",
+    "intensity": "medium",
+    "description": "Soft glowing sparkles surrounding the characters as they make eye contact, emphasizing the romantic tension",
+    "position": "around_character"
+  }}
+]
+```
 
 ---
 
@@ -162,6 +212,14 @@ You must output a valid JSON object with this **exact** structure:
       "character_frame_percentage": integer (15-50),
       "environment_frame_percentage": integer (50-85),
       "character_placement_and_action": "string (where + what doing)",
+      "sfx_effects": [
+        {{
+          "type": "string (speed_lines | impact | emotion_bubbles | sparkles | motion_blur | screen_tone | light_rays)",
+          "intensity": "string (low | medium | high)",
+          "description": "string (detailed visual description of the effect)",
+          "position": "string (background | foreground | around_character | full_screen)"
+        }}
+      ] or null,
       "dialogue": [
         {{
           "character": "string (character name)",
@@ -209,7 +267,7 @@ close-up portrait, headshot, face-only, zoomed face, cropped body, simple backgr
 Before outputting JSON, verify:
 - ✅ Total scenes = 8-12 (not 4, not 16)
 - ✅ Story has clear beginning → middle → end
-- ✅ At least 6 scenes have dialogue (2-5 lines each)
+- ✅ At least 6 scenes have dialogue (3-8 lines each)
 - ✅ Every visual_prompt is 150-250 words and COMPLETE
 - ✅ Shot types are varied (no 3+ consecutive similar)
 - ✅ Character frame percentage never exceeds 50%

@@ -54,7 +54,7 @@ class ImageGenerator:
         character_name: str,
         gender: str,
         image_style: str
-    ) -> str:
+    ) -> Tuple[str, str]:
         """
         Generate a character image from description.
         
@@ -95,7 +95,7 @@ class ImageGenerator:
                 # Direct call, let exception propagate as requested
                 image_url = await self._generate_with_gemini(final_prompt, character_name)
                 logger.info(f"Image generated with Gemini for {character_name}")
-                return image_url
+                return image_url, final_prompt
             else:
                 raise Exception("Gemini API not initialized, cannot generate image.")
             

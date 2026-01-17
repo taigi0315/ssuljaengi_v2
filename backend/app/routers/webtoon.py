@@ -239,7 +239,7 @@ async def generate_character_image(request: GenerateCharacterImageRequest) -> Ch
     
     try:
         # Generate image with gender and style
-        image_url = await image_generator.generate_character_image(
+        image_url, prompt_used = await image_generator.generate_character_image(
             description=request.description,
             character_name=request.character_name,
             gender=request.gender,
@@ -253,7 +253,8 @@ async def generate_character_image(request: GenerateCharacterImageRequest) -> Ch
             character_name=request.character_name,
             description=request.description,
             image_url=image_url,
-            is_selected=False
+            is_selected=False,
+            prompt_used=prompt_used
         )
         
         # Store image
@@ -386,7 +387,12 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
         
         for panel in panels:
             if panel["panel_number"] == request.panel_number:
-                active_char_names = panel.get("active_character_names", [])
+                # Override active characters if provided in request
+                if request.active_character_names is not None:
+                     active_char_names = request.active_character_names
+                     logger.info(f"Using overridden active characters: {active_char_names}")
+                else:
+                     active_char_names = panel.get("active_character_names", [])
                 
                 # Extract cinematic fields from panel
                 panel_metadata["shot_type"] = panel.get("shot_type", "Wide Shot")
@@ -396,8 +402,22 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
                 panel_metadata["atmospheric_conditions"] = panel.get("atmospheric_conditions", "Standard lighting")
                 panel_metadata["character_frame_percentage"] = panel.get("character_frame_percentage", 40)
                 panel_metadata["environment_frame_percentage"] = panel.get("environment_frame_percentage", 60)
-                # No longer need character_placement_and_action for template as it is in visual_prompt, but good to keep if needed
                 panel_metadata["negative_prompt"] = panel.get("negative_prompt", "worst quality, low quality")
+                
+                # Extract SFX effects
+                sfx_effects = panel.get("sfx_effects", [])
+                if sfx_effects:
+                    sfx_parts = []
+                    for sfx in sfx_effects:
+                        sfx_type = sfx.get("type", "")
+                        intensity = sfx.get("intensity", "medium")
+                        desc = sfx.get("description", "")
+                        position = sfx.get("position", "background")
+                        sfx_parts.append(f"- {sfx_type.upper()} effect ({intensity} intensity): {desc} [Position: {position}]")
+                    panel_metadata["sfx_description"] = "\n".join(sfx_parts)
+                    logger.info(f"SFX effects found: {len(sfx_effects)}")
+                else:
+                    panel_metadata["sfx_description"] = "No special visual effects for this scene"
                 
                 logger.info(f"Active characters in panel {request.panel_number}: {active_char_names}")
                 
@@ -433,8 +453,6 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
         logger.info(f"Character descriptions for prompt:\n{character_desc_text}")
         
         # Build final prompt using the template
-        # Build final prompt using the template
-        # Build final prompt using the template
         final_prompt = SCENE_IMAGE_TEMPLATE.format(
             character_description=character_desc_text,
             visual_prompt=request.visual_prompt,
@@ -445,7 +463,8 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
             environment_frame_percentage=panel_metadata["environment_frame_percentage"],
             environment_focus=panel_metadata["environment_focus"],
             environment_details=panel_metadata["environment_details"],
-            atmospheric_conditions=panel_metadata["atmospheric_conditions"]
+            atmospheric_conditions=panel_metadata["atmospheric_conditions"],
+            sfx_description=panel_metadata.get("sfx_description", "No special visual effects for this scene")
         )
         
         logger.info(f"Final scene prompt (first 500 chars): {final_prompt[:500]}")
@@ -462,7 +481,8 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
         else:
             # Fallback to text-only generation
             logger.info("No reference images, using text-only generation")
-            image_url = await image_generator.generate_character_image(
+            # Unpack tuple from generate_character_image
+            image_url, _ = await image_generator.generate_character_image(
                 description=final_prompt,
                 character_name=f"scene_{request.panel_number}",
                 gender="neutral",
@@ -475,7 +495,7 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
             id=image_id,
             panel_number=request.panel_number,
             image_url=image_url,
-            prompt_used=request.visual_prompt,
+            prompt_used=final_prompt,
             is_selected=False
         )
         

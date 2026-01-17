@@ -31,8 +31,14 @@ authentic Korean manhwa webtoon style character illustration,
 """
 
 CHARACTER_IMAGE_TEMPLATE = """
+**CRITICAL ASPECT RATIO: VERTICAL 9:16 (Portrait Mode)**
+- This MUST be a tall vertical image, NOT square, NOT horizontal
+- Height significantly greater than width (ratio 9:16)
+- Optimized for mobile vertical scrolling webtoon format
+
 full body front view, largest and most prominent, 
-masterpiece best quality professional Naver webtoon illustration
+masterpiece best quality professional Naver webtoon illustration,
+vertical portrait orientation, tall format, 9:16 aspect ratio
 
 BASE_STYLE: {gender_style}
 
@@ -41,10 +47,12 @@ CHARACTER_DETAILS (USE THESE EXACT DESCRIPTIONS):
 
 ART_STYLE_REFERENCE: {genre_style}
 
-IMPORTANT: Follow the CHARACTER_DETAILS exactly for body type, height, and build.
-Do not add conflicting physical attributes.
+IMPORTANT: 
+- Follow the CHARACTER_DETAILS exactly for body type, height, and build
+- Do not add conflicting physical attributes
+- Image MUST be vertical 9:16 ratio (portrait mode)
 
-NEGATIVE: text, watermark, signature, logo, conflicting descriptions
+NEGATIVE: text, watermark, signature, logo, conflicting descriptions, square image, 1:1 ratio, horizontal image, landscape orientation
 """
 
 # CHARACTER_IMAGE_TEMPLATE EXAMPLE

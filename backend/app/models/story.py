@@ -283,6 +283,10 @@ class WebtoonPanel(BaseModel):
         description="Description of where characters are and what they are doing.",
         max_length=1000
     )
+    sfx_effects: Optional[List[dict]] = Field(
+        default=None,
+        description="List of SFX effects: [{'type': 'speed_lines', 'intensity': 'high', 'description': '...', 'position': 'background'}]"
+    )
     dialogue: Optional[List[dict]] = Field(
         default=None, 
         description="List of dialogue objects: [{'character': 'Name', 'text': 'Speech'}]",
@@ -367,6 +371,7 @@ class CharacterImage(BaseModel):
     image_url: str = Field(..., description="Image URL or base64 data")
     created_at: datetime = Field(default_factory=datetime.now, description="Creation timestamp")
     is_selected: bool = Field(default=False, description="Is this the selected final image")
+    prompt_used: str = Field(default="", description="The exact prompt used for generation")
 
 
 class WebtoonScriptResponse(BaseModel):
@@ -428,11 +433,16 @@ class GenerateSceneImageRequest(BaseModel):
         panel_number: Panel number to generate image for
         visual_prompt: Visual prompt (possibly edited by user)
         genre: Genre/style for image generation
+        active_character_names: Optional override for active characters in scene.
     """
     script_id: str = Field(..., description="Webtoon script ID")
     panel_number: int = Field(..., description="Panel number", ge=1)
     visual_prompt: str = Field(..., description="Visual prompt for generation")
     genre: str = Field(..., description="Genre/style selection")
+    active_character_names: Optional[List[str]] = Field(
+        default=None, 
+        description="Override active characters for this generation"
+    )
 
 
 class SceneImage(BaseModel):

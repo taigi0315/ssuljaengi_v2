@@ -501,23 +501,28 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
                         top: `${bubble.y}%`,
                         width: `${width}%`,
                         height: `${height}%`,
-                        fontSize: `clamp(10px, ${Math.max(0.8, height / 10)}vw, 24px)` 
-                        // Simple responsive font size based on viewport width scaling with height factor
+                        fontSize: `clamp(10px, ${Math.max(0.8, height / 10)}vw, 24px)`,
+                        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                        border: '2px solid #4a4a4a',
                       }}
-                      className="absolute bg-white rounded-xl px-4 py-2 shadow-lg cursor-move group select-none flex items-center justify-center text-center overflow-hidden"
-                      // Only allow delete if not resizing (simple click)
+                      className="absolute rounded-xl px-4 py-2 backdrop-blur-sm cursor-move group select-none flex items-center justify-center text-center overflow-hidden"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // handleRemoveBubble(bubble.id) // Move delete to X button only to avoid accidental delete during resize
                       }}
                     >
                       {/* Tail */}
-                      <div className="absolute -bottom-2 left-4 w-4 h-4 bg-white transform rotate-45" />
+                      <div 
+                        className="absolute -bottom-2 left-4 w-4 h-4 transform rotate-45" 
+                        style={{ 
+                          backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                          borderRight: '2px solid #4a4a4a',
+                          borderBottom: '2px solid #4a4a4a',
+                        }}
+                      />
                       
-                      {/* Content */}
+                      {/* Content - Text only, no name */}
                       <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden">
-                        <p className="text-xs font-bold text-purple-600 mb-1 leading-none">{bubble.characterName}</p>
-                        <p className="text-gray-800 leading-tight w-full break-words" style={{ fontSize: '1em' }}>{bubble.text}</p>
+                        <p className="text-gray-900 font-medium leading-tight w-full break-words" style={{ fontSize: '1em' }}>{bubble.text}</p>
                       </div>
 
                       {/* Delete Button */}
