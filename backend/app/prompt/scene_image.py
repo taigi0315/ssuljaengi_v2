@@ -90,7 +90,6 @@ portrait photography, headshot, profile picture, face close-up, cropped body, up
 
 # **CRITICAL**
 # - ASPECT_RATIO: 9:16
-# - VERTICAL SCROLLING WEBTOON AESTHETIC
 
 # """
 

@@ -257,7 +257,7 @@ class VideoService:
             frame_paths = []
             frame_idx = 0
             
-            for panel in panels:
+            for panel_idx, panel in enumerate(panels):
                 logger.info(f"Processing panel {panel.panel_number}")
                 
                 # Resolve image URL to loadable source
@@ -336,7 +336,75 @@ class VideoService:
                     final_base.convert("RGB").save(frame_path, "PNG")
                     frame_paths.append(frame_path)
                     frame_idx += 1
-            
+
+                # 4. Scroll transition to next panel (except for last panel)
+                if panel_idx < len(panels) - 1:
+                    next_panel = panels[panel_idx + 1]
+                    next_image_url = next_panel.image_url
+
+                    # Load next panel image
+                    try:
+                        if next_image_url.startswith('data:image'):
+                            import base64
+                            header, encoded = next_image_url.split(',', 1)
+                            image_data = base64.b64decode(encoded)
+                            next_base_img = Image.open(BytesIO(image_data)).convert("RGBA")
+                        elif next_image_url.startswith(('http://', 'https://')):
+                            next_base_img = self.download_image_sync(next_image_url)
+                        elif next_image_url.startswith('/api/assets/cache/images/'):
+                            filename = next_image_url.split('/')[-1]
+                            local_path = os.path.join(
+                                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                                'cache', 'images', filename
+                            )
+                            if os.path.exists(local_path):
+                                next_base_img = Image.open(local_path).convert("RGBA")
+                            else:
+                                continue  # Skip transition if next image not found
+                        elif os.path.exists(next_image_url):
+                            next_base_img = Image.open(next_image_url).convert("RGBA")
+                        else:
+                            continue  # Skip transition if next image can't be loaded
+
+                        # Process next image
+                        next_scaled = self._scale_to_cover(next_base_img)
+                        next_final = self._crop_center(next_scaled)
+
+                        # Generate scroll transition frames
+                        transition_frames = int(self.config.transition_duration_ms / 1000 * self.config.fps)
+
+                        for t in range(transition_frames):
+                            progress = t / transition_frames  # 0.0 to 1.0
+                            # Ease-in-out for smoother transition
+                            eased = 0.5 - 0.5 * (1 - progress * 2) ** 2 if progress < 0.5 else 0.5 + 0.5 * (1 - (1 - progress) * 2) ** 2
+
+                            # Current image moves up
+                            current_y_offset = -int(self.config.height * eased)
+                            # Next image comes from below
+                            next_y_offset = int(self.config.height * (1 - eased))
+
+                            # Create transition frame
+                            transition_frame = Image.new("RGB", (self.config.width, self.config.height), (0, 0, 0))
+
+                            # Paste current image (scrolling up)
+                            if current_y_offset > -self.config.height:
+                                transition_frame.paste(final_base.convert("RGB"), (0, current_y_offset))
+
+                            # Paste next image (scrolling up from below)
+                            if next_y_offset < self.config.height:
+                                transition_frame.paste(next_final.convert("RGB"), (0, next_y_offset))
+
+                            frame_path = os.path.join(temp_dir, f"frame_{frame_idx:06d}.png")
+                            transition_frame.save(frame_path, "PNG")
+                            frame_paths.append(frame_path)
+                            frame_idx += 1
+
+                        logger.info(f"Added {transition_frames} scroll transition frames")
+
+                    except Exception as e:
+                        logger.warning(f"Could not generate scroll transition: {e}")
+                        # Continue without transition if it fails
+
             logger.info(f"Generated {len(frame_paths)} frames")
             
             # Verify frames exist

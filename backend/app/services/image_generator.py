@@ -473,27 +473,5 @@ class ImageGenerator:
             logger.error(f"Failed to save image to cache: {str(e)}")
             return ""
     
-    def _generate_placeholder(self, character_name: str, description: str) -> str:
-        """
-        Generate a placeholder image URL.
-        
-        Args:
-            character_name: Name of the character
-            description: Visual description
-            
-        Returns:
-            Placeholder image URL
-        """
-        # Use a placeholder service like placeholder.com or UI Avatars
-        # For now, use UI Avatars with character initials
-        initials = "".join([word[0].upper() for word in character_name.split()[:2]])
-        
-        # Create a simple placeholder URL
-        # In production, this would be replaced with actual generated images
-        placeholder_url = f"https://ui-avatars.com/api/?name={initials}&size=512&background=random"
-        
-        return placeholder_url
-
-
 # Global image generator instance
 image_generator = ImageGenerator()

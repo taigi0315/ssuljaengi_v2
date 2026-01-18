@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { WebtoonScript, WebtoonPanel, SceneImage, StoryGenre } from '@/types';
 import { generateSceneImage, getSceneImages, selectSceneImage } from '@/lib/apiClient';
+import { formatGenreName } from '@/utils/formatters';
 import SceneSidebar from './SceneSidebar';
 import ScenePromptEditor from './ScenePromptEditor';
 import SceneImageCanvas from './SceneImageCanvas';
@@ -169,11 +170,6 @@ export default function SceneImageGenerator({ webtoonScript, genre: propGenre }:
 
   const handleNextPanel = () => {
     setCurrentPanelIndex(prev => Math.min(panels.length - 1, prev + 1));
-  };
-
-  // Helper to format genre for display
-  const formatGenreName = (g: StoryGenre): string => {
-    return g.replace(/_/g, ' ').replace(/MANHWA/g, '').trim();
   };
 
   if (!currentPanel) {

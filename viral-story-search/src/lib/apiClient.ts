@@ -194,10 +194,11 @@ export async function getStory(storyId: string): Promise<StoryResponse> {
 /**
  * Generate a webtoon script from a story
  * @param storyId Story ID to convert to webtoon script
+ * @param storyContent Optional direct story content (bypasses story lookup)
  * @returns WebtoonScript with characters and panels
  * @throws Error if the request fails
  */
-export async function generateWebtoonScript(storyId: string): Promise<import('@/types').WebtoonScript> {
+export async function generateWebtoonScript(storyId: string, storyContent?: string): Promise<import('@/types').WebtoonScript> {
   try {
     const response = await fetch(`${API_BASE_URL}/webtoon/generate`, {
       method: 'POST',
@@ -206,6 +207,7 @@ export async function generateWebtoonScript(storyId: string): Promise<import('@/
       },
       body: JSON.stringify({
         story_id: storyId,
+        story_content: storyContent,
       }),
     });
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { WebtoonScript, WebtoonPanel, SceneImage, StoryGenre, Character, DialogueBubble } from '@/types';
 import { generateSceneImage, selectSceneImage } from '@/lib/apiClient';
+import { formatGenreName } from '@/utils/formatters';
 
 interface SceneImageGeneratorV2Props {
   webtoonScript: WebtoonScript;
@@ -381,11 +382,6 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
         dialogue_bubbles: updatedBubbles
       });
     }
-  };
-
-  // Helper to format genre for display
-  const formatGenreName = (g: StoryGenre): string => {
-    return g.replace(/_/g, ' ').replace(/MANHWA/g, '').trim();
   };
 
   // Get character info for active characters in panel

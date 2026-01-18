@@ -1,13 +1,8 @@
 import React from 'react';
 import { RedditPostDisplayProps } from '@/types';
+import { formatNumber } from '@/utils/formatters';
 
 const RedditPostDisplay: React.FC<RedditPostDisplayProps> = ({ post }) => {
-  const formatNumber = (num: number): string => {
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'k';
-    }
-    return num.toString();
-  };
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 sticky top-6">

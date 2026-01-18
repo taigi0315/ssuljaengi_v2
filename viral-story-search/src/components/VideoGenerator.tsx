@@ -12,24 +12,26 @@ interface VideoGeneratorProps {
 // VIDEO GENERATION CONFIG - ADJUST HERE
 // ============================================
 const VIDEO_CONFIG = {
-  // Canvas/Video dimensions (4:5 for Instagram/Facebook Feed)
+  // Canvas/Video dimensions (9:16 for TikTok/Shorts/Reels)
   CANVAS_WIDTH: 1080,
   CANVAS_HEIGHT: 1920,
-  
+
   // Timing (in milliseconds)
-  BASE_IMAGE_DURATION_MS: 2000,    // How long to show image before first bubble
-  DIALOGUE_DURATION_MS: 2000,      // How long each dialogue bubble shows
-  FINAL_PAUSE_MS: 500,             // Pause after last bubble before next panel
-  
+  // Timing (in milliseconds)
+  BASE_IMAGE_DURATION_MS: 250,     // How long to show image before first bubble
+  DIALOGUE_DURATION_MS: 2500,      // How long each dialogue bubble shows
+  FINAL_PAUSE_MS: 250,             // Pause after last bubble before next panel
+  TRANSITION_DURATION_MS: 1250,    // Duration of scroll transition between panels
+
   // Bubble styling
-  BUBBLE_FONT_SIZE: 43,            // Font size for dialogue text
-  BUBBLE_PADDING: 35,              // Padding inside bubble
+  BUBBLE_FONT_SIZE: 47,            // Font size for dialogue text
+  BUBBLE_PADDING: 30,              // Padding inside bubble
   BUBBLE_BORDER_RADIUS: 20,        // Rounded corner radius
   BUBBLE_BORDER_WIDTH: 5,          // Border thickness
   BUBBLE_BG_OPACITY: 0.1,          // Background opacity (0-1)
   BUBBLE_BORDER_COLOR: '#4a4a4a',  // Border color
   BUBBLE_TEXT_COLOR: '#1a1a1a',    // Text color
-  
+
   // Video quality - MAXIMUM QUALITY SETTINGS
   VIDEO_BITRATE: 16000000,         // 16 Mbps for maximum quality
   FPS: 30,
@@ -246,8 +248,67 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
           await drawImageCover(selectedImage.image_url);
         }
         await new Promise(r => setTimeout(r, VIDEO_CONFIG.FINAL_PAUSE_MS));
+
+        // Scroll transition to next panel (except for last panel)
+        if (i < totalPanels - 1) {
+          const nextPanel = panels[i + 1];
+          const nextSceneImages = webtoonScript.scene_images?.[nextPanel.panel_number] || [];
+          const nextSelectedImage = nextSceneImages.find(img => img.is_selected) || nextSceneImages[0];
+
+          if (nextSelectedImage && selectedImage) {
+            setStatusText(`Transitioning to Panel ${nextPanel.panel_number}...`);
+
+            try {
+              // Load current and next images
+              const currentImg = await loadImage(selectedImage.image_url);
+              const nextImg = await loadImage(nextSelectedImage.image_url);
+
+              // Calculate transition frames (60 frames for smooth 2-second transition at 30fps)
+              const transitionFrames = Math.floor(VIDEO_CONFIG.TRANSITION_DURATION_MS / (1000 / VIDEO_CONFIG.FPS));
+              const frameDelay = VIDEO_CONFIG.TRANSITION_DURATION_MS / transitionFrames;
+
+              for (let t = 0; t < transitionFrames; t++) {
+                const progress = t / transitionFrames; // 0.0 to 1.0
+                // Ease-in-out for smoother transition
+                const eased = progress < 0.5
+                  ? 2 * progress * progress
+                  : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+                // Current image moves up
+                const currentYOffset = -canvas.height * eased;
+                // Next image comes from below
+                const nextYOffset = canvas.height * (1 - eased);
+
+                // Clear canvas
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Draw current image (scrolling up) - using cover mode calculations
+                const currentScale = Math.max(canvas.width / currentImg.width, canvas.height / currentImg.height);
+                const currentWidth = currentImg.width * currentScale;
+                const currentHeight = currentImg.height * currentScale;
+                const currentX = (canvas.width - currentWidth) / 2;
+                const currentY = (canvas.height - currentHeight) / 2 + currentYOffset;
+                ctx.drawImage(currentImg, currentX, currentY, currentWidth, currentHeight);
+
+                // Draw next image (scrolling up from below) - using cover mode calculations
+                const nextScale = Math.max(canvas.width / nextImg.width, canvas.height / nextImg.height);
+                const nextWidth = nextImg.width * nextScale;
+                const nextHeight = nextImg.height * nextScale;
+                const nextX = (canvas.width - nextWidth) / 2;
+                const nextY = (canvas.height - nextHeight) / 2 + nextYOffset;
+                ctx.drawImage(nextImg, nextX, nextY, nextWidth, nextHeight);
+
+                await new Promise(r => setTimeout(r, frameDelay));
+              }
+            } catch (transitionErr) {
+              console.warn('Could not generate scroll transition:', transitionErr);
+              // Continue without transition if it fails
+            }
+          }
+        }
       }
-      
+
     } catch (err) {
       console.error(err);
       setError('Error generating video');

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { WebtoonScript, StoryGenre, Character, WebtoonPanel } from '@/types';
 import { generateWebtoonScript } from '@/lib/apiClient';
+import { formatGenreName } from '@/utils/formatters';
 
 interface ScriptPreviewProps {
   storyId: string;
@@ -25,12 +26,21 @@ export default function ScriptPreview({
   // Generate script only if not already cached
   const handleGenerateScript = async () => {
     if (webtoonScript) return; // Already have script, don't regenerate
-    
+
     try {
       setIsGenerating(true);
       setError(null);
 
-      const script = await generateWebtoonScript(storyId);
+      // Check if this is a manual story (ID starts with "manual_")
+      let storyContent: string | undefined;
+      if (storyId.startsWith('manual_')) {
+        storyContent = sessionStorage.getItem('gossiptoon_manualStoryContent') || undefined;
+        if (!storyContent) {
+          throw new Error('Manual story content not found. Please go back and enter your story.');
+        }
+      }
+
+      const script = await generateWebtoonScript(storyId, storyContent);
       onScriptGenerated(script);
     } catch (err) {
       console.error('Script generation error:', err);
@@ -38,11 +48,6 @@ export default function ScriptPreview({
     } finally {
       setIsGenerating(false);
     }
-  };
-
-  // Helper to format genre for display
-  const formatGenreName = (g: StoryGenre): string => {
-    return g.replace(/_/g, ' ').replace(/MANHWA/g, '').trim();
   };
 
   // Render loading state

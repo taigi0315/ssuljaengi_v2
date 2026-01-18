@@ -20,6 +20,7 @@ export default function CharacterImageDisplay({
   onGenerateImage,
   onSelectImage,
   isGenerating,
+  onSaveToLibrary,
 }: CharacterImageDisplayProps) {
   // Individual field states
   const [gender, setGender] = useState(character.gender || '');
@@ -386,24 +387,22 @@ export default function CharacterImageDisplay({
                 </div>
                 
                 {/* Save to Library Button */}
-                <button
-                  onClick={async () => {
-                    try {
-                      // @ts-ignore - Prop will be passed from parent
-                      if (props.onSaveToLibrary) {
-                        // @ts-ignore
-                        await props.onSaveToLibrary(character, currentImage.image_url);
+                {onSaveToLibrary && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await onSaveToLibrary(character, currentImage.image_url);
                         alert('Character saved to library!');
+                      } catch (e) {
+                        console.error(e);
+                        alert('Failed to save character');
                       }
-                    } catch (e) {
-                      console.error(e);
-                      alert('Failed to save character');
-                    }
-                  }}
-                  className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
-                >
-                   <span>💾 Save Character to Library</span>
-                </button>
+                    }}
+                    className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>💾 Save Character to Library</span>
+                  </button>
+                )}
 
                 {/* Selected Badge */}
                 {currentImage.is_selected && (

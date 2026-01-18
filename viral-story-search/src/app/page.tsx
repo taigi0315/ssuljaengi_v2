@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { SearchControls, ResultsList, ErrorMessage, GenreSelector, SceneImageGenerator, VideoGenerator } from '@/components';
 import StoryTabs from '@/components/StoryTabs';
@@ -39,10 +39,14 @@ export default function Home() {
     null
   );
   const [webtoonScript, setWebtoonScript] = useSessionStorage<WebtoonScript | null>(
-    SESSION_KEYS.WEBTOON_SCRIPT, 
+    SESSION_KEYS.WEBTOON_SCRIPT,
     null
   );
-  
+  const [manualFullStory, setManualFullStory] = useSessionStorage<string>(
+    'gossiptoon_manualFullStory',
+    ''
+  );
+
   // Tab state - persistent
   const [activeTab, setActiveTab] = useSessionStorage<'search' | 'generate' | 'script' | 'images' | 'scenes' | 'video'>(
     SESSION_KEYS.ACTIVE_TAB, 
@@ -50,6 +54,69 @@ export default function Home() {
   );
   
   const router = useRouter();
+
+  // Check for stale data on startup - if backend is fresh but frontend has old data
+  useEffect(() => {
+    const checkAndClearStaleData = async () => {
+      // Only run on client
+      if (typeof window === 'undefined') return;
+
+      // Check if we have any stored data
+      const hasStoredStoryId = sessionStorage.getItem('gossiptoon_generatedStoryId');
+      const hasStoredScript = sessionStorage.getItem('gossiptoon_webtoonScript');
+
+      // If we have stored data, verify it exists on the backend
+      if (hasStoredStoryId || hasStoredScript) {
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+          const response = await fetch(`${apiUrl}/webtoon/latest`, { method: 'GET' });
+
+          // If backend returns 404 (no data), clear stale frontend cache
+          if (response.status === 404 || !response.ok) {
+            console.log('Backend data cleared, clearing stale frontend cache...');
+            // Clear all gossiptoon session storage keys
+            const keysToRemove = Object.keys(sessionStorage).filter(key => key.startsWith('gossiptoon_'));
+            keysToRemove.forEach(key => sessionStorage.removeItem(key));
+            sessionStorage.removeItem('gossiptoon_manualStoryContent');
+
+            // Reload to get fresh state
+            window.location.reload();
+          }
+        } catch {
+          // Backend not available, don't clear (might just be starting up)
+        }
+      }
+    };
+
+    checkAndClearStaleData();
+  }, []);
+
+  // Clear all session data for fresh start
+  const handleFreshStart = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      // Clear all gossiptoon session storage keys
+      const keysToRemove = Object.keys(sessionStorage).filter(key => key.startsWith('gossiptoon_'));
+      keysToRemove.forEach(key => sessionStorage.removeItem(key));
+
+      // Also clear the manual story content
+      sessionStorage.removeItem('gossiptoon_manualStoryContent');
+
+      // Reset all local state
+      setSelectedPost(null);
+      setCustomStorySeed('');
+      setSelectedGenre(null);
+      setGeneratedStoryId(null);
+      setWebtoonScript(null);
+      setManualFullStory('');
+      setActiveTab('search');
+      setPosts([]);
+      setSearchCriteria(null);
+      setError(null);
+
+      // Clear search cache
+      searchCache.clear();
+    }
+  }, [setSelectedPost, setCustomStorySeed, setSelectedGenre, setGeneratedStoryId, setWebtoonScript, setManualFullStory, setActiveTab]);
 
   // Handle search execution with caching
   const performSearch = useCallback(async (criteria: SearchCriteria) => {
@@ -147,7 +214,8 @@ export default function Home() {
 
   // Handle tab change
   const handleTabChange = useCallback((tab: 'search' | 'generate' | 'script' | 'images' | 'scenes' | 'video') => {
-    if (tab === 'generate' && !(selectedPost || customStorySeed.trim()) && !selectedGenre) {
+    // Allow 'generate' tab if: has post/seed, OR has genre (to write manual story)
+    if (tab === 'generate' && !selectedGenre) {
       return;
     }
     if (tab === 'script' && !generatedStoryId) {
@@ -163,7 +231,7 @@ export default function Home() {
       return;
     }
     setActiveTab(tab);
-  }, [selectedPost, customStorySeed, selectedGenre, generatedStoryId, webtoonScript]);
+  }, [selectedGenre, generatedStoryId, webtoonScript]);
 
   // Handle story generation complete - go to script tab
   const handleGenerateImages = useCallback((storyId: string) => {
@@ -197,7 +265,8 @@ export default function Home() {
   }, [setActiveTab]);
 
   // Check if can proceed to create story
-  const canCreateStory = (selectedPost || customStorySeed.trim()) && selectedGenre;
+  // User can proceed if they have a genre selected (they can write full story manually in tab 2)
+  const canCreateStory = selectedGenre;
 
   // Load Test Story Handler
   const handleLoadTestStory = async () => {
@@ -232,14 +301,23 @@ export default function Home() {
             Discover the most engaging Reddit stories
           </p>
           
-          {/* Test Mode Button */}
-          <button
-            onClick={handleLoadTestStory}
-            className="absolute top-4 right-4 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1 rounded border border-gray-300 transition-colors"
-            title="Load latest backend data for testing"
-          >
-            🧪 Load Test Story
-          </button>
+          {/* Action Buttons */}
+          <div className="absolute top-4 right-4 flex gap-2">
+            <button
+              onClick={handleFreshStart}
+              className="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1 rounded border border-red-200 transition-colors"
+              title="Clear all data and start fresh"
+            >
+              🔄 Fresh Start
+            </button>
+            <button
+              onClick={handleLoadTestStory}
+              className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1 rounded border border-gray-300 transition-colors"
+              title="Load latest backend data for testing"
+            >
+              🧪 Load Test Story
+            </button>
+          </div>
         </div>
       </header>
 
@@ -327,15 +405,18 @@ export default function Home() {
                   }
                 `}
               >
-                {!selectedGenre && !(selectedPost || customStorySeed.trim())
-                  ? '👆 Select a post/seed AND genre first'
-                  : !selectedGenre
-                    ? '👆 Select a genre first'
-                    : !(selectedPost || customStorySeed.trim())
-                      ? '👆 Select a post or enter a story seed first'
-                      : '✨ Create Story'
+                {!selectedGenre
+                  ? '👆 Select a genre first'
+                  : (selectedPost || customStorySeed.trim())
+                    ? '✨ Create Story'
+                    : '✨ Write Your Story'
                 }
               </button>
+              {selectedGenre && !(selectedPost || customStorySeed.trim()) && (
+                <p className="mt-2 text-sm text-gray-500">
+                  You can also select a Reddit post or enter a story seed above
+                </p>
+              )}
             </div>
           </>
         ) : activeTab === 'generate' ? (
@@ -343,12 +424,53 @@ export default function Home() {
             {/* Story Building Tab */}
             {selectedGenre && (
               <div className="max-w-7xl mx-auto">
-                <StoryBuilder 
-                  post={selectedPost}
-                  customStorySeed={customStorySeed.trim() || undefined}
-                  selectedGenre={selectedGenre}
-                  onGenerateImages={handleGenerateImages}
-                />
+                {/* Manual Full Story Input Option */}
+                {!selectedPost && !customStorySeed.trim() && (
+                  <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      ✍️ Write Your Story Manually
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Enter your complete story below. This will skip AI generation and use your story directly.
+                    </p>
+                    <textarea
+                      value={manualFullStory}
+                      onChange={(e) => setManualFullStory(e.target.value)}
+                      placeholder="Write your full story here... (This will be used directly without AI rewriting)"
+                      className="w-full p-4 text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent resize-none h-64"
+                    />
+                    {manualFullStory.trim() && (
+                      <button
+                        onClick={() => {
+                          // Create a story object from manual input and proceed
+                          const storyId = `manual_${Date.now()}`;
+                          setGeneratedStoryId(storyId);
+                          // Store the manual story in session for later use
+                          sessionStorage.setItem('gossiptoon_manualStoryContent', manualFullStory);
+                          setActiveTab('script');
+                        }}
+                        className="mt-4 w-full px-6 py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white font-bold text-lg rounded-lg hover:shadow-xl hover:scale-105 transition-all"
+                      >
+                        📝 Use This Story → Proceed to Script
+                      </button>
+                    )}
+                    <div className="mt-4 flex items-center">
+                      <div className="flex-1 border-t border-gray-300"></div>
+                      <span className="px-4 text-sm text-gray-500">OR go back and select a Reddit post / story seed</span>
+                      <div className="flex-1 border-t border-gray-300"></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Regular Story Builder (shows when post or seed is provided) */}
+                {(selectedPost || customStorySeed.trim()) && (
+                  <StoryBuilder
+                    post={selectedPost}
+                    customStorySeed={customStorySeed.trim() || undefined}
+                    selectedGenre={selectedGenre}
+                    onGenerateImages={handleGenerateImages}
+                  />
+                )}
               </div>
             )}
           </>

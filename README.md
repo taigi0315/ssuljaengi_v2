@@ -299,3 +299,36 @@ This project is proprietary. All rights reserved.
 ## Support
 
 For issues and questions, please open an issue on GitHub.
+
+---
+
+## ⚡ WHERE TO TUNE THE SPEED
+
+To adjust video timing (scene duration, bubble display time, transitions), you must update **BOTH** of these files to keep them consistent:
+
+### 1. Backend (HQ Video / FFmpeg)
+
+- **File**: `backend/app/models/video_models.py`
+- **Class**: `VideoConfig`
+
+```python
+class VideoConfig(BaseModel):
+    base_duration_ms: int = 300      # Time before first bubble
+    bubble_duration_ms: int = 4000   # Duration per bubble
+    final_pause_ms: int = 300        # Pause after last bubble
+    transition_duration_ms: int = 1500 # Scroll transition time
+```
+
+### 2. Frontend (Browser Preview)
+
+- **File**: `viral-story-search/src/components/VideoGenerator.tsx`
+- **Object**: `VIDEO_CONFIG`
+
+```typescript
+const VIDEO_CONFIG = {
+  BASE_IMAGE_DURATION_MS: 300,
+  DIALOGUE_DURATION_MS: 4000,
+  FINAL_PAUSE_MS: 300,
+  TRANSITION_DURATION_MS: 1500,
+};
+```

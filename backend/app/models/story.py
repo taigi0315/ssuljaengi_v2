@@ -397,11 +397,13 @@ class WebtoonScriptResponse(BaseModel):
 class GenerateWebtoonRequest(BaseModel):
     """
     Request model for webtoon script generation.
-    
+
     Attributes:
         story_id: ID of the story to convert to webtoon script
+        story_content: Optional direct story content (bypasses story lookup if provided)
     """
     story_id: str = Field(..., description="Story ID to convert")
+    story_content: Optional[str] = Field(default=None, description="Optional direct story content (bypasses story lookup)")
 
 
 class GenerateCharacterImageRequest(BaseModel):

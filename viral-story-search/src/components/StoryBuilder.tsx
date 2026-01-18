@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ViralPost, Story, WorkflowStatus, StoryGenre } from '@/types';
 import { generateStory, getStoryStatus, getStory } from '@/lib/apiClient';
+import { formatGenreName } from '@/utils/formatters';
 import RedditPostDisplay from './RedditPostDisplay';
 
 interface StoryBuilderProps {
@@ -11,11 +12,6 @@ interface StoryBuilderProps {
   selectedGenre: StoryGenre;
   onGenerateImages?: (storyId: string) => void;
 }
-
-// Helper to format genre for display
-const formatGenreName = (genre: StoryGenre): string => {
-  return genre.replace(/_/g, ' ').replace(/MANHWA/g, '').trim();
-};
 
 export default function StoryBuilder({ post, customStorySeed, selectedGenre, onGenerateImages }: StoryBuilderProps) {
   const [story, setStory] = useState<Story | null>(null);

@@ -1,6 +1,6 @@
 CHARACTER_GENRE_MODIFIERS = {
 "MODERN_ROMANCE_DRAMA_MANHWA": """ 
-Korean webtoon manhwa style, modern digital romance comic illustration, vertical scrolling webtoon aesthetic, 
+Korean webtoon manhwa style, modern digital romance comic illustration, 
 ultra-soft cel-shading with gentle gradients and airy blending, luminous and bright overall lighting, 
 soft diffused natural light with warm highlights and subtle golden-hour glow, dreamy ethereal atmosphere,
 delicate sparkles bokeh particles, soft bloom and lens flare effects, pastel-tinted yet elegant color palette with creamy beiges, 

@@ -1,35 +1,8 @@
 import React from 'react';
 import { ResultItemProps } from '@/types';
+import { formatNumber, formatRelativeTime } from '@/utils/formatters';
 
 const ResultItem: React.FC<ResultItemProps> = ({ post, isSelected = false, onSelect }) => {
-  // Format post age
-  const formatPostAge = (createdAt: Date): string => {
-    const now = new Date();
-    const postDate = new Date(createdAt);
-    const diffMs = now.getTime() - postDate.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffHours < 1) {
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      return `${diffMinutes}m ago`;
-    } else if (diffHours < 24) {
-      return `${diffHours}h ago`;
-    } else if (diffDays < 30) {
-      return `${diffDays}d ago`;
-    } else {
-      const diffMonths = Math.floor(diffDays / 30);
-      return `${diffMonths}mo ago`;
-    }
-  };
-
-  // Format numbers with commas
-  const formatNumber = (num: number): string => {
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'k';
-    }
-    return num.toString();
-  };
 
   // Handle click - either select or navigate to Reddit
   const handleClick = (e: React.MouseEvent) => {
@@ -115,7 +88,7 @@ const ResultItem: React.FC<ResultItemProps> = ({ post, isSelected = false, onSel
 
         {/* Post age */}
         <div className="flex items-center text-gray-500">
-          <span>🕐 {formatPostAge(post.createdAt)}</span>
+          <span>🕐 {formatRelativeTime(post.createdAt)}</span>
         </div>
 
         {/* Author */}

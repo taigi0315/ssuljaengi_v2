@@ -116,13 +116,17 @@ async def generate_webtoon_script(request: GenerateWebtoonRequest) -> WebtoonScr
         HTTPException: If story not found or conversion fails
     """
     logger.info(f"Generating webtoon script for story: {request.story_id}")
-    
-    # Check if story exists
-    if request.story_id not in stories:
-        raise HTTPException(status_code=404, detail="Story not found")
-    
-    story_data = stories[request.story_id]
-    story_content = story_data["content"]
+
+    # Use provided story_content if available, otherwise lookup from storage
+    if request.story_content:
+        story_content = request.story_content
+        logger.info("Using provided story content (manual input)")
+    else:
+        # Check if story exists
+        if request.story_id not in stories:
+            raise HTTPException(status_code=404, detail="Story not found")
+        story_data = stories[request.story_id]
+        story_content = story_data["content"]
     
     try:
         # Use the LangGraph workflow with evaluation and rewriting

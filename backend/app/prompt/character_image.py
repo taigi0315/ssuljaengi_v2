@@ -75,7 +75,7 @@ authentic Korean manhwa webtoon style character illustration,
 """
 FEMALE_20_30 = """
 tall elegant stature over 165cm, statuesque supermodel-like figure, extremely long toned legs (leg length exceeding torso),
-dramatically elongated graceful proportions, long elegant torso, perfect posture, hourglass silhouette with prominent big natural breasts,
+dramatically elongated graceful proportions, long elegant torso, perfect posture, hourglass silhouette with prominent good natural breasts,
 full voluptuous bust, narrow waist, wide hips, sexy mature curves, flawless glossy skin, seductive confident expression, 
 modern chic fashion highlighting long legs and bust, in authentic Korean manhwa webtoon style with realistic human proportions and no exaggeration
 """

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { WebtoonScript, Character, CharacterImage, StoryGenre } from '@/types';
 import { generateCharacterImage, selectCharacterImage, saveCharacterToLibrary } from '@/lib/apiClient';
+import { formatGenreName } from '@/utils/formatters';
 import CharacterList from './CharacterList';
 import CharacterImageDisplay from './CharacterImageDisplay';
 
@@ -139,11 +140,6 @@ export default function CharacterImageGenerator({
       </div>
     );
   }
-
-  // Helper to format genre for display
-  const formatGenreName = (g: StoryGenre): string => {
-    return g.replace(/_/g, ' ').replace(/MANHWA/g, '').trim();
-  };
 
   // Main layout
   return (
