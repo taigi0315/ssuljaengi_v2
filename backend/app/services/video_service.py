@@ -144,19 +144,47 @@ class VideoService:
         bx = max(20, min(img.width - bw - 20, bx))
         by = max(20, min(img.height - bh - 20, by))
         
-        # Draw rounded rectangle background
-        radius = 20
-        bg_color = (255, 255, 255, int(self.config.bubble_bg_opacity * 255))
-        border_color = self._hex_to_rgb(self.config.bubble_border_color)
+        # Draw bubble background
+        assets_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets")
+        bubble_img_path = os.path.join(assets_dir, "bubble.png")
         
-        # Draw filled rounded rectangle
-        draw.rounded_rectangle(
-            [(bx, by), (bx + bw, by + bh)],
-            radius=radius,
-            fill=bg_color,
-            outline=border_color,
-            width=self.config.bubble_border_width
-        )
+        custom_bubble_used = False
+        if os.path.exists(bubble_img_path):
+            try:
+                # Load custom bubble
+                bubble_asset = Image.open(bubble_img_path).convert("RGBA")
+                # Resize to fit text dimensions
+                bubble_asset = bubble_asset.resize((int(bw), int(bh)), Image.Resampling.LANCZOS)
+                
+                # Apply opacity to custom image
+                # Assuming config.bubble_bg_opacity is 0.0-1.0
+                opacity = self.config.bubble_bg_opacity
+                if opacity < 1.0:
+                    r, g, b, a = bubble_asset.split()
+                    a = a.point(lambda p: int(p * opacity))
+                    bubble_asset.putalpha(a)
+                
+                # Paste onto image (using alpha_composite for correct transparency)
+                img.alpha_composite(bubble_asset, (int(bx), int(by)))
+                custom_bubble_used = True
+                
+            except Exception as e:
+                logger.error(f"Failed to load custom bubble asset: {str(e)}")
+        
+        if not custom_bubble_used:
+            # Fallback: Draw rounded rectangle background
+            radius = 20
+            bg_color = (255, 255, 255, int(self.config.bubble_bg_opacity * 255))
+            border_color = self._hex_to_rgb(self.config.bubble_border_color)
+            
+            # Draw filled rounded rectangle
+            draw.rounded_rectangle(
+                [(bx, by), (bx + bw, by + bh)],
+                radius=radius,
+                fill=bg_color,
+                outline=border_color,
+                width=self.config.bubble_border_width
+            )
         
         # Draw text centered in bubble
         text_x = bx + bw / 2

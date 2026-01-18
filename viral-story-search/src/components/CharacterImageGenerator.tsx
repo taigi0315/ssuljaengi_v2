@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { WebtoonScript, Character, CharacterImage, StoryGenre } from '@/types';
-import { generateCharacterImage, selectCharacterImage } from '@/lib/apiClient';
+import { generateCharacterImage, selectCharacterImage, saveCharacterToLibrary } from '@/lib/apiClient';
 import CharacterList from './CharacterList';
 import CharacterImageDisplay from './CharacterImageDisplay';
 
@@ -186,6 +186,14 @@ export default function CharacterImageGenerator({
                   onGenerateImage={handleGenerateImage}
                   onSelectImage={handleSelectImage}
                   isGenerating={isGeneratingImage}
+                  onSaveToLibrary={async (char, imgUrl) => {
+                    try {
+                      await saveCharacterToLibrary(char, imgUrl);
+                    } catch (err) {
+                      console.error(err);
+                      throw err; // Propagate to display for alert
+                    }
+                  }}
                 />
               ) : (
                 <div className="bg-gray-50 rounded-lg p-12 text-center">

@@ -1,13 +1,19 @@
 SCENE_IMAGE_TEMPLATE = """
-**CRITICAL MANDATORY REQUIREMENT - READ FIRST**
-- Generate a TALL VERTICAL image, NOT square (1:1), NOT horizontal
-- Height must be significantly greater than width
-- Ratio: 4 (width) : 5 (height) - Portrait/Vertical orientation
-- Optimized for mobile vertical scrolling webtoon format
+**LAYOUT & RATIO REQUIREMENT (MANDATORY)**
+- FORMAT: Pillarboxed 9:16 Vertical within a 1:1 Square.
+- ACTION: Create a 1:1 square canvas where the actual artwork is centered in a narrow vertical strip.
+- SIDES: The left 20% and right 20% of the image MUST be solid, empty white bars.
+- CENTER: All characters, background, and action must be contained strictly within the central 9:16 vertical column.
 
-**CRITICAL**: A vertical 4:5 portrait orientation centered within a 1:1 square frame.
-The left and right sides of the image are solid, flat black bars (pillarboxed), 
-focusing all detail and the subject exclusively in the central vertical column.
+**VISUAL STYLE**
+- Vertical Webtoon/Manhwa style.
+- Composition must favor verticality (low-angle shots, tall buildings, or standing characters).
+- High-definition, optimized for mobile vertical scrolling.
+
+**CRITICAL INSTRUCTION**
+Imagine the image is a smartphone screen placed in the middle of a square white room. 
+Do not extend any part of the scene into the left or right white pillars. 
+Focus all detail and the subject exclusively in the central vertical column.
 
 [Character reference handling section]
 {character_description}

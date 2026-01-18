@@ -396,10 +396,11 @@ def setup_routes(app: FastAPI) -> None:
         logger.warning(f"Assets directory not found: {assets_path}")
     
     # Import and register routers
-    from app.routers import search, story, webtoon
+    from app.routers import search, story, webtoon, character_library
     app.include_router(search.router, tags=["Search"])
     app.include_router(story.router, tags=["Story"])
     app.include_router(webtoon.router, tags=["Webtoon"])
+    app.include_router(character_library.router, tags=["Library"])
     
     logger.info("Routes configured")
 

@@ -505,3 +505,65 @@ export async function selectSceneImage(scriptId: string, panelNumber: number, im
     throw new Error('Failed to select scene image');
   }
 }
+// Library API
+
+/**
+ * Save a character to the library
+ * @param character Character data
+ * @param imageUrl Optional image URL
+ * @returns Saved character data
+ */
+export async function saveCharacterToLibrary(character: import('@/types').Character, imageUrl?: string): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/library/character`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        character,
+        image_url: imageUrl,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: { message: 'Failed to save character to library' },
+      }));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to save character to library');
+  }
+}
+
+/**
+ * Get all characters from the library
+ * @returns List of saved characters
+ */
+export async function getLibraryCharacters(): Promise<any[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/library/characters`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+        throw error;
+    }
+    throw new Error('Failed to get library characters');
+  }
+}

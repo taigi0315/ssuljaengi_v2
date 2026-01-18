@@ -9,6 +9,7 @@ interface CharacterImageDisplayProps {
   onGenerateImage: (characterName: string, description: string, gender: string) => Promise<void>;
   onSelectImage: (imageId: string) => void;
   isGenerating: boolean;
+  onSaveToLibrary?: (character: Character, imageUrl: string) => Promise<void>;
 }
 
 
@@ -383,6 +384,26 @@ export default function CharacterImageDisplay({
                     <span>Download Image</span>
                   </button>
                 </div>
+                
+                {/* Save to Library Button */}
+                <button
+                  onClick={async () => {
+                    try {
+                      // @ts-ignore - Prop will be passed from parent
+                      if (props.onSaveToLibrary) {
+                        // @ts-ignore
+                        await props.onSaveToLibrary(character, currentImage.image_url);
+                        alert('Character saved to library!');
+                      }
+                    } catch (e) {
+                      console.error(e);
+                      alert('Failed to save character');
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                >
+                   <span>💾 Save Character to Library</span>
+                </button>
 
                 {/* Selected Badge */}
                 {currentImage.is_selected && (

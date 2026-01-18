@@ -447,6 +447,7 @@ class ImageGenerator:
             
             # Decode base64 and save to file
             image_bytes = base64.b64decode(image_base64)
+            
             with open(file_path, 'wb') as f:
                 f.write(image_bytes)
             
