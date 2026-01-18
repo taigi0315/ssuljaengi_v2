@@ -2,7 +2,7 @@ SCENE_IMAGE_TEMPLATE = """
 **LAYOUT & RATIO REQUIREMENT (MANDATORY)**
 - FORMAT: Pillarboxed 9:16 Vertical within a 1:1 Square.
 - ACTION: Create a 1:1 square canvas where the actual artwork is centered in a narrow vertical strip.
-- SIDES: The left 20% and right 20% of the image MUST be solid, empty white bars.
+- SIDES: The left 20% and right 20% of the image MUST be solid, empty black bars.
 - CENTER: All characters, background, and action must be contained strictly within the central 9:16 vertical column.
 
 **VISUAL STYLE**
@@ -11,8 +11,8 @@ SCENE_IMAGE_TEMPLATE = """
 - High-definition, optimized for mobile vertical scrolling.
 
 **CRITICAL INSTRUCTION**
-Imagine the image is a smartphone screen placed in the middle of a square white room. 
-Do not extend any part of the scene into the left or right white pillars. 
+Imagine the image is a smartphone screen placed in the middle of a square black room. 
+Do not extend any part of the scene into the left or right black pillars. 
 Focus all detail and the subject exclusively in the central vertical column.
 
 [Character reference handling section]
