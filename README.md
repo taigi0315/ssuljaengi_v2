@@ -1,3 +1,18 @@
+# 앞으로 빠른 테스트가 필요할 때:
+
+```bash
+npm run stop
+cd backend && python setup_test_data.py
+npm run dev
+```
+
+이제 세 가지 방식으로 사용할 수 있습니다:
+
+명령어 설명
+npm run dev:test 테스트 데이터 설정 + 서버 시작 (한 번에!)
+npm run kill 서버만 중지 (데이터 유지)
+npm run stop 서버 중지 + 데이터 삭제 (클린 스타트)
+
 # Viral Story Search
 
 A full-stack application for discovering viral Reddit stories with a Next.js frontend and Python FastAPI backend.
@@ -11,10 +26,12 @@ A full-stack application for discovering viral Reddit stories with a Next.js fro
 ## Prerequisites
 
 ### Backend Requirements
+
 - Python 3.10 or higher
 - pip (Python package manager)
 
 ### Frontend Requirements
+
 - Node.js 18 or higher
 - npm (Node package manager)
 
@@ -69,6 +86,7 @@ cp .env.local.example .env.local
 ### 4. Environment Variables
 
 #### Backend (.env)
+
 ```env
 # Server Configuration
 HOST=0.0.0.0
@@ -89,6 +107,7 @@ CACHE_MAX_SIZE=100
 ```
 
 #### Frontend (.env.local)
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
@@ -111,12 +130,14 @@ npm run dev
 ```
 
 This will start:
+
 - Backend on http://localhost:8000
 - Frontend on http://localhost:3000
 
 ### Option 2: Run Services Separately
 
 #### Terminal 1 - Backend
+
 ```bash
 cd backend
 ./run.sh
@@ -124,6 +145,7 @@ cd backend
 ```
 
 #### Terminal 2 - Frontend
+
 ```bash
 cd viral-story-search
 npm run dev
@@ -141,6 +163,7 @@ npm run dev
 ## API Documentation
 
 Once the backend is running, visit:
+
 - **Interactive API Docs**: http://localhost:8000/docs
 - **OpenAPI Schema**: http://localhost:8000/openapi.json
 - **Health Check**: http://localhost:8000/health
@@ -213,6 +236,7 @@ npm run build
 ## Features
 
 ### Current Features (Phase 1)
+
 - ✅ Reddit post search across multiple subreddits
 - ✅ Viral score calculation (upvotes + comments + recency)
 - ✅ Time range filtering (1h, 1d, 10d, 100d)
@@ -222,6 +246,7 @@ npm run build
 - ✅ Automatic API documentation
 
 ### Future Features (Planned)
+
 - 🔄 LangChain-powered story generation
 - 🔄 LangGraph workflow orchestration
 - 🔄 AI-generated images from stories
@@ -233,35 +258,41 @@ npm run build
 ### Backend Issues
 
 **Port already in use:**
+
 ```bash
 # Find and kill process on port 8000
 lsof -ti:8000 | xargs kill -9
 ```
 
 **Missing dependencies:**
+
 ```bash
 cd backend
 pip install -r requirements.txt
 ```
 
 **Reddit API errors:**
+
 - Verify your Reddit API credentials in `.env`
 - Check that your Reddit app is configured correctly at https://www.reddit.com/prefs/apps
 
 ### Frontend Issues
 
 **Port already in use:**
+
 ```bash
 # Kill process on port 3000
 lsof -ti:3000 | xargs kill -9
 ```
 
 **Cannot connect to backend:**
+
 - Ensure backend is running on port 8000
 - Check `NEXT_PUBLIC_API_URL` in `.env.local`
 - Verify CORS settings in backend `config.py`
 
 **Missing dependencies:**
+
 ```bash
 cd viral-story-search
 npm install

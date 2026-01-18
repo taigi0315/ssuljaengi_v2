@@ -98,7 +98,7 @@ export default function CharacterImageGenerator({
       // Update local state to reflect selection
       // Update script with new selection
       if (webtoonScript && onUpdateScript) {
-        const updatedImages = { ...webtoonScript.character_images };
+        const updatedImages = { ...(webtoonScript.character_images || {}) };
         
         // Deselect all images for all characters, then select the chosen one
         Object.keys(updatedImages).forEach(charName => {
@@ -171,7 +171,7 @@ export default function CharacterImageGenerator({
             <div className="w-1/3">
               <CharacterList
                 characters={webtoonScript.characters}
-                characterImages={webtoonScript.character_images}
+                characterImages={webtoonScript.character_images || {}}
                 selectedCharacter={selectedCharacter}
                 onCharacterSelect={handleCharacterSelect}
               />
@@ -182,7 +182,7 @@ export default function CharacterImageGenerator({
               {selectedCharacter ? (
                 <CharacterImageDisplay
                   character={selectedCharacter}
-                  images={webtoonScript.character_images[selectedCharacter.name] || []}
+                  images={(webtoonScript.character_images || {})[selectedCharacter.name] || []}
                   onGenerateImage={handleGenerateImage}
                   onSelectImage={handleSelectImage}
                   isGenerating={isGeneratingImage}
@@ -225,7 +225,7 @@ export default function CharacterImageGenerator({
             <div className="flex items-center gap-2">
               <span className="font-semibold">Images Generated:</span>
               <span className="px-2 py-1 bg-green-100 text-green-700 rounded">
-                {Object.values(webtoonScript.character_images).reduce((sum, imgs) => sum + imgs.length, 0)}
+                {Object.values(webtoonScript.character_images || {}).reduce((sum, imgs) => sum + imgs.length, 0)}
               </span>
             </div>
           </div>

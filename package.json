@@ -4,8 +4,10 @@
   "description": "Viral Story Search - Next.js frontend with Python FastAPI backend",
   "scripts": {
     "dev": "concurrently \"cd backend && ./run.sh\" \"cd viral-story-search && npm run dev\"",
+    "dev:test": "cd backend && python setup_test_data.py && cd .. && npm run dev",
     "backend": "cd backend && ./run.sh",
     "frontend": "cd viral-story-search && npm run dev",
+    "kill": "lsof -ti:8000,3000 | xargs kill -9 2>/dev/null; echo 'Servers stopped (data preserved)'",
     "stop": "lsof -ti:8000,3000 | xargs kill -9; rm -f backend/data/*.json; rm -rf backend/cache/images/*",
     "clean": "rm -f backend/data/*.json; rm -rf backend/cache/images/*"
   },

@@ -199,17 +199,47 @@ export default function Home() {
   // Check if can proceed to create story
   const canCreateStory = (selectedPost || customStorySeed.trim()) && selectedGenre;
 
+  // Load Test Story Handler
+  const handleLoadTestStory = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${apiUrl}/webtoon/latest`);
+      if (!res.ok) throw new Error('No test data found');
+      
+      const script = await res.json();
+      console.log('Loaded test script:', script);
+      
+      setGeneratedStoryId(script.story_id);
+      setWebtoonScript(script);
+      setSelectedGenre(script.genre || 'MODERN_ROMANCE_DRAMA_MANHWA');
+      setCustomStorySeed('E2E Test Story'); // Dummy to satisfy checks
+      
+      setActiveTab('video');
+    } catch (e: any) {
+      alert('Failed to load test story: ' + e.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4 sm:py-6">
+        <div className="container mx-auto px-4 py-4 sm:py-6 relative">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 text-center">
             🔥 Viral Story Search
           </h1>
           <p className="text-sm sm:text-base text-gray-600 text-center mt-2">
             Discover the most engaging Reddit stories
           </p>
+          
+          {/* Test Mode Button */}
+          <button
+            onClick={handleLoadTestStory}
+            className="absolute top-4 right-4 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1 rounded border border-gray-300 transition-colors"
+            title="Load latest backend data for testing"
+          >
+            🧪 Load Test Story
+          </button>
         </div>
       </header>
 

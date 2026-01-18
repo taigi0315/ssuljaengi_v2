@@ -29,6 +29,13 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
     startWidth: number; 
     startHeight: number 
   } | null>(null);
+  const [draggingBubble, setDraggingBubble] = useState<{
+    id: string;
+    startX: number;
+    startY: number;
+    startBubbleX: number;
+    startBubbleY: number;
+  } | null>(null);
   
   const canvasRef = useRef<HTMLDivElement>(null);
   const prevImagesLengthRef = useRef<Record<number, number>>({});
@@ -103,6 +110,44 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [resizingBubble, currentPanel, onUpdateScript, webtoonScript]);
+
+  // Handle Drag Move Logic for Bubbles
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!draggingBubble || !canvasRef.current || !onUpdateScript) return;
+
+      const rect = canvasRef.current.getBoundingClientRect();
+      const deltaX = ((e.clientX - draggingBubble.startX) / rect.width) * 100;
+      const deltaY = ((e.clientY - draggingBubble.startY) / rect.height) * 100;
+
+      const newX = Math.max(5, Math.min(85, draggingBubble.startBubbleX + deltaX));
+      const newY = Math.max(5, Math.min(85, draggingBubble.startBubbleY + deltaY));
+
+      const updatedBubbles = { ...(webtoonScript.dialogue_bubbles || {}) };
+      if (updatedBubbles[currentPanel.panel_number]) {
+        updatedBubbles[currentPanel.panel_number] = updatedBubbles[currentPanel.panel_number].map(b => 
+          b.id === draggingBubble.id ? { ...b, x: newX, y: newY } : b
+        );
+        onUpdateScript({
+          ...webtoonScript,
+          dialogue_bubbles: updatedBubbles
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setDraggingBubble(null);
+    };
+
+    if (draggingBubble) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingBubble, currentPanel, onUpdateScript, webtoonScript]);
 
   // Get current state values
   const currentPrompt = panelPrompts[currentPanel?.panel_number] || currentPanel?.visual_prompt || '';
@@ -506,6 +551,18 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
                         border: '3px solid #4a4a4a',
                       }}
                       className="absolute rounded-xl px-4 py-2 backdrop-blur-sm cursor-move group select-none flex items-center justify-center text-center overflow-hidden"
+                      onMouseDown={(e) => {
+                        // Start dragging this bubble
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setDraggingBubble({
+                          id: bubble.id,
+                          startX: e.clientX,
+                          startY: e.clientY,
+                          startBubbleX: bubble.x,
+                          startBubbleY: bubble.y,
+                        });
+                      }}
                       onClick={(e) => {
                         e.stopPropagation();
                       }}

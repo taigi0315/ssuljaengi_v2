@@ -266,13 +266,87 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       {!videoUrl ? (
         <div className="flex flex-col items-center justify-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
           {!isGenerating ? (
-            <button
-              onClick={handleGenerateVideo}
-              className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xl font-bold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-3"
-            >
-              <span>🎥</span>
-              <span>Create Media-Webtoon</span>
-            </button>
+            <div className="flex flex-col gap-4">
+              {/* Browser-based generation (existing) */}
+              <button
+                onClick={handleGenerateVideo}
+                className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xl font-bold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-3"
+              >
+                <span>🎥</span>
+                <span>Create Media-Webtoon (Browser)</span>
+              </button>
+              
+              {/* Backend FFmpeg generation (new, high quality) */}
+              <button
+                onClick={async () => {
+                  setIsGenerating(true);
+                  setStatusText('Generating HQ video on server...');
+                  setProgress(0);
+                  
+                  try {
+                    // Prepare panel data with bubbles
+                    const panelsData = webtoonScript.panels.map(panel => {
+                      const sceneImages = webtoonScript.scene_images?.[panel.panel_number] || [];
+                      const selectedImage = sceneImages.find(img => img.is_selected) || sceneImages[0];
+                      const bubbles = webtoonScript.dialogue_bubbles?.[panel.panel_number] || [];
+                      
+                      return {
+                        panel_number: panel.panel_number,
+                        image_url: selectedImage?.image_url || '',
+                        bubbles: bubbles.map(b => ({
+                          text: b.text,
+                          x: b.x,
+                          y: b.y
+                        }))
+                      };
+                    }).filter(p => p.image_url);
+                    
+                    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                    
+                    setProgress(20);
+                    setStatusText('Sending to server...');
+                    
+                    const response = await fetch(`${API_BASE_URL}/webtoon/video/generate`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        script_id: webtoonScript.script_id,
+                        panels: panelsData
+                      })
+                    });
+                    
+                    if (!response.ok) {
+                      const error = await response.json();
+                      throw new Error(error.detail || 'Video generation failed');
+                    }
+                    
+                    setProgress(80);
+                    setStatusText('Downloading video...');
+                    
+                    // Download the video
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    setVideoUrl(url);
+                    setStatusText('HQ Video generated!');
+                    
+                  } catch (err) {
+                    console.error('Backend video generation error:', err);
+                    setError(err instanceof Error ? err.message : 'Backend video generation failed');
+                  } finally {
+                    setIsGenerating(false);
+                    setProgress(100);
+                  }
+                }}
+                className="px-8 py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white text-xl font-bold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-3"
+              >
+                <span>⚡</span>
+                <span>Create HQ Video (Server FFmpeg)</span>
+              </button>
+              
+              <p className="text-sm text-gray-500 text-center mt-2">
+                HQ version uses server-side FFmpeg for better quality
+              </p>
+            </div>
           ) : (
             <div className="text-center">
               <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
