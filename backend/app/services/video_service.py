@@ -72,11 +72,8 @@ class VideoService:
             response.raise_for_status()
             return Image.open(BytesIO(response.content)).convert("RGBA")
     
-    def crop_to_cover(self, img: Image.Image) -> Image.Image:
-        """
-        Crop image to cover target dimensions (4:5 ratio).
-        Centers the crop on the image.
-        """
+    def _scale_to_cover(self, img: Image.Image) -> Image.Image:
+        """Scale image to cover target dimensions without cropping."""
         target_w = self.config.width
         target_h = self.config.height
         
@@ -86,15 +83,19 @@ class VideoService:
         # Resize
         new_w = int(img.width * scale)
         new_h = int(img.height * scale)
-        img_resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        return img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+    
+    def _crop_center(self, img: Image.Image) -> Image.Image:
+        """Crop image to target dimensions from center."""
+        target_w = self.config.width
+        target_h = self.config.height
         
-        # Crop to center
-        left = (new_w - target_w) // 2
-        top = (new_h - target_h) // 2
+        left = (img.width - target_w) // 2
+        top = (img.height - target_h) // 2
         right = left + target_w
         bottom = top + target_h
         
-        return img_resized.crop((left, top, right, bottom))
+        return img.crop((left, top, right, bottom))
     
     def render_bubble(
         self, 
@@ -222,12 +223,15 @@ class VideoService:
         else:
             img = Image.open(image_url).convert("RGBA")
         
-        # Crop to cover
-        img = self.crop_to_cover(img)
+        # Scale to cover (don't crop yet)
+        img = self._scale_to_cover(img)
         
-        # Render bubbles
+        # Render bubbles on scaled full image (preserves relative coordinates logic)
         for bubble in bubbles:
             img = self.render_bubble(img, bubble.text, bubble.x, bubble.y)
+            
+        # Crop to target size
+        img = self._crop_center(img)
         
         return img
     
@@ -290,7 +294,9 @@ class VideoService:
                 else:
                     raise ValueError(f"Cannot load image from: {image_url[:100]}")
                 
-                base_img = self.crop_to_cover(base_img)
+                # Process image pipeline logic matching frontend
+                base_scaled = self._scale_to_cover(base_img)
+                final_base = self._crop_center(base_scaled)
                 
                 # Calculate frame counts
                 base_frames = int(self.config.base_duration_ms / 1000 * self.config.fps)
@@ -300,18 +306,23 @@ class VideoService:
                 # 1. Base image without bubbles
                 for _ in range(base_frames):
                     frame_path = os.path.join(temp_dir, f"frame_{frame_idx:06d}.png")
-                    base_img.convert("RGB").save(frame_path, "PNG")
+                    final_base.convert("RGB").save(frame_path, "PNG")
                     frame_paths.append(frame_path)
                     frame_idx += 1
                 
                 # 2. Each bubble sequentially
                 for bubble in panel.bubbles:
-                    frame_with_bubble = self.render_bubble(
-                        base_img.copy(), 
+                    # Render bubble on COPY of scaled image
+                    # We use scaled image (not cropped) to calculate position correctly
+                    img_with_bubble = self.render_bubble(
+                        base_scaled.copy(), 
                         bubble.text, 
                         bubble.x, 
                         bubble.y
                     )
+                    
+                    # THEN crop it
+                    frame_with_bubble = self._crop_center(img_with_bubble)
                     
                     for _ in range(bubble_frames):
                         frame_path = os.path.join(temp_dir, f"frame_{frame_idx:06d}.png")
@@ -322,7 +333,7 @@ class VideoService:
                 # 3. Final pause (image only)
                 for _ in range(final_frames):
                     frame_path = os.path.join(temp_dir, f"frame_{frame_idx:06d}.png")
-                    base_img.convert("RGB").save(frame_path, "PNG")
+                    final_base.convert("RGB").save(frame_path, "PNG")
                     frame_paths.append(frame_path)
                     frame_idx += 1
             
@@ -348,9 +359,12 @@ class VideoService:
                 "-framerate", str(self.config.fps),
                 "-i", os.path.join(temp_dir, "frame_%06d.png"),
                 "-c:v", "libx264",
+                "-profile:v", "high",
+                "-level", "4.0",
                 "-crf", str(self.config.crf),
                 "-preset", "slow",
                 "-pix_fmt", "yuv420p",
+                "-r", str(self.config.fps),
                 "-movflags", "+faststart",
                 output_path
             ]

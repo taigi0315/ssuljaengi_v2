@@ -13,7 +13,12 @@ from pathlib import Path
 from typing import Literal, Tuple, List, Optional
 from google import genai
 from app.config import get_settings
-from app.prompt.character_image import MALE, FEMALE, YOUTH_MALE, YOUTH_FEMALE, CHARACTER_IMAGE_TEMPLATE
+from app.prompt.character_image import (
+    MALE, FEMALE,
+    MALE_KID, MALE_TEEN, MALE_20_30, MALE_40_50, MALE_60_70,
+    FEMALE_KID, FEMALE_TEEN, FEMALE_20_30, FEMALE_40_50, FEMALE_60_70,
+    CHARACTER_IMAGE_TEMPLATE
+)
 from app.prompt.image_mood import CHARACTER_GENRE_MODIFIERS
 
 
@@ -181,10 +186,10 @@ class ImageGenerator:
                 contents=contents,
                 config={
                     "safety_settings": [
-                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_LOW_AND_ABOVE"},
-                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_LOW_AND_ABOVE"},
-                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_LOW_AND_ABOVE"},
-                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}, # 
                     ],
                 }
             )
@@ -250,46 +255,56 @@ class ImageGenerator:
         """
         gender_lower = gender.lower()
         desc_lower = description.lower()
+        is_female = "female" in gender_lower or "girl" in gender_lower or "woman" in gender_lower
         
-        # Check for youth indicators
-        is_youth = False
-        youth_keywords = [
-            "child", "kid", "toddler", "baby", "infant",
-            "girl", "boy", "teen", "student", "youth",
-            " 1 year", " 2 year", " 3 year", " 4 year", " 5 year",
-            " 6 year", " 7 year", " 8 year", " 9 year", " 10 year",
-            " 11 year", " 12 year", " 13 year", " 14 year", " 15 year",
-            " 16 year", " 17 year",
-            "years old"
-        ]
+        # Default age group
+        age_group = "20_30"
         
-        # Check explicit age in description if possible (simple heuristic)
-        for keyword in youth_keywords:
-            if keyword in desc_lower:
-                # Double check "years old" - if number is > 18, it's not youth
-                if keyword == "years old":
-                    try:
-                        # Extract number before years old
-                        import re
-                        match = re.search(r'(\d+)\s+years old', desc_lower)
-                        if match:
-                            age = int(match.group(1))
-                            if age < 18:
-                                is_youth = True
-                                break
-                    except:
-                        pass
-                else:
-                    is_youth = True
-                    break
+        # 1. Check explicit age numbers
+        import re
+        # Match "age 10", "10 years old", "10yo", etc.
+        age_match = re.search(r'(?:age\s+|)(\d+)\s*(?:years|yrs|y/o|old)?', desc_lower)
+        if age_match:
+            try:
+                # Add check to ensure the number is actually an age (simple heuristic e.g. < 120)
+                # and not "Top 10" or "Year 2024"
+                age_str = age_match.group(1)
+                # Only trust if followed by explicit age marker OR if explicitly "age X"
+                if "year" in age_match.group(0) or "y/o" in age_match.group(0) or "age" in age_match.group(0):
+                     age = int(age_str)
+                     if age <= 12: age_group = "KID"
+                     elif 13 <= age <= 19: age_group = "TEEN"
+                     elif 20 <= age <= 39: age_group = "20_30"
+                     elif 40 <= age <= 59: age_group = "40_50"
+                     elif age >= 60: age_group = "60_70"
+            except:
+                pass
         
-        if "male" in gender_lower and "female" not in gender_lower:
-            return YOUTH_MALE if is_youth else MALE
-        elif "female" in gender_lower:
-            return YOUTH_FEMALE if is_youth else FEMALE
+        # 2. Check detected age against keywords (Logic: Keywords override default, but explicit number overrides keywords)
+        # But since we set age_group above, we only apply keyword logic if current is '20_30' (default)
+        # OR if we want to support keywords like "elderly man" which implies age even if no number.
+        
+        if age_group == "20_30":
+            if any(w in desc_lower for w in ["baby", "infant", "toddler", "child", "kid", "little girl", "little boy"]):
+                age_group = "KID"
+            elif any(w in desc_lower for w in ["teen", "high school", "student", "youth"]):
+                age_group = "TEEN"
+            elif any(w in desc_lower for w in ["40s", "50s", "middle age", "middle-aged"]):
+                age_group = "40_50"
+            elif any(w in desc_lower for w in ["60s", "70s", "elderly", "senior", "grandma", "grandpa", "old man", "old woman"]):
+                age_group = "60_70"
+        
+        # Map to constants
+        if is_female:
+            return {
+                "KID": FEMALE_KID, "TEEN": FEMALE_TEEN, "20_30": FEMALE_20_30,
+                "40_50": FEMALE_40_50, "60_70": FEMALE_60_70
+            }.get(age_group, FEMALE_20_30)
         else:
-            # Default to male if unclear
-            return YOUTH_MALE if is_youth else MALE
+            return {
+                "KID": MALE_KID, "TEEN": MALE_TEEN, "20_30": MALE_20_30,
+                "40_50": MALE_40_50, "60_70": MALE_60_70
+            }.get(age_group, MALE_20_30)
     
     async def _generate_with_gemini(self, prompt: str, character_name: str) -> str:
         """
@@ -318,10 +333,10 @@ class ImageGenerator:
                 contents=[prompt],
                 config={
                     "safety_settings": [
-                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_LOW_AND_ABOVE"},
-                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_LOW_AND_ABOVE"},
-                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_LOW_AND_ABOVE"},
-                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
                     ],
                 }
             )

@@ -45,6 +45,10 @@ Modern webtoons use DIALOGUE and CHARACTER INTERACTION to drive stories, not jus
    - Same character = same reference_tag throughout (e.g., "Ji-hoon(20s, melancholic)")
    - If character appears at different ages, use different names: "Ji-hoon-teen(17, awkward)" vs "Ji-hoon(20s, melancholic)"
 
+5. **CHARACTER DESCRIPTION:**
+   - Each character should have distinct features via body shape, hair style, clothing, etc.
+   - Different characters in story should have distinct different visual features from other characters
+
 ---
 
 **VISUAL_PROMPT CONSTRUCTION RULES:**

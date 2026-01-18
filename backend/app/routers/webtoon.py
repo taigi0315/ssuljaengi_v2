@@ -655,6 +655,8 @@ async def convert_video_to_mp4(
             "ffmpeg", "-y",  # Overwrite output
             "-i", input_path,
             "-c:v", "libx264",
+            "-profile:v", "high",
+            "-level", "4.0",
             "-crf", "18",
             "-preset", "slow",
             "-c:a", "aac",

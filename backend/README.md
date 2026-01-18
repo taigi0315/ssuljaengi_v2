@@ -1,213 +1,223 @@
-# Viral Story Search - Python Backend
+# Gossiptoon V2 - Backend
 
-FastAPI backend for the Viral Story Search application, providing Reddit search functionality with future support for AI-powered story generation and image creation.
+FastAPI backend for the Gossiptoon V2 application, providing Reddit search, AI-powered story generation, webtoon script creation, and image generation.
 
-## Features
+---
 
-- **Reddit Search API**: Fetch viral posts from multiple subreddits
-- **Caching**: In-memory caching with TTL for improved performance
-- **Error Handling**: Comprehensive error handling with structured responses
-- **API Documentation**: Auto-generated interactive API docs
+## 🚀 Features
 
-## Requirements
+| Feature                    | Description                                          |
+| -------------------------- | ---------------------------------------------------- |
+| **Reddit Search API**      | Fetch and rank viral posts from multiple subreddits  |
+| **Story Generation**       | AI-powered story generation using LangChain + Gemini |
+| **Webtoon Scripts**        | Transform stories into webtoon-style scripts         |
+| **Character Generation**   | Generate and manage character designs                |
+| **Scene Image Generation** | Create scene images with Gemini 2.5 Flash            |
+| **Video Assembly**         | Combine assets into video content                    |
+| **Caching**                | In-memory caching with file persistence              |
 
-- Python 3.10 or higher
-- pip (Python package manager)
+---
 
-## Setup Instructions
+## 📋 Requirements
+
+- Python 3.10+
+- pip (or virtualenv)
+
+---
+
+## 🛠️ Setup
 
 ### 1. Install Dependencies
 
 ```bash
 cd backend
-pip install -r requirements.txt
-```
 
-Alternatively, use a virtual environment (recommended):
-
-```bash
-cd backend
+# Recommended: Use a virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment Variables
-
-Copy the example environment file and fill in your credentials:
+### 2. Configure Environment
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and add your Reddit API credentials:
+Edit `.env` with your credentials:
 
+```env
+# Reddit API (Required)
+REDDIT_CLIENT_ID=your_client_id
+REDDIT_CLIENT_SECRET=your_client_secret
+
+# Google Gemini API (Required)
+GOOGLE_API_KEY=your_api_key
 ```
-REDDIT_CLIENT_ID=your_actual_client_id
-REDDIT_CLIENT_SECRET=your_actual_client_secret
-REDDIT_USER_AGENT=viral-story-search/1.0
-```
 
-**Getting Reddit API Credentials:**
-
-1. Go to https://www.reddit.com/prefs/apps
-2. Click "Create App" or "Create Another App"
-3. Select "script" as the app type
-4. Fill in the required fields
-5. Copy the client ID (under the app name) and client secret
-
-### 3. Run the Backend
+### 3. Run the Server
 
 ```bash
+./run.sh
+# Or manually:
 uvicorn app.main:app --reload --port 8000
 ```
 
-The backend will be available at:
-- API: http://localhost:8000
-- Interactive API Docs: http://localhost:8000/docs
-- OpenAPI Schema: http://localhost:8000/openapi.json
+---
 
-### 4. Test the Backend
-
-Check the health endpoint:
-
-```bash
-curl http://localhost:8000/health
-```
-
-Test the search endpoint:
-
-```bash
-curl -X POST http://localhost:8000/search \
-  -H "Content-Type: application/json" \
-  -d '{
-    "time_range": "1d",
-    "subreddits": ["python"],
-    "post_count": 10
-  }'
-```
-
-## Development
-
-### Project Structure
+## 📁 Project Structure
 
 ```
 backend/
 ├── app/
-│   ├── __init__.py
 │   ├── main.py              # FastAPI application entry point
-│   ├── config.py            # Configuration management
-│   ├── models/              # Pydantic models
-│   │   ├── __init__.py
-│   │   ├── search.py
-│   │   ├── story.py
-│   │   └── image.py
-│   ├── services/            # Business logic
-│   │   ├── __init__.py
-│   │   ├── reddit.py
-│   │   ├── story_generator.py
-│   │   └── image_generator.py
-│   ├── routers/             # API endpoints
-│   │   ├── __init__.py
-│   │   ├── search.py
-│   │   ├── story.py
-│   │   └── image.py
-│   └── utils/               # Utilities
-│       ├── __init__.py
-│       ├── cache.py
-│       └── viral_score.py
-├── tests/
-├── requirements.txt
-├── .env.example
-└── README.md
+│   ├── config.py            # Pydantic Settings configuration
+│   ├── models/              # Pydantic data models
+│   │   ├── search.py        # Reddit search models
+│   │   ├── story.py         # Story & webtoon models
+│   │   └── video_models.py  # Video generation models
+│   ├── services/            # Business logic layer
+│   │   ├── reddit.py        # Reddit API client
+│   │   ├── story_writer.py  # Story generation service
+│   │   ├── webtoon_writer.py # Webtoon script generation
+│   │   ├── image_generator.py # Image generation with Gemini
+│   │   ├── video_service.py # Video assembly service
+│   │   └── llm_config.py    # LLM configuration
+│   ├── routers/             # API endpoint handlers
+│   │   ├── search.py        # /api/v1/search endpoints
+│   │   ├── story.py         # /api/v1/story endpoints
+│   │   ├── webtoon.py       # /api/v1/webtoon endpoints
+│   │   └── character_library.py # Character library endpoints
+│   ├── prompt/              # AI prompt templates
+│   │   ├── story_writer.py  # Story generation prompts
+│   │   ├── webtoon_writer.py # Webtoon script prompts
+│   │   ├── character_image.py # Character image prompts
+│   │   └── scene_image.py   # Scene image prompts
+│   ├── utils/               # Utility modules
+│   │   ├── cache.py         # In-memory cache
+│   │   ├── persistence.py   # File-based persistence
+│   │   ├── exceptions.py    # Custom exception classes
+│   │   └── viral_score.py   # Viral score calculator
+│   └── workflows/           # LangGraph workflow definitions
+├── docs/                    # Backend documentation
+├── tests/                   # Test files
+├── data/                    # Persistent data storage
+├── cache/                   # Cache storage (images)
+├── requirements.txt         # Python dependencies
+├── .env.example             # Environment template
+└── run.sh                   # Server startup script
 ```
 
-### Hot Reloading
+---
 
-The `--reload` flag enables automatic reloading when code changes are detected. This is useful during development but should not be used in production.
+## 🔌 API Endpoints
 
-### Running Tests
+### Health & Status
+
+| Method | Endpoint  | Description  |
+| ------ | --------- | ------------ |
+| GET    | `/health` | Health check |
+
+### Search API
+
+| Method | Endpoint          | Description         |
+| ------ | ----------------- | ------------------- |
+| POST   | `/api/v1/search/` | Search Reddit posts |
+
+### Story API
+
+| Method | Endpoint                 | Description              |
+| ------ | ------------------------ | ------------------------ |
+| POST   | `/api/v1/story/generate` | Generate story from post |
+
+### Webtoon API
+
+| Method | Endpoint                          | Description               |
+| ------ | --------------------------------- | ------------------------- |
+| GET    | `/api/v1/webtoon/`                | List all workflows        |
+| POST   | `/api/v1/webtoon/`                | Create new workflow       |
+| GET    | `/api/v1/webtoon/{id}`            | Get workflow status       |
+| GET    | `/api/v1/webtoon/{id}/story`      | Get story content         |
+| POST   | `/api/v1/webtoon/{id}/script`     | Generate webtoon script   |
+| POST   | `/api/v1/webtoon/{id}/characters` | Generate character images |
+| POST   | `/api/v1/webtoon/{id}/scenes`     | Generate scene images     |
+| POST   | `/api/v1/webtoon/{id}/video`      | Generate video            |
+
+### Character Library API
+
+| Method | Endpoint                  | Description               |
+| ------ | ------------------------- | ------------------------- |
+| GET    | `/api/v1/characters/`     | List saved characters     |
+| POST   | `/api/v1/characters/`     | Save character to library |
+| DELETE | `/api/v1/characters/{id}` | Delete character          |
+
+---
+
+## ⚙️ Environment Variables
+
+| Variable               | Description            | Default                  | Required |
+| ---------------------- | ---------------------- | ------------------------ | -------- |
+| `HOST`                 | Server host            | `0.0.0.0`                | No       |
+| `PORT`                 | Server port            | `8000`                   | No       |
+| `DEBUG`                | Debug mode             | `False`                  | No       |
+| `FRONTEND_URL`         | Frontend URL for CORS  | `http://localhost:3000`  | No       |
+| `REDDIT_CLIENT_ID`     | Reddit API client ID   | -                        | **Yes**  |
+| `REDDIT_CLIENT_SECRET` | Reddit API secret      | -                        | **Yes**  |
+| `GOOGLE_API_KEY`       | Google Gemini API key  | -                        | **Yes**  |
+| `GEMINI_MODEL`         | Gemini model name      | `gemini-2.0-flash-exp`   | No       |
+| `MODEL_IMAGE_GEN`      | Image generation model | `gemini-2.5-flash-image` | No       |
+| `CACHE_TTL`            | Cache TTL (seconds)    | `300`                    | No       |
+| `CACHE_MAX_SIZE`       | Max cache entries      | `100`                    | No       |
+
+---
+
+## 🧪 Testing
 
 ```bash
+# Run all tests
 pytest
+
+# Run with coverage
+pytest --cov=app
+
+# Run specific test file
+pytest tests/test_video_service.py
 ```
 
-## API Endpoints
+---
 
-### Health Check
+## 📖 Documentation
 
-```
-GET /health
-```
+- **Interactive API Docs**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **OpenAPI Schema**: http://localhost:8000/openapi.json
 
-Returns the health status of the backend.
+For more detailed documentation, see the `docs/` folder.
 
-### Search Posts
+---
 
-```
-POST /search
-```
-
-Search for viral Reddit posts.
-
-**Request Body:**
-```json
-{
-  "time_range": "1d",
-  "subreddits": ["python", "programming"],
-  "post_count": 20
-}
-```
-
-**Response:**
-```json
-{
-  "posts": [...],
-  "total_found": 20,
-  "search_criteria": {...},
-  "execution_time": 1.23
-}
-```
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `HOST` | Server host | `0.0.0.0` |
-| `PORT` | Server port | `8000` |
-| `DEBUG` | Debug mode | `False` |
-| `FRONTEND_URL` | Frontend URL for CORS | `http://localhost:3000` |
-| `REDDIT_CLIENT_ID` | Reddit API client ID | Required |
-| `REDDIT_CLIENT_SECRET` | Reddit API client secret | Required |
-| `REDDIT_USER_AGENT` | Reddit API user agent | `viral-story-search/1.0` |
-| `CACHE_TTL` | Cache time-to-live (seconds) | `300` |
-| `CACHE_MAX_SIZE` | Maximum cache entries | `100` |
-
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### Import Errors
 
-If you encounter import errors, make sure you're running commands from the `backend/` directory and that all dependencies are installed.
+- Ensure you're in the `backend/` directory
+- Verify virtual environment is activated
+- Run `pip install -r requirements.txt`
 
 ### Reddit API Errors
 
-- **401 Unauthorized**: Check your Reddit API credentials in `.env`
-- **429 Rate Limited**: Wait a few minutes before making more requests
-- **403 Forbidden**: Verify your user agent string is set correctly
+- **401**: Check credentials in `.env`
+- **429**: Rate limited - wait a few minutes
+- **403**: Verify user agent is set
 
-### Port Already in Use
+### Google API Errors
 
-If port 8000 is already in use, specify a different port:
+- Verify `GOOGLE_API_KEY` is valid
+- Check API quotas at Google Cloud Console
+
+### Port in Use
 
 ```bash
-uvicorn app.main:app --reload --port 8001
+lsof -ti:8000 | xargs kill -9
 ```
-
-## Future Phases
-
-- **Phase 2**: LangChain story generation
-- **Phase 3**: LangGraph workflows and image generation
-
-## License
-
-MIT

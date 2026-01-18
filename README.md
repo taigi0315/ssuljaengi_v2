@@ -1,174 +1,187 @@
-# 앞으로 빠른 테스트가 필요할 때:
+# 🎬 Gossiptoon V2 (Viral Story Search)
 
-```bash
-npm run stop
-cd backend && python setup_test_data.py
-npm run dev
-```
+A full-stack application for discovering viral Reddit stories and transforming them into webtoon-style content with AI-powered story generation.
 
-이제 세 가지 방식으로 사용할 수 있습니다:
+![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?style=flat&logo=fastapi)
+![Next.js](https://img.shields.io/badge/Next.js-16.1-black?style=flat&logo=next.js)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat&logo=typescript)
 
-명령어 설명
-npm run dev:test 테스트 데이터 설정 + 서버 시작 (한 번에!)
-npm run kill 서버만 중지 (데이터 유지)
-npm run stop 서버 중지 + 데이터 삭제 (클린 스타트)
+---
 
-# Viral Story Search
+## 📋 Table of Contents
 
-A full-stack application for discovering viral Reddit stories with a Next.js frontend and Python FastAPI backend.
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+- [Development](#development)
+- [API Documentation](#api-documentation)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Overview
+
+Gossiptoon V2 is a monorepo containing:
+
+| Component    | Technology                             | Description                                                |
+| ------------ | -------------------------------------- | ---------------------------------------------------------- |
+| **Frontend** | Next.js 16 + React 19 + TypeScript     | Modern web interface for story discovery and visualization |
+| **Backend**  | Python FastAPI + LangChain + LangGraph | AI-powered story processing and generation                 |
+
+---
+
+## Features
+
+### ✅ Current Features
+
+- 🔍 **Reddit Story Search** - Search viral posts across multiple subreddits
+- 📊 **Viral Score Calculation** - Intelligent scoring based on upvotes, comments, and recency
+- 📅 **Time Range Filtering** - Filter by 1h, 1d, 10d, or 100d
+- 🎨 **Webtoon Generation** - Transform stories into webtoon-style scripts
+- 🖼️ **AI Image Generation** - Generate character and scene images using Gemini
+- 🎬 **Video Assembly** - Create video content from generated assets
+- ⚡ **Response Caching** - Optimized performance with intelligent caching
+- 🔐 **CORS-enabled API** - Secure frontend-backend communication
+
+### 🔄 Planned Features
+
+- LangGraph workflow orchestration enhancements
+- Multiple AI provider support for image generation
+- Enhanced story customization options
+
+---
 
 ## Architecture
 
-- **Frontend**: Next.js 14 with React and TypeScript
-- **Backend**: Python FastAPI with async support
-- **API**: RESTful API with automatic documentation
+```
+gossiptoon_v2_2/
+├── backend/                    # Python FastAPI backend
+│   ├── app/
+│   │   ├── main.py            # Application entry point
+│   │   ├── config.py          # Configuration management
+│   │   ├── models/            # Pydantic data models
+│   │   ├── services/          # Business logic (Reddit, LLM, Image Gen)
+│   │   ├── routers/           # API endpoints
+│   │   ├── prompt/            # AI prompt templates
+│   │   ├── utils/             # Utilities (cache, persistence)
+│   │   └── workflows/         # LangGraph workflows
+│   ├── docs/                  # Backend documentation
+│   ├── tests/                 # Test files
+│   ├── requirements.txt       # Python dependencies
+│   └── .env.example           # Environment template
+│
+├── viral-story-search/         # Next.js frontend
+│   ├── src/
+│   │   ├── app/               # Next.js app router
+│   │   ├── components/        # React components
+│   │   ├── hooks/             # Custom React hooks
+│   │   ├── lib/               # API client utilities
+│   │   ├── types/             # TypeScript definitions
+│   │   └── utils/             # Utility functions
+│   ├── public/                # Static assets
+│   └── .env.local.example     # Environment template
+│
+├── docs/                       # Project documentation
+│   └── archive/               # Historical development notes
+│
+└── package.json               # Root package for monorepo scripts
+```
 
-## Prerequisites
+---
 
-### Backend Requirements
+## Quick Start
 
-- Python 3.10 or higher
-- pip (Python package manager)
+### Prerequisites
 
-### Frontend Requirements
+| Requirement | Version |
+| ----------- | ------- |
+| Python      | 3.10+   |
+| Node.js     | 18+     |
+| npm         | 9+      |
 
-- Node.js 18 or higher
-- npm (Node package manager)
-
-## Setup Instructions
-
-### 1. Clone the Repository
+### 1. Clone & Install
 
 ```bash
+# Clone the repository
 git clone <repository-url>
-cd viral-story-search-monorepo
-```
+cd gossiptoon_v2_2
 
-### 2. Backend Setup
+# Install root dependencies (for concurrent scripts)
+npm install
 
-```bash
-# Navigate to backend directory
+# Install backend dependencies
 cd backend
-
-# Install Python dependencies
 pip install -r requirements.txt
+cd ..
 
-# Create environment file from example
-cp .env.example .env
-
-# IMPORTANT: Set up Reddit API credentials
-# Follow the guide in backend/REDDIT_SETUP.md to get your credentials
-# Then edit .env and add your Reddit API credentials:
-#   REDDIT_CLIENT_ID=your_actual_client_id
-#   REDDIT_CLIENT_SECRET=your_actual_client_secret
-#   REDDIT_USER_AGENT=viral-story-search/1.0
-```
-
-**⚠️ REQUIRED**: You must set up Reddit API credentials or you'll get authentication errors.
-See detailed instructions in [`backend/REDDIT_SETUP.md`](backend/REDDIT_SETUP.md)
-
-### 3. Frontend Setup
-
-```bash
-# Navigate to frontend directory
+# Install frontend dependencies
 cd viral-story-search
-
-# Install Node dependencies
 npm install
-
-# Create environment file
-cp .env.local.example .env.local
-
-# Edit .env.local and set backend URL (default: http://localhost:8000)
-# NEXT_PUBLIC_API_URL=http://localhost:8000
+cd ..
 ```
 
-### 4. Environment Variables
+### 2. Configure Environment
 
-#### Backend (.env)
-
-```env
-# Server Configuration
-HOST=0.0.0.0
-PORT=8000
-DEBUG=true
-
-# CORS
-FRONTEND_URL=http://localhost:3000
-
-# Reddit API (Required)
-REDDIT_CLIENT_ID=your_client_id_here
-REDDIT_CLIENT_SECRET=your_client_secret_here
-REDDIT_USER_AGENT=viral-story-search/1.0
-
-# Cache Configuration
-CACHE_TTL=300
-CACHE_MAX_SIZE=100
-```
-
-#### Frontend (.env.local)
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-## Running the Application
-
-### Option 1: Run Both Services Concurrently (Recommended)
-
-**IMPORTANT**: Run this from the **project root** directory (gossiptoon_v2_2), NOT from inside viral-story-search!
-
-```bash
-# From project root (gossiptoon_v2_2)
-cd /path/to/gossiptoon_v2_2
-
-# Install concurrently (first time only)
-npm install
-
-# Run both frontend and backend
-npm run dev
-```
-
-This will start:
-
-- Backend on http://localhost:8000
-- Frontend on http://localhost:3000
-
-### Option 2: Run Services Separately
-
-#### Terminal 1 - Backend
+#### Backend Configuration
 
 ```bash
 cd backend
-./run.sh
-# Or manually: uvicorn app.main:app --reload --port 8000
+cp .env.example .env
 ```
 
-#### Terminal 2 - Frontend
+Edit `backend/.env` with your credentials:
+
+```env
+# Required: Reddit API credentials
+# Get from: https://www.reddit.com/prefs/apps
+REDDIT_CLIENT_ID=your_client_id
+REDDIT_CLIENT_SECRET=your_client_secret
+
+# Required: Google Gemini API key
+# Get from: https://makersuite.google.com/app/apikey
+GOOGLE_API_KEY=your_api_key
+```
+
+#### Frontend Configuration
 
 ```bash
 cd viral-story-search
+cp .env.local.example .env.local
+```
+
+### 3. Run the Application
+
+```bash
+# From project root - runs both frontend and backend
 npm run dev
 ```
 
-## Using the Application
+| Service  | URL                        |
+| -------- | -------------------------- |
+| Frontend | http://localhost:3000      |
+| Backend  | http://localhost:8000      |
+| API Docs | http://localhost:8000/docs |
 
-1. Open your browser to http://localhost:3000
-2. Select subreddits from the dropdown
-3. Choose a time range (1h, 1d, 10d, 100d)
-4. Set the number of posts to retrieve
-5. Click "Search" to find viral stories
-6. Results are sorted by viral score (combination of upvotes, comments, and recency)
-
-## API Documentation
-
-Once the backend is running, visit:
-
-- **Interactive API Docs**: http://localhost:8000/docs
-- **OpenAPI Schema**: http://localhost:8000/openapi.json
-- **Health Check**: http://localhost:8000/health
+---
 
 ## Development
+
+### Available Scripts
+
+From the **project root**:
+
+| Command              | Description                                   |
+| -------------------- | --------------------------------------------- |
+| `npm run dev`        | Start both frontend and backend (clean start) |
+| `npm run dev:resume` | Start without cleaning cache                  |
+| `npm run dev:test`   | Setup test data and start servers             |
+| `npm run kill`       | Stop servers (preserve data)                  |
+| `npm run stop`       | Stop servers and clean data                   |
+| `npm run clean`      | Remove cached data files                      |
 
 ### Backend Development
 
@@ -178,10 +191,10 @@ cd backend
 # Run with hot-reload
 ./run.sh
 
-# Run tests (when available)
+# Run tests
 pytest
 
-# Check code style
+# Code formatting
 black app/
 flake8 app/
 ```
@@ -191,123 +204,97 @@ flake8 app/
 ```bash
 cd viral-story-search
 
-# Run development server
+# Development server
 npm run dev
 
 # Run tests
 npm test
 
-# Run linter
+# Linting
 npm run lint
+npm run lint:fix
 
-# Build for production
+# Formatting
+npm run format
+
+# Production build
 npm run build
 ```
 
-## Project Structure
+---
 
-```
-.
-├── backend/                    # Python FastAPI backend
-│   ├── app/
-│   │   ├── main.py            # FastAPI application entry point
-│   │   ├── config.py          # Configuration management
-│   │   ├── models/            # Pydantic data models
-│   │   ├── services/          # Business logic (Reddit API, etc.)
-│   │   ├── routers/           # API endpoints
-│   │   └── utils/             # Utilities (cache, viral score, etc.)
-│   ├── requirements.txt       # Python dependencies
-│   ├── .env.example          # Environment variables template
-│   └── run.sh                # Backend startup script
-│
-├── viral-story-search/        # Next.js frontend
-│   ├── src/
-│   │   ├── app/              # Next.js app directory
-│   │   ├── components/       # React components
-│   │   ├── lib/              # API client and utilities
-│   │   └── types/            # TypeScript type definitions
-│   ├── package.json
-│   └── .env.local            # Frontend environment variables
-│
-├── package.json              # Root package.json for concurrent scripts
-└── README.md                 # This file
-```
+## API Documentation
 
-## Features
+Once the backend is running, interactive API documentation is available at:
 
-### Current Features (Phase 1)
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **OpenAPI Schema**: http://localhost:8000/openapi.json
 
-- ✅ Reddit post search across multiple subreddits
-- ✅ Viral score calculation (upvotes + comments + recency)
-- ✅ Time range filtering (1h, 1d, 10d, 100d)
-- ✅ Response caching for improved performance
-- ✅ Error handling and rate limiting
-- ✅ CORS-enabled API
-- ✅ Automatic API documentation
+### Key Endpoints
 
-### Future Features (Planned)
+| Method | Endpoint                 | Description              |
+| ------ | ------------------------ | ------------------------ |
+| GET    | `/health`                | Health check             |
+| GET    | `/api/v1/search/`        | Search Reddit posts      |
+| POST   | `/api/v1/story/generate` | Generate story from post |
+| POST   | `/api/v1/webtoon/`       | Create webtoon workflow  |
+| GET    | `/api/v1/webtoon/{id}`   | Get webtoon status       |
 
-- 🔄 LangChain-powered story generation
-- 🔄 LangGraph workflow orchestration
-- 🔄 AI-generated images from stories
-- 🔄 Story customization (style, length)
-- 🔄 Image generation with multiple providers
+---
 
 ## Troubleshooting
 
-### Backend Issues
+### Common Issues
 
-**Port already in use:**
+#### Port Already in Use
 
 ```bash
-# Find and kill process on port 8000
+# Kill processes on ports 3000 and 8000
+npm run kill
+
+# Or manually:
 lsof -ti:8000 | xargs kill -9
-```
-
-**Missing dependencies:**
-
-```bash
-cd backend
-pip install -r requirements.txt
-```
-
-**Reddit API errors:**
-
-- Verify your Reddit API credentials in `.env`
-- Check that your Reddit app is configured correctly at https://www.reddit.com/prefs/apps
-
-### Frontend Issues
-
-**Port already in use:**
-
-```bash
-# Kill process on port 3000
 lsof -ti:3000 | xargs kill -9
 ```
 
-**Cannot connect to backend:**
+#### Backend Won't Start
 
-- Ensure backend is running on port 8000
-- Check `NEXT_PUBLIC_API_URL` in `.env.local`
-- Verify CORS settings in backend `config.py`
+1. Verify Python version: `python --version` (need 3.10+)
+2. Check dependencies: `pip install -r requirements.txt`
+3. Verify `.env` file exists with valid credentials
+4. Check Reddit API setup: See `backend/docs/REDDIT_SETUP.md`
 
-**Missing dependencies:**
+#### Frontend Won't Connect to Backend
 
-```bash
-cd viral-story-search
-npm install
-```
+1. Ensure backend is running on port 8000
+2. Check `NEXT_PUBLIC_API_URL` in `.env.local`
+3. Verify CORS settings in backend `config.py`
+
+#### Reddit API Errors
+
+- Verify credentials at https://www.reddit.com/prefs/apps
+- Ensure app type is "script"
+- Check rate limiting (Reddit allows ~60 requests/minute)
+
+---
 
 ## Contributing
 
-1. Create a feature branch
-2. Make your changes
-3. Test thoroughly (both frontend and backend)
-4. Submit a pull request
+1. Create a feature branch from `main`
+2. Make your changes following the code style guidelines
+3. Ensure all tests pass
+4. Submit a pull request with a clear description
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+---
 
 ## License
 
-[Your License Here]
+This project is proprietary. All rights reserved.
+
+---
 
 ## Support
 

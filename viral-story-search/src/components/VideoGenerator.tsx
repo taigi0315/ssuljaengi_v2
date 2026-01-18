@@ -14,18 +14,18 @@ interface VideoGeneratorProps {
 const VIDEO_CONFIG = {
   // Canvas/Video dimensions (4:5 for Instagram/Facebook Feed)
   CANVAS_WIDTH: 1080,
-  CANVAS_HEIGHT: 1350,
+  CANVAS_HEIGHT: 1920,
   
   // Timing (in milliseconds)
-  BASE_IMAGE_DURATION_MS: 3000,    // How long to show image before first bubble
+  BASE_IMAGE_DURATION_MS: 2000,    // How long to show image before first bubble
   DIALOGUE_DURATION_MS: 2000,      // How long each dialogue bubble shows
   FINAL_PAUSE_MS: 500,             // Pause after last bubble before next panel
   
   // Bubble styling
-  BUBBLE_FONT_SIZE: 39,            // Font size for dialogue text
-  BUBBLE_PADDING: 30,              // Padding inside bubble
+  BUBBLE_FONT_SIZE: 43,            // Font size for dialogue text
+  BUBBLE_PADDING: 35,              // Padding inside bubble
   BUBBLE_BORDER_RADIUS: 20,        // Rounded corner radius
-  BUBBLE_BORDER_WIDTH: 4,          // Border thickness
+  BUBBLE_BORDER_WIDTH: 5,          // Border thickness
   BUBBLE_BG_OPACITY: 0.1,          // Background opacity (0-1)
   BUBBLE_BORDER_COLOR: '#4a4a4a',  // Border color
   BUBBLE_TEXT_COLOR: '#1a1a1a',    // Text color

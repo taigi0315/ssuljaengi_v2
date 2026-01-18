@@ -74,7 +74,8 @@ def main():
     char_img_path = create_test_image(
         f"char_{char_img_id[:8]}.png",
         "Test Character",
-        (80, 100, 140)
+        (80, 100, 140),
+        size=(1080, 1920)
     )
     char_img_url = f"/api/assets/cache/images/{os.path.basename(char_img_path)}"
     print(f"   Character: {char_img_url}")
@@ -84,7 +85,8 @@ def main():
     scene1_path = create_test_image(
         f"scene_{scene1_id[:8]}.png",
         "Scene 1",
-        (100, 80, 120)
+        (100, 80, 120),
+        size=(1080, 1920)
     )
     scene1_url = f"/api/assets/cache/images/{os.path.basename(scene1_path)}"
     print(f"   Scene 1: {scene1_url}")
@@ -93,7 +95,8 @@ def main():
     scene2_path = create_test_image(
         f"scene_{scene2_id[:8]}.png",
         "Scene 2",
-        (120, 100, 80)
+        (120, 100, 80),
+        size=(1080, 1920)
     )
     scene2_url = f"/api/assets/cache/images/{os.path.basename(scene2_path)}"
     print(f"   Scene 2: {scene2_url}")
