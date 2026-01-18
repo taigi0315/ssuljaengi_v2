@@ -502,8 +502,8 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
                         width: `${width}%`,
                         height: `${height}%`,
                         fontSize: `clamp(10px, ${Math.max(0.8, height / 10)}vw, 24px)`,
-                        backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                        border: '2px solid #4a4a4a',
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        border: '3px solid #4a4a4a',
                       }}
                       className="absolute rounded-xl px-4 py-2 backdrop-blur-sm cursor-move group select-none flex items-center justify-center text-center overflow-hidden"
                       onClick={(e) => {
@@ -514,9 +514,9 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
                       <div 
                         className="absolute -bottom-2 left-4 w-4 h-4 transform rotate-45" 
                         style={{ 
-                          backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                          borderRight: '2px solid #4a4a4a',
-                          borderBottom: '2px solid #4a4a4a',
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          borderRight: '3px solid #4a4a4a',
+                          borderBottom: '3px solid #4a4a4a',
                         }}
                       />
                       
@@ -584,10 +584,10 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
               </div>
             )}
             
-            {/* Drop hint overlay */}
+            {/* Drop hint overlay - very subtle */}
             {draggedDialogue && (
-              <div className="absolute inset-0 bg-purple-500 bg-opacity-20 flex items-center justify-center pointer-events-none">
-                <div className="bg-white px-6 py-3 rounded-full shadow-lg">
+              <div className="absolute inset-0 bg-purple-500 bg-opacity-5 flex items-center justify-center pointer-events-none">
+                <div className="bg-white/90 px-6 py-3 rounded-full shadow-lg border border-purple-300">
                   <p className="text-purple-700 font-semibold">Drop dialogue here to create bubble</p>
                 </div>
               </div>

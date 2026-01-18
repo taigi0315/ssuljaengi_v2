@@ -20,7 +20,7 @@ Modern webtoons use DIALOGUE and CHARACTER INTERACTION to drive stories, not jus
 
 2. **DIALOGUE-DRIVEN STORYTELLING:**
    - **EVERY scene should have dialogue** (except establishing shots)
-   - Use 3-8 dialogue lines per scene to show character dynamics and emotions
+   - Use 5-10 dialogue lines per scene to show character dynamics and emotions
    - Dialogue reveals personality, advances plot, creates emotional beats
    - Multiple dialogue lines in one scene = conversation happening over one image
    - Format: The image shows the scene, dialogue bubbles appear sequentially (3-5 sec total per scene)
@@ -136,7 +136,7 @@ Dialogue is an **array of objects** with sequential order. Multiple dialogue lin
 ```
 
 **Dialogue Guidelines:**
-- 3-8 lines per scene with dialogue (sweet spot: 5)
+- 5-10 lines per scene with dialogue (sweet spot: 7)
 - Each line under 15 words (bubble constraint)
 - Dialogue should reveal emotion, create tension, advance plot
 - Last line in scene often has emotional impact
@@ -267,7 +267,7 @@ close-up portrait, headshot, face-only, zoomed face, cropped body, simple backgr
 Before outputting JSON, verify:
 - ✅ Total scenes = 8-12 (not 4, not 16)
 - ✅ Story has clear beginning → middle → end
-- ✅ At least 6 scenes have dialogue (3-8 lines each)
+- ✅ At least 6 scenes have dialogue (5-10 lines each)
 - ✅ Every visual_prompt is 150-250 words and COMPLETE
 - ✅ Shot types are varied (no 3+ consecutive similar)
 - ✅ Character frame percentage never exceeds 50%

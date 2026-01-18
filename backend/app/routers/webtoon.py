@@ -12,8 +12,9 @@ This module provides REST API endpoints for webtoon script generation and charac
 import logging
 import uuid
 from typing import Dict, List
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 import os
 
 from app.models.story import (
@@ -571,3 +572,113 @@ async def get_scene_images(script_id: str, panel_number: int):
     images = scene_images.get(image_key, [])
     
     return [SceneImage(**img) for img in images]
+
+
+@router.post("/video/convert-to-mp4")
+async def convert_video_to_mp4(
+    file: UploadFile = File(...)
+):
+    """
+    Convert WebM video to MP4 format using ffmpeg.
+    
+    This endpoint accepts a WebM file and returns an MP4 file
+    suitable for YouTube Shorts and other platforms.
+    
+    Args:
+        file: WebM video file upload
+        
+    Returns:
+        MP4 video file as streaming response
+        
+    Raises:
+        HTTPException: If conversion fails or ffmpeg not available
+    """
+    import subprocess
+    import tempfile
+    import os
+    from fastapi.responses import FileResponse
+    
+    # Validate file type
+    if not file.filename.endswith('.webm'):
+        raise HTTPException(status_code=400, detail="Only WebM files are supported")
+    
+    # Create temp files
+    temp_dir = tempfile.mkdtemp()
+    input_path = os.path.join(temp_dir, "input.webm")
+    output_path = os.path.join(temp_dir, "output.mp4")
+    
+    try:
+        # Save uploaded file
+        with open(input_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+        
+        logger.info(f"Converting WebM to MP4: {len(content)} bytes")
+        
+        # Run ffmpeg conversion with high quality settings
+        # -c:v libx264 - Use H.264 codec (widely compatible)
+        # -crf 18 - High quality (lower = better, 18 is visually lossless)
+        # -preset slow - Better compression (slower encoding)
+        # -c:a aac - AAC audio codec
+        # -b:a 192k - Audio bitrate
+        # -movflags +faststart - Optimize for web streaming
+        cmd = [
+            "ffmpeg", "-y",  # Overwrite output
+            "-i", input_path,
+            "-c:v", "libx264",
+            "-crf", "18",
+            "-preset", "slow",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-movflags", "+faststart",
+            "-pix_fmt", "yuv420p",  # Compatibility
+            output_path
+        ]
+        
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minute timeout
+        )
+        
+        if result.returncode != 0:
+            logger.error(f"FFmpeg error: {result.stderr}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Video conversion failed: {result.stderr[:500]}"
+            )
+        
+        if not os.path.exists(output_path):
+            raise HTTPException(status_code=500, detail="Output file not created")
+        
+        output_size = os.path.getsize(output_path)
+        logger.info(f"MP4 conversion successful: {output_size} bytes")
+        
+        # Return the MP4 file
+        return FileResponse(
+            output_path,
+            media_type="video/mp4",
+            filename="webtoon_video.mp4",
+            background=BackgroundTask(cleanup_temp_files, temp_dir)
+        )
+        
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=500, detail="Conversion timed out")
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=500,
+            detail="FFmpeg not found. Please install ffmpeg on the server."
+        )
+    except Exception as e:
+        logger.error(f"Conversion error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def cleanup_temp_files(temp_dir: str):
+    """Clean up temporary files after response is sent."""
+    import shutil
+    try:
+        shutil.rmtree(temp_dir)
+    except Exception as e:
+        logger.warning(f"Failed to cleanup temp dir: {e}")

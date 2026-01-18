@@ -1,1 +1,44 @@
-{}
+{
+  "4600d912-d4ef-4ec4-b445-0dd9d1f7db30": {
+    "status": "completed",
+    "current_step": "done",
+    "progress": 1.0,
+    "start_time": 1768687412.922575,
+    "story_id": "e711b0cd-aed6-4bb2-ab94-4b6938cccc99"
+  },
+  "55299717-3a88-4d2b-976f-4ebcb2953d77": {
+    "status": "completed",
+    "current_step": "done",
+    "progress": 1.0,
+    "start_time": 1768687412.9329169,
+    "story_id": "e6bfa61a-60a0-4a91-a908-89a57089b91f"
+  },
+  "6ca48735-c5a5-4f4e-8a03-33685ded2654": {
+    "status": "completed",
+    "current_step": "done",
+    "progress": 1.0,
+    "start_time": 1768687421.505512,
+    "story_id": "3b163585-5894-4764-916e-98b0c8c876e9"
+  },
+  "c9c47a46-c881-4c1d-a017-eba14c3d6615": {
+    "status": "completed",
+    "current_step": "done",
+    "progress": 1.0,
+    "start_time": 1768687421.505735,
+    "story_id": "7a208a3c-064b-4746-bd28-e57e67d4a66c"
+  },
+  "2e104f58-79ba-4e5e-9ab0-5f8b2be6ac7c": {
+    "status": "completed",
+    "current_step": "done",
+    "progress": 1.0,
+    "start_time": 1768687444.976801,
+    "story_id": "419466ba-6fbf-40b6-83ad-cba388f35eb9"
+  },
+  "b4ae0eb6-5af0-40e4-aa69-aa740eb5f697": {
+    "status": "completed",
+    "current_step": "done",
+    "progress": 1.0,
+    "start_time": 1768687444.9772139,
+    "story_id": "5c835951-3288-4ad6-9ffa-ee3c2aa071bf"
+  }
+}

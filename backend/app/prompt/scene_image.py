@@ -1,10 +1,13 @@
 SCENE_IMAGE_TEMPLATE = """
 **CRITICAL MANDATORY REQUIREMENT - READ FIRST**
-ASPECT RATIO: VERTICAL 9:16 (Portrait Mode) - THIS IS NON-NEGOTIABLE
 - Generate a TALL VERTICAL image, NOT square (1:1), NOT horizontal
 - Height must be significantly greater than width
-- Ratio: 9 (width) : 16 (height) - Portrait/Vertical orientation
+- Ratio: 4 (width) : 5 (height) - Portrait/Vertical orientation
 - Optimized for mobile vertical scrolling webtoon format
+
+**CRITICAL**: A vertical 4:5 portrait orientation centered within a 1:1 square frame.
+The left and right sides of the image are solid, flat black bars (pillarboxed), 
+focusing all detail and the subject exclusively in the central vertical column.
 
 [Character reference handling section]
 {character_description}

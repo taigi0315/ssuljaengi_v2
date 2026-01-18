@@ -8,6 +8,33 @@ interface VideoGeneratorProps {
   genre: StoryGenre;
 }
 
+// ============================================
+// VIDEO GENERATION CONFIG - ADJUST HERE
+// ============================================
+const VIDEO_CONFIG = {
+  // Canvas/Video dimensions (4:5 for Instagram/Facebook Feed)
+  CANVAS_WIDTH: 1080,
+  CANVAS_HEIGHT: 1350,
+  
+  // Timing (in milliseconds)
+  BASE_IMAGE_DURATION_MS: 3000,    // How long to show image before first bubble
+  DIALOGUE_DURATION_MS: 2000,      // How long each dialogue bubble shows
+  FINAL_PAUSE_MS: 500,             // Pause after last bubble before next panel
+  
+  // Bubble styling
+  BUBBLE_FONT_SIZE: 39,            // Font size for dialogue text
+  BUBBLE_PADDING: 30,              // Padding inside bubble
+  BUBBLE_BORDER_RADIUS: 20,        // Rounded corner radius
+  BUBBLE_BORDER_WIDTH: 4,          // Border thickness
+  BUBBLE_BG_OPACITY: 0.1,          // Background opacity (0-1)
+  BUBBLE_BORDER_COLOR: '#4a4a4a',  // Border color
+  BUBBLE_TEXT_COLOR: '#1a1a1a',    // Text color
+  
+  // Video quality - MAXIMUM QUALITY SETTINGS
+  VIDEO_BITRATE: 16000000,         // 16 Mbps for maximum quality
+  FPS: 30,
+};
+
 export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0); // 0 to 100
@@ -45,17 +72,16 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       return;
     }
 
-    // Canvas settings (1080x1920 for vertical video, or 1080x1350?)
-    // User requested "vertical full-screen images" in previous session context.
-    // Let's us 1080x1920 (9:16)
-    canvas.width = 1080;
-    canvas.height = 1920;
+    // Canvas settings from config
+    canvas.width = VIDEO_CONFIG.CANVAS_WIDTH;
+    canvas.height = VIDEO_CONFIG.CANVAS_HEIGHT;
     
-    // MediaRecorder setup
-    const stream = canvas.captureStream(30); // 30 FPS
+    // MediaRecorder setup with higher quality
+    const stream = canvas.captureStream(VIDEO_CONFIG.FPS);
     const chunks: Blob[] = [];
     const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: 'video/webm;codecs=vp9'
+      mimeType: 'video/webm;codecs=vp9',
+      videoBitsPerSecond: VIDEO_CONFIG.VIDEO_BITRATE
     });
     
     mediaRecorder.ondataavailable = (e) => {
@@ -71,6 +97,100 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
     };
     
     mediaRecorder.start();
+
+    // Track the image area for bubble positioning
+    let imageRect = { x: 0, y: 0, width: canvas.width, height: canvas.height };
+
+    // Helper to draw image in COVER mode (zoom to fill, crop sides)
+    const drawImageCover = async (imageUrl: string) => {
+      try {
+        const img = await loadImage(imageUrl);
+        
+        // Cover logic: Scale to fit the LARGER dimension (Height in this case for 9:16 target vs 1:1 source)
+        // Since we want to display the center vertical strip of a square image
+        const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+        
+        const width = img.width * scale;
+        const height = img.height * scale;
+        
+        const x = (canvas.width - width) / 2;
+        const y = (canvas.height - height) / 2;
+        
+        // Store image rectangle for bubble positioning (will be larger than canvas)
+        imageRect = { x, y, width, height };
+        
+        // Draw image (centered, cropping sides)
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, x, y, width, height);
+        return true;
+      } catch (e) {
+        console.error('Failed to load image', e);
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        return false;
+      }
+    };
+
+    // Helper to draw bubble with auto-sizing based on text
+    // xPercent and yPercent are relative to the IMAGE area
+    const drawBubble = (text: string, xPercent: number, yPercent: number) => {
+      const { 
+        BUBBLE_FONT_SIZE, BUBBLE_PADDING, BUBBLE_BORDER_RADIUS, 
+        BUBBLE_BORDER_WIDTH, BUBBLE_BG_OPACITY, BUBBLE_BORDER_COLOR, BUBBLE_TEXT_COLOR 
+      } = VIDEO_CONFIG;
+      
+      // Measure text to auto-size bubble
+      ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`;
+      const textMetrics = ctx.measureText(text);
+      const textWidth = Math.min(textMetrics.width, canvas.width * 0.85); // Max 85% of CANVAS width (visible area)
+      const textHeight = BUBBLE_FONT_SIZE;
+      
+      // Calculate bubble dimensions
+      const bw = textWidth + BUBBLE_PADDING * 2;
+      const bh = textHeight + BUBBLE_PADDING * 2;
+      
+      // Position relative to IMAGE area (transforming user placement on original 1:1 image to zoomed canvas space)
+      const absoluteX = imageRect.x + (xPercent / 100) * imageRect.width;
+      const absoluteY = imageRect.y + (yPercent / 100) * imageRect.height;
+      
+      // Center bubble on the point
+      let bx = absoluteX - bw / 2;
+      let by = absoluteY - bh / 2;
+      
+      // Clamp to CANVAS bounds (visible area), not image bounds
+      // keeping 20px padding from edges
+      bx = Math.max(20, Math.min(canvas.width - bw - 20, bx));
+      by = Math.max(20, Math.min(canvas.height - bh - 20, by));
+      
+      // Draw Bubble Background with semi-transparent white
+      ctx.fillStyle = `rgba(255, 255, 255, 0.85)`; // More visible background
+      ctx.strokeStyle = BUBBLE_BORDER_COLOR;
+      ctx.lineWidth = BUBBLE_BORDER_WIDTH;
+      
+      // Rounded rect
+      const radius = BUBBLE_BORDER_RADIUS;
+      ctx.beginPath();
+      ctx.moveTo(bx + radius, by);
+      ctx.lineTo(bx + bw - radius, by);
+      ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + radius);
+      ctx.lineTo(bx + bw, by + bh - radius);
+      ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - radius, by + bh);
+      ctx.lineTo(bx + radius, by + bh);
+      ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - radius);
+      ctx.lineTo(bx, by + radius);
+      ctx.quadraticCurveTo(bx, by, bx + radius, by);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      
+      // Draw Text (guaranteed visible with dark color on light background)
+      ctx.fillStyle = '#000000';
+      ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, bx + bw / 2, by + bh / 2, bw - BUBBLE_PADDING);
+    };
 
     try {
       // Iterate scenes
@@ -95,81 +215,37 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
           ctx.textAlign = 'center';
           ctx.fillText(`Panel ${panel.panel_number} (No Image)`, canvas.width/2, canvas.height/2);
         } else {
-          // Load and draw image
-          try {
-            const img = await loadImage(selectedImage.image_url);
-            // Draw image to cover canvas
-            // Simple cover logic
-            const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
-            const x = (canvas.width / 2) - (img.width / 2) * scale;
-            const y = (canvas.height / 2) - (img.height / 2) * scale;
-            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-          } catch (e) {
-            console.error('Failed to load image', e);
-            ctx.fillStyle = '#333';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-          }
+          // Draw image using cover (crop) mode
+          await drawImageCover(selectedImage.image_url);
         }
         
-        // Draw Bubbles
+        // Get Bubbles for this panel
         const bubbles = webtoonScript.dialogue_bubbles?.[panel.panel_number] || [];
-        // Calculate duration based on bubbles count: 4s + 0.5s * count
-        // Wait, user said: "4 seconds + 0.5 second * number of dialogue"
-        // Let's assume count of bubbles.
-        const duration = 4000 + (bubbles.length * 500);
         
-        // Render frames for this duration
-        const startTime = Date.now();
-        while (Date.now() - startTime < duration) {
-            // Need to keep drawing for stream?
-            // Actually canvas contents persist until cleared/drawn over.
-            // But if we want animations (fade in bubbles), we need loop.
-            // For now static image + bubbles is fine.
-            // If bubbles appear sequentially? Maybe Phase 4.
-            // Just draw everything and wait.
-            
-            // Draw bubbles (re-draw every frame if we had animation, but here static)
-            // Just wait.
-            
-            // Re-drawing same content is redundant but ensures stream keeps flowing?
-            // "requestAnimationFrame" is usually used.
-            // But inside async loop, we can just use "await delay".
-            
-            // Draw bubbles on top
-            bubbles.forEach(bubble => {
-                const bx = (bubble.x / 100) * canvas.width;
-                const by = (bubble.y / 100) * canvas.height;
-                // Use stored width/height if available, else defaults
-                const bw = ((bubble.width || 30) / 100) * canvas.width;
-                const bh = ((bubble.height || 15) / 100) * canvas.height;
-                
-                // Draw Bubble Background
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                // Rounded rect logic... simplified for now as rect
-                ctx.fillRect(bx, by, bw, bh);
-                
-                // Draw Text
-                ctx.fillStyle = '#000';
-                ctx.font = '30px Arial'; // Simplified
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                // Simple text wrap or just center truncated?
-                // For MVP just center text
-                ctx.fillText(bubble.text, bx + bw/2, by + bh/2, bw - 20);
-                
-                // Draw Character Name
-                ctx.fillStyle = 'purple';
-                ctx.font = 'bold 24px Arial';
-                ctx.fillText(bubble.characterName, bx + bw/2, by - 20);
-            });
-            
-            // Trigger stream update?
-            // In Firefox/Chrome canvas stream executes on paint?
-            // We might need to make small changes or just wait?
-            // Actually stream captures at frame rate.
-            
-            await new Promise(r => setTimeout(r, 100)); // Wait 100ms
+        // Sequential bubble appearance
+        // First show image for BASE_DURATION (no bubbles)
+        await new Promise(r => setTimeout(r, VIDEO_CONFIG.BASE_IMAGE_DURATION_MS));
+        
+        // Then show each bubble one at a time
+        for (let bubbleIdx = 0; bubbleIdx < bubbles.length; bubbleIdx++) {
+          // Redraw image (clears previous bubble)
+          if (selectedImage) {
+            await drawImageCover(selectedImage.image_url);
+          }
+          
+          // Draw ONLY the current bubble (auto-sized)
+          const bubble = bubbles[bubbleIdx];
+          drawBubble(bubble.text, bubble.x, bubble.y);
+          
+          // Wait for bubble display duration
+          await new Promise(r => setTimeout(r, VIDEO_CONFIG.DIALOGUE_DURATION_MS));
         }
+        
+        // Final frame: just the image (last bubble disappears)
+        if (selectedImage) {
+          await drawImageCover(selectedImage.image_url);
+        }
+        await new Promise(r => setTimeout(r, VIDEO_CONFIG.FINAL_PAUSE_MS));
       }
       
     } catch (err) {
@@ -221,14 +297,69 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
             />
           </div>
           
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-4 flex-wrap">
+            <button
+              onClick={async () => {
+                if (!videoUrl) return;
+                setStatusText('Converting to MP4...');
+                setIsGenerating(true);
+                
+                try {
+                  // Fetch the webm blob
+                  const response = await fetch(videoUrl);
+                  const webmBlob = await response.blob();
+                  
+                  // Create form data
+                  const formData = new FormData();
+                  formData.append('file', webmBlob, 'video.webm');
+                  
+                  // Upload to backend for conversion
+                  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                  const convertResponse = await fetch(`${API_BASE_URL}/webtoon/video/convert-to-mp4`, {
+                    method: 'POST',
+                    body: formData,
+                  });
+                  
+                  if (!convertResponse.ok) {
+                    const error = await convertResponse.json();
+                    throw new Error(error.detail || 'Conversion failed');
+                  }
+                  
+                  // Download the MP4
+                  const mp4Blob = await convertResponse.blob();
+                  const mp4Url = URL.createObjectURL(mp4Blob);
+                  
+                  const a = document.createElement('a');
+                  a.href = mp4Url;
+                  a.download = `webtoon_story_${webtoonScript.script_id.slice(0, 8)}.mp4`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(mp4Url);
+                  
+                  setStatusText('Download complete!');
+                } catch (error) {
+                  console.error('MP4 conversion error:', error);
+                  setError(error instanceof Error ? error.message : 'MP4 conversion failed');
+                } finally {
+                  setIsGenerating(false);
+                  setStatusText('');
+                }
+              }}
+              disabled={isGenerating}
+              className="px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              <span>📥</span>
+              Download MP4 (YouTube Shorts)
+            </button>
+            
             <a 
               href={videoUrl} 
               download={`webtoon_story_${webtoonScript.script_id.slice(0, 8)}.webm`}
               className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
             >
               <span>⬇️</span>
-              Download Video
+              Download WebM
             </a>
             
             <button
