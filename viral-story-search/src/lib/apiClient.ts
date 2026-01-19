@@ -575,6 +575,49 @@ export async function getLibraryCharacters(): Promise<any[]> {
 }
 
 /**
+ * Get available story genres
+ * @returns List of genres
+ */
+export async function getGenres(): Promise<{id: string, name: string}[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/genres`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch genres:', error);
+    // Return empty array as fallback
+    return [];
+  }
+}
+
+/**
+ * Delete a character from the library
+ * @param characterId Character ID
+ * @returns Success message
+ */
+export async function deleteCharacter(characterId: string): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/library/character/${characterId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to delete character');
+  }
+}
+
+/**
  * Generate a shorts script based on a topic
  * @param topic The topic for the shorts script (empty for random)
  * @returns ShortsScript with scenes and prompts

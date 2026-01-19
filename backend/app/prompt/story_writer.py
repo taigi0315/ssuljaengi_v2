@@ -14,8 +14,8 @@ STORY_WRITER_PROMPT = """
 You are writing for a VISUAL MEDIUM. This story will be broken into panels/scenes where each one shows 3-5 seconds of action. Your story should unfold in clear, discrete BEATS - moments that can be illustrated as individual images.
 
 **TARGET SPECS:**
-- Duration: 30-50 second video/webtoon
-- Panel Count: 10-16 distinct visual scenes
+- Duration: 20-40 second video/webtoon
+- Panel Count: 8-12 distinct visual scenes
 - Each panel shows: 3-5 seconds of action/dialogue
 - Think: "What would the camera show in this moment?"
 

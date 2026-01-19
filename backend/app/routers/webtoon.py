@@ -37,6 +37,7 @@ from app.models.video_models import GenerateVideoRequest, VideoPanelData, Bubble
 
 from app.config import get_settings
 from app.utils.persistence import JsonStore
+from app.prompt.story_mood import STORY_GENRE_PROMPTS
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +113,53 @@ async def generate_shorts_script(request: GenerateShortsRequest):
     
     return await shorts_generator.generate_script(topic)
 
+
+@router.get("/genres", response_model=List[dict])
+async def get_genres():
+    """
+    Get available story genres/styles.
+    Returns a list of genre objects with id and basic metadata.
+    """
+    genres = []
+    
+    # Define mapping for human-readable names and descriptions
+    # Ideally this would be in the prompt file or a separate config,
+    # but for now we map it here or extract from the prompt if possible.
+    # Since the user requested dynamic population based on keys, we will generate basic info
+    # and maybe look up details if we have them.
+    # For now, let's allow the frontend to have the rich metadata (images/descriptions) 
+    # OR we return a list of keys and let frontend map them if they have static assets.
+    # BUT, the user said "expecting to updating more genres down the road".
+    # This implies the backend should provide the Name/Description.
+    
+    # We don't have descriptions in STORY_GENRE_PROMPTS keys directly, only the prompt text.
+    # We can infer a name from the ID.
+    
+    # Let's create a helper map here for now or update `story_mood.py` to include metadata?
+    # Updating `story_mood.py` would be cleaner but let's stick to the router for minimal invasion first,
+    # unless I see I need to edit `story_mood.py` anyway.
+    
+    # Actually, the frontend `GenreSelector.tsx` has `GENRE_OPTIONS` with `name`, `description`, `previewImage`.
+    # If I just return keys, the frontend still needs to know what image/text to show.
+    # If the user adds a NEW genre backend-side, the frontend won't have an image for it unless we serve it or use a placeholder.
+    # The user said "expecting to updating more genres down the road".
+    
+    for key in STORY_GENRE_PROMPTS.keys():
+        # if key == "NO_GENRE":
+        #     continue
+
+            
+        # Convert CONSTANT_CASE to Title Case for name if not known
+        name = key.replace("_", " ").title().replace("Manhwa", "").strip()
+        
+        genres.append({
+            "id": key,
+            "name": name,
+            # We will leave description/image to be filled by frontend or use defaults
+            # passing them as None or generic to let frontend decide or use a default
+        })
+        
+    return genres
 
 @router.post("/generate")
 async def generate_webtoon_script(request: GenerateWebtoonRequest) -> WebtoonScriptResponse:

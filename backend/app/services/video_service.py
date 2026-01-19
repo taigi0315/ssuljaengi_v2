@@ -192,9 +192,11 @@ class VideoService:
         bx = center_x_target - (bw / 2)
         by = center_y_target - (bh / 2)
         
-        # Clamp to image bounds (optional, but good for safety)
-        # bx = max(0, min(img.width - bw, bx))
-        # by = max(0, min(img.height - bh, by))
+        # Clamp to image bounds to match Frontend logic
+        # Keeping 20px padding from edges to prevent cutting off
+        margin = 20
+        bx = max(margin, min(img.width - bw - margin, bx))
+        by = max(margin, min(img.height - bh - margin, by))
 
         # Draw Bubble Background
         radius = 20
@@ -350,6 +352,8 @@ class VideoService:
                 base_frames = int(self.config.base_duration_ms / 1000 * self.config.fps)
                 bubble_frames = int(self.config.bubble_duration_ms / 1000 * self.config.fps)
                 final_frames = int(self.config.final_pause_ms / 1000 * self.config.fps)
+                
+                logger.info(f"Frame Config - FPS: {self.config.fps} | Base: {base_frames} frames ({self.config.base_duration_ms}ms) | Bubble: {bubble_frames} frames ({self.config.bubble_duration_ms}ms) | Final: {final_frames} frames ({self.config.final_pause_ms}ms)")
                 
                 # 1. Base image without bubbles
                 for _ in range(base_frames):

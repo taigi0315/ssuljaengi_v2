@@ -33,7 +33,7 @@ class VideoConfig(BaseModel):
     width: int = 1080
     height: int = 1920  # 9:16 ratio (vertical video for TikTok/Shorts/Reels)
     base_duration_ms: int = 750
-    bubble_duration_ms: int = 2000
+    bubble_duration_ms: int = 2500
     final_pause_ms: int = 750
     transition_duration_ms: int = 1000  # Duration of scroll transition between panels
     fps: int = 30

@@ -1,4 +1,7 @@
 CHARACTER_GENRE_MODIFIERS = {
+"NO_GENRE": """EMPTY
+""",
+
 "MODERN_ROMANCE_DRAMA_MANHWA": """ 
 webtoon manhwa style, modern digital romance comic illustration, 
 ultra-soft cel-shading with gentle gradients and airy blending, luminous and bright overall lighting, 
@@ -52,5 +55,15 @@ gentle glossy highlights on hair eyes jewelry satin silky fabrics,
 subtle to prominent, 
 floral particle sparkles, floating hearts and romantic overlays, 
 whimsical dreamy romantic mood, slow-burn tender feeling with light comedic palace fantasy touch, masterpiece, best quality
+""",
+
+    "DARK_ROMANCE_REVENGE_MANHWA": """
+webtoon manhwa style, dark romance comic illustration with fantasy and erotic elements, ultra-detailed cel-shading with sensual gradients and intimate blending, intense and shadowy lighting with 
+dramatic contrasts and glowing highlights on skin, ethereal diffused light featuring sultry candlelit tones and seductive sparkles, brooding opulent atmosphere with misty particles and hazy bokeh effects, 
+deep sensual color palette including rich crimsons, velvety blacks, warm ambers, and flushed pinks, intricate ornate linework on revealing embroidered lingerie and jewelry, large expressive eyes with glossy 
+reflections conveying desire, obsession, and vulnerability, cinematic panel compositions focusing on close-up intimate encounters and full-body poses, erotic and charged mood with hints of dominance, submission, 
+and forbidden passion, highly textured skin with blush, sweat, and sheen on luxurious yet disheveled attire, subtle rim lighting accentuating curves and volumetric fog for mystery,
+ polished Korean dark fantasy drama vibe, radiant flushed skin tones with erotic highlights, flowing tousled hair with tangled braids and soft caresses, masterpiece quality steamy webtoon art, 
+ trending obsessive smutty manhwa aesthetic
 """
 }

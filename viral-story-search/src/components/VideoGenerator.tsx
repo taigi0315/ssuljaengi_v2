@@ -19,7 +19,7 @@ const VIDEO_CONFIG = {
   // Timing (in milliseconds)
   // Timing (in milliseconds)
   BASE_IMAGE_DURATION_MS: 750,     // How long to show image before first bubble
-  DIALOGUE_DURATION_MS: 2000,      // How long each dialogue bubble shows
+  DIALOGUE_DURATION_MS: 2500,      // How long each dialogue bubble shows
   FINAL_PAUSE_MS: 750,             // Pause after last bubble before next panel
   TRANSITION_DURATION_MS: 400,    // Duration of scroll transition between panels
 
@@ -136,6 +136,26 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
 
     // Helper to draw bubble with auto-sizing based on text
     // xPercent and yPercent are relative to the IMAGE area
+    // Helper to wrap text for canvas
+    const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number) => {
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = words[0];
+
+        for (let i = 1; i < words.length; i++) {
+            const word = words[i];
+            const width = ctx.measureText(currentLine + " " + word).width;
+            if (width < maxWidth) {
+                currentLine += " " + word;
+            } else {
+                lines.push(currentLine);
+                currentLine = word;
+            }
+        }
+        lines.push(currentLine);
+        return lines;
+    };
+
     // Helper to draw bubble with auto-sizing based on text
     // xPercent and yPercent are relative to the IMAGE area
     const drawBubble = (text: string, xPercent: number, yPercent: number, characterName?: string) => {
@@ -144,15 +164,25 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
         BUBBLE_BORDER_WIDTH, BUBBLE_BG_OPACITY, BUBBLE_BORDER_COLOR, BUBBLE_TEXT_COLOR 
       } = VIDEO_CONFIG;
       
-      // Measure text to auto-size bubble
       ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`;
-      const textMetrics = ctx.measureText(text);
-      let textWidth = Math.min(textMetrics.width, canvas.width * 0.85); // Max 85% of CANVAS width (visible area)
-      let textHeight = BUBBLE_FONT_SIZE;
+      
+      // Calculate max width for wrapping (85% of canvas)
+      const maxTextWidth = canvas.width * 0.85;
+      
+      // Wrap text
+      const wrappedLines = wrapText(ctx, text, maxTextWidth);
+      
+      // Measure actual dimensions
+      let textWidth = 0;
+      wrappedLines.forEach(line => {
+          textWidth = Math.max(textWidth, ctx.measureText(line).width);
+      });
+      
+      let textHeight = wrappedLines.length * BUBBLE_FONT_SIZE * 1.2; // 1.2 line height
 
       if (characterName) {
         // Add height for name line + gap
-        textHeight += BUBBLE_FONT_SIZE * 1.2;
+        textHeight += BUBBLE_FONT_SIZE * 1.5;
         
         // Ensure width fits name too
         const nameMetrics = ctx.measureText(`${characterName}:`);
@@ -173,7 +203,7 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       let by = absoluteY - bh / 2;
       
       // Clamp to CANVAS bounds (visible area), not image bounds
-      // keeping 20px padding from edges
+      // keeping 20px padding from edges to match backend
       bx = Math.max(20, Math.min(canvas.width - bw - 20, bx));
       by = Math.max(20, Math.min(canvas.height - bh - 20, by));
       
@@ -185,6 +215,8 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       // Rounded rect
       const radius = BUBBLE_BORDER_RADIUS;
       ctx.beginPath();
+      // ctx.roundRect is standard now but check support, otherwise fallback or polyfill
+      // Using manual path for safety as before
       ctx.moveTo(bx + radius, by);
       ctx.lineTo(bx + bw - radius, by);
       ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + radius);
@@ -201,26 +233,27 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       // Draw Text
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      ctx.fillStyle = BUBBLE_TEXT_COLOR;
       
       const centerX = bx + bw / 2;
-      const centerY = by + bh / 2;
+      let currentY = by + BUBBLE_PADDING + (BUBBLE_FONT_SIZE * 0.6); // Start Y
       
       if (characterName) {
         // Draw Name 
         ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`;
         ctx.fillStyle = '#6b21a8'; // Purple
-        ctx.fillText(`${characterName}:`, centerX, centerY - BUBBLE_FONT_SIZE * 0.6);
-        
-        // Draw Message
-        ctx.font = `${BUBBLE_FONT_SIZE}px Arial`;
-        ctx.fillStyle = BUBBLE_TEXT_COLOR;
-        ctx.fillText(text, centerX, centerY + BUBBLE_FONT_SIZE * 0.6);
-      } else {
-        // Text Only
-        ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`;
-        ctx.fillStyle = BUBBLE_TEXT_COLOR;
-        ctx.fillText(text, centerX, centerY);
-      }
+        ctx.fillText(`${characterName}:`, centerX, currentY);
+        currentY += BUBBLE_FONT_SIZE * 1.5; // Gap
+      } 
+      
+      // Draw Message Lines
+      ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`; // Keep bold for readability
+      ctx.fillStyle = BUBBLE_TEXT_COLOR;
+      
+      wrappedLines.forEach((line) => {
+          ctx.fillText(line, centerX, currentY);
+          currentY += BUBBLE_FONT_SIZE * 1.2;
+      });
     };
 
     try {

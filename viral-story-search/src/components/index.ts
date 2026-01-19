@@ -15,7 +15,7 @@ export { default as WorkflowProgress } from './WorkflowProgress';
 export { default as RedditPostDisplay } from './RedditPostDisplay';
 
 export { default as StoryTabs } from './StoryTabs';
-export { default as MoodSelector } from './MoodSelector';
+
 export { default as GenreSelector } from './GenreSelector';
 export { default as StoryBuilder } from './StoryBuilder';
 

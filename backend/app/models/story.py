@@ -5,13 +5,14 @@ This module defines Pydantic models for story generation requests, responses,
 workflow status tracking, and evaluation results.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Literal, List
 from datetime import datetime
+from app.prompt.story_mood import STORY_GENRE_PROMPTS
 
 
-# Story mood types
-StoryMood = Literal["MODERN_ROMANCE_DRAMA_MANHWA", "FANTASY_ROMANCE_MANHWA", "HISTORY_SAGEUK_ROMANCE", "ACADEMY_SCHOOL_LIFE", "ISEKAI_OTOME_FANTASY"]
+# Story mood types - now dynamic based on keys
+StoryMood = str
 
 
 class StoryRequest(BaseModel):
@@ -30,6 +31,13 @@ class StoryRequest(BaseModel):
     post_content: str = Field(..., description="Reddit post content")
     mood: StoryMood = Field(..., description="Story mood/style")
     options: Optional[dict] = Field(default=None, description="Optional generation options")
+
+    @field_validator('mood')
+    @classmethod
+    def validate_mood(cls, v: str) -> str:
+        if v not in STORY_GENRE_PROMPTS:
+            raise ValueError(f"Invalid mood '{v}'. Must be one of: {list(STORY_GENRE_PROMPTS.keys())}")
+        return v
 
 
 class Story(BaseModel):
@@ -422,10 +430,15 @@ class GenerateCharacterImageRequest(BaseModel):
     character_name: str = Field(..., description="Character name")
     description: str = Field(..., description="Visual description for generation")
     gender: str = Field(..., description="Character gender (male/female)")
-    image_style: Literal["MODERN_ROMANCE_DRAMA_MANHWA", "FANTASY_ROMANCE_MANHWA", "HISTORY_SAGEUK_ROMANCE", "ACADEMY_SCHOOL_LIFE", "ISEKAI_OTOME_FANTASY"] = Field(
-        ..., description="Image style/genre selection"
-    )
+    image_style: str = Field(..., description="Image style/genre selection")
     reference_image_url: Optional[str] = Field(default=None, description="Optional reference image URL for multimodal generation")
+
+    @field_validator('image_style')
+    @classmethod
+    def validate_image_style(cls, v: str) -> str:
+        if v not in STORY_GENRE_PROMPTS:
+            raise ValueError(f"Invalid image_style '{v}'. Must be one of: {list(STORY_GENRE_PROMPTS.keys())}")
+        return v
 
 
 class GenerateSceneImageRequest(BaseModel):
