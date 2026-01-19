@@ -64,24 +64,24 @@ Each scene is a VISUAL-DIALOGUE UNIT where:
    **Dialogue Format:**
 ```json
    "dialogue": [
-     {
+     {{
        "character": "Ji-hoon",
        "text": "You think I don't know what you did?",
        "emotion": "accusatory",
        "order": 1
-     },
-     {
+     }},
+     {{
        "character": "Soojin",
        "text": "What are you talking about?",
        "emotion": "defensive",
        "order": 2
-     },
-     {
+     }},
+     {{
        "character": "Ji-hoon",
        "text": "Stop lying. I saw the messages.",
        "emotion": "hurt-angry",
        "order": 3
-     }
+     }}
    ]
 ```
 
@@ -89,7 +89,7 @@ Each scene is a VISUAL-DIALOGUE UNIT where:
 
    **MANDATORY FORMAT:**
 ```
-   {shot_type}, vertical 9:16 webtoon panel, {dramatic_moment_description}, {environment_with_storytelling_details}, {character_positioning_and_body_language}, {lighting_and_atmosphere_that_matches_emotion}, {genre_style} manhwa style, cinematic composition, emotional impact
+   {{shot_type}}, vertical 9:16 webtoon panel, {{dramatic_moment_description}}, {{environment_with_storytelling_details}}, {{character_positioning_and_body_language}}, {{lighting_and_atmosphere_that_matches_emotion}}, {{genre_style}} manhwa style, cinematic composition, emotional impact
 ```
 
    **Key Principles:**
@@ -182,12 +182,12 @@ Each scene is a VISUAL-DIALOGUE UNIT where:
    **Example:**
 ```json
    "sfx_effects": [
-     {
+     {{
        "type": "impact",
        "intensity": "high",
        "description": "Radiating impact lines from Ji-hoon's shocked face as he realizes the truth, emphasizing the emotional blow",
        "position": "around_character"
-     }
+     }}
    ]
 ```
 
@@ -229,12 +229,12 @@ Before creating each scene, ask:
 
 **OUTPUT JSON STRUCTURE:**
 ```json
-{
+{{
   "genre_style": "string (romance/action/thriller/drama/slice-of-life/mystery)",
   "narrative_tone": "string (dark-intense/light-heartwarming/suspenseful/emotional/comedic)",
   
   "characters": [
-    {
+    {{
       "name": "string",
       "reference_tag": "string (Name(age, trait1, trait2))",
       "gender": "string",
@@ -246,11 +246,11 @@ Before creating each scene, ask:
       "personality": "string (3-5 words)",
       "role_in_story": "string (protagonist/antagonist/love-interest/supporting)",
       "visual_description": "string (complete description for consistency)"
-    }
+    }}
   ],
   
   "scenes": [
-    {
+    {{
       "scene_number": integer (1-12),
       "act": "string (ACT_1_SETUP / ACT_2_ESCALATION / ACT_3_RESOLUTION)",
       "narrative_purpose": "string (what this scene accomplishes in the story)",
@@ -272,34 +272,34 @@ Before creating each scene, ask:
       "character_placement_and_action": "string (positioning + body language + facial expression)",
       
       "dialogue": [
-        {
+        {{
           "character": "string",
           "text": "string (under 15 words)",
           "emotion": "string (how it's delivered)",
           "order": integer
-        }
+        }}
       ],
       
       "sfx_effects": [
-        {
+        {{
           "type": "string",
           "intensity": "string (low/medium/high)",
           "description": "string",
           "position": "string"
-        }
+        }}
       ] or null,
       
       "story_beat": "string (what happens narratively)",
       "emotional_beat": "string (what the viewer should feel)",
       "why_this_matters": "string (how this scene serves the overall story)"
-    }
+    }}
   ],
   
   "episode_summary": "string (3-4 sentences capturing the complete emotional journey)",
   "opening_hook": "string (what grabs attention in scene 1)",
   "climactic_moment": "string (the peak dramatic scene)",
   "emotional_resolution": "string (how the viewer should feel at the end)"
-}
+}}
 ```
 
 ---

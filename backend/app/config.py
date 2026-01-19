@@ -71,7 +71,7 @@ class Settings(BaseSettings):
         min_length=1
     )
     gemini_model: str = Field(
-        default="gemini-2.0-flash-exp",
+        default="gemini-2.5-flash",
         description="Gemini model name"
     )
     model_image_gen: str = Field(
@@ -129,7 +129,27 @@ class Settings(BaseSettings):
         ge=0.0,
         le=1.0
     )
-    
+
+    # Fidelity Validation Configuration
+    fidelity_validation_threshold: float = Field(
+        default=80.0,
+        description="Minimum fidelity score to pass validation (0-100)",
+        ge=0.0,
+        le=100.0
+    )
+    fidelity_max_iterations: int = Field(
+        default=3,
+        description="Maximum number of validation iterations",
+        ge=1,
+        le=5
+    )
+    fidelity_min_panel_description_length: int = Field(
+        default=150,
+        description="Minimum characters for panel visual descriptions",
+        ge=50,
+        le=500
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

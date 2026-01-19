@@ -319,10 +319,10 @@ export default function Home() {
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="container mx-auto px-4 py-4 sm:py-6 relative">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 text-center">
-            🔥 Viral Story Search
+            🔥 Webtoon Shorts Creator
           </h1>
           <p className="text-sm sm:text-base text-gray-600 text-center mt-2">
-            Discover the most engaging Reddit stories
+            Handy tool to create webtoon shorts
           </p>
           {/* Action Buttons */}
           <div className="absolute top-4 right-4 flex gap-2">

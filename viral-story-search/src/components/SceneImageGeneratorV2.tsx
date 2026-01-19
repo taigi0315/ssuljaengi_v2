@@ -666,9 +666,12 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
                         }}
                       />
 
-                      {/* Content - Text only, no name */}
+                      {/* Content - Character Name + Text */}
                       <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden">
-                        <p className="text-gray-900 font-medium leading-tight w-full break-words" style={{ fontSize: '1em' }}>{bubble.text}</p>
+                        <p className="text-gray-900 font-medium leading-tight w-full break-words" style={{ fontSize: '1em' }}>
+                          <span className="font-bold text-purple-700 mr-1">{bubble.characterName}:</span>
+                          {bubble.text}
+                        </p>
                       </div>
 
                       {/* Delete Button */}
