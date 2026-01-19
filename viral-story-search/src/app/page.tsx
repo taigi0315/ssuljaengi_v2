@@ -232,10 +232,10 @@ export default function Home() {
       return;
     }
 
-    // Allow 'generate' tab if: has post/seed, OR has genre (to write manual story)
-    if (tab === 'generate' && !selectedGenre) {
-      return;
-    }
+    // Allow 'generate' tab always (we handle empty state in render)
+    // if (tab === 'generate' && !selectedGenre) {
+    //   return;
+    // }
     if (tab === 'script' && !generatedStoryId) {
       return;
     }
@@ -462,8 +462,22 @@ export default function Home() {
         ) : activeTab === 'generate' ? (
           <>
             {/* Story Building Tab */}
-            {selectedGenre && (
-              <div className="max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto">
+              {!selectedGenre ? (
+                <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Start Your Story</h2>
+                  <p className="text-gray-600 mb-8">Select a genre to begin writing or generating your story.</p>
+                  <GenreSelector
+                    selectedGenre={selectedGenre}
+                    onGenreSelect={(genre) => {
+                       setSelectedGenre(genre);
+                       // Optional: Automatically set mode to manual if nothing else selected?
+                       // For now just selecting genre reveals the interface below
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="max-w-7xl mx-auto">
                 {/* Manual Full Story Input Option */}
                 {!selectedPost && !customStorySeed.trim() && (
                   <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -512,7 +526,8 @@ export default function Home() {
                   />
                 )}
               </div>
-            )}
+                )}
+              </div>
           </>
         ) : activeTab === 'script' ? (
           <>

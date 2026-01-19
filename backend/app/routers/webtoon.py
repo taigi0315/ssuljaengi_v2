@@ -799,9 +799,20 @@ async def generate_video_backend(
         panels = []
         for p in request.panels:
             bubbles = [
-                BubbleData(text=b.text, x=b.x, y=b.y) 
+                BubbleData(
+                    text=b.text, 
+                    x=b.x, 
+                    y=b.y, 
+                    width=b.width, 
+                    height=b.height, 
+                    character_name=b.character_name
+                ) 
                 for b in p.bubbles
             ]
+            
+            # Debug log for first bubble of first panel
+            if p.panel_number == 1 and bubbles:
+                logger.info(f"First bubble data: text='{bubbles[0].text}', char='{bubbles[0].character_name}'")
             panels.append(VideoPanelData(
                 panel_number=p.panel_number,
                 image_url=p.image_url,

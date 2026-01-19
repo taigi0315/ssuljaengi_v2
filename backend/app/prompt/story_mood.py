@@ -7,6 +7,9 @@ setting translation, character design, visual aesthetic, and tone.
 """
 
 STORY_GENRE_PROMPTS = {
+    "NO_GENRE": """EMPTY
+""",
+
     "MODERN_ROMANCE_DRAMA_MANHWA": """
 Generate a contemporary Korean romance drama story with the following narrative elements:
 - Setting: Modern urban Korea (Seoul cafes, corporate offices, university campuses, apartments)
@@ -75,5 +78,21 @@ Generate an isekai otome fantasy romance story (reincarnation/transmigration int
 - Mood: Playful and romantic, sparkling palace fantasy with comedic self-awareness, sweet multiple romantic routes converging
 - Dialogue style: Modern protagonist's inner monologue contrasting with formal fantasy speech, witty banter, heartfelt emotional confessions breaking through game-like scenarios
 Create a story of a modern soul navigating a fantasy romance world, finding real love while cleverly rewriting their destined fate.
+""",
+
+    "DARK_ROMANCE_REVENGE_MANHWA": """
+Generate a dark romance manhwa story infused with intense emotional stakes and the following narrative elements:
+
+Setting: Opulent yet oppressive noble estates, decaying royal palaces, shadowy fantasy kingdoms, or modern elite circles tainted by power and secrets; environments that feel luxurious on the surface but suffocating underneath
+Tone: Brooding, obsessive, and erotically charged with undercurrents of danger, bitterness, vengeance, and reluctant tenderness; raw passion mixed with pain and moral ambiguity
+Character archetypes: Jaded protagonists scarred by betrayal, abuse, or loss (abandoned princesses, betrayed spouses, vengeful heirs, possessive anti-heroes); dominant, morally gray male leads who are ruthless yet fiercely protective; female leads who start broken or scheming but grow into empowered figures through desire and defiance
+Themes: Revenge through seduction or marriage, reclaiming power after humiliation, twisted obsession turning into genuine (if unhealthy) devotion, healing trauma through intense physical and emotional possession, the blurred line between love and destruction, second chances born from ruin
+Conflict: Forced or predatory marriages/arrangements, past betrayals fueling vengeance, possessive jealousy clashing with independence, power imbalances and dominance/submission dynamics, fear of vulnerability in toxic bonds, external enemies or societal expectations threatening the fragile connection
+Pacing: Deliberate escalation from cold calculation or hatred to consuming passion; slow-burn tension punctuated by explosive confrontations, intimate power plays, and moments of raw vulnerability
+Story beats: Bitter reunions or chance encounters laced with resentment, revenge plots involving seduction or entrapment, possessive claiming and marking (literal or emotional), breakdowns revealing hidden wounds, obsessive protection, steamy yet psychologically charged encounters, eventual twisted redemption or mutual ruin-and-rebuild
+Mood: Heavy sensuality laced with melancholy and danger, intoxicating toxicity that feels addictive, moments of tender cruelty, the thrill of forbidden or destructive desire, cathartic release after suffering
+Dialogue style: Sharp, laced with subtext and taunts, possessive declarations, emotionally raw confessions hidden behind cruelty, seductive threats, restrained yet intense expressions of longing or rage
+
+Create a story that captures the intoxicating darkness of obsessive love, vengeful passion, and the destructive beauty of bonds forged in betrayal and desire.
 """
-}
+},

@@ -5,7 +5,9 @@ import { WebtoonScript, Character, CharacterImage, StoryGenre } from '@/types';
 import { generateCharacterImage, selectCharacterImage, saveCharacterToLibrary } from '@/lib/apiClient';
 import { formatGenreName } from '@/utils/formatters';
 import CharacterList from './CharacterList';
+
 import CharacterImageDisplay from './CharacterImageDisplay';
+import CharacterLibraryModal from './CharacterLibraryModal';
 
 interface CharacterImageGeneratorProps {
   storyId: string;
@@ -26,6 +28,7 @@ export default function CharacterImageGenerator({
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   
   // Get genre from prop or sessionStorage
   const [genre] = useState<StoryGenre>(
@@ -118,6 +121,66 @@ export default function CharacterImageGenerator({
     }
   };
 
+  const handleLoadCharacter = (saved: { character: Character, image_url?: string }) => {
+    if (!selectedCharacter || !onUpdateScript || !webtoonScript) return;
+
+    // We want to apply the saved character's visual description (and maybe name?) to the CURRENT selected character in the script.
+    // Usually we want to keep the script's character name but adopt the visual style.
+    // Let's ask the user? Or just adopt style.
+    // For now, I'll update the visual_description and other physical traits, but KEEP the Name if possible?
+    // Actually, user might want to swap the character entirely.
+    // But the script depends on the Name. If I change the name, I break the script references.
+    // So I will only update visual traits.
+    
+    const updatedCharacters = webtoonScript.characters.map(c => {
+      if (c.name === selectedCharacter.name) {
+        return {
+          ...c,
+          // Update visual traits
+          gender: saved.character.gender,
+          age: saved.character.age,
+          face: saved.character.face,
+          hair: saved.character.hair,
+          body: saved.character.body,
+          outfit: saved.character.outfit,
+          visual_description: saved.character.visual_description,
+          // Keep name
+        };
+      }
+      return c;
+    });
+
+    // If there is an image, we should probably add it to the character images list
+    let updatedImages = { ...(webtoonScript.character_images || {}) };
+    if (saved.image_url) {
+        const charName = selectedCharacter.name;
+        if (!updatedImages[charName]) {
+            updatedImages[charName] = [];
+        }
+        // Add as a reference image
+        updatedImages[charName].push({
+            id: `loaded-${Date.now()}`,
+            character_name: charName,
+            description: saved.character.visual_description,
+            image_url: saved.image_url,
+            created_at: new Date().toISOString(),
+            is_selected: true // Select it by default?
+        });
+    }
+
+    onUpdateScript({
+      ...webtoonScript,
+      characters: updatedCharacters,
+      character_images: updatedImages
+    });
+
+    // Update local selection to trigger re-render
+    const newSelected = updatedCharacters.find(c => c.name === selectedCharacter.name);
+    if (newSelected) setSelectedCharacter(newSelected);
+    
+    setIsLibraryOpen(false);
+  };
+
 
 
   // Error state - only for image generation errors
@@ -157,9 +220,19 @@ export default function CharacterImageGenerator({
           <span>🎨</span>
           <span>Character Image Generation</span>
         </h2>
-        <p className="text-gray-600 mb-6">
-          Generate images for each character. Edit descriptions and regenerate as needed.
-        </p>
+        <div className="flex justify-between items-center mb-6">
+            <p className="text-gray-600">
+            Generate images for each character. Edit descriptions and regenerate as needed.
+            </p>
+            <button
+            onClick={() => setIsLibraryOpen(true)}
+            disabled={!selectedCharacter}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:border-purple-300 transition-all text-gray-700 font-medium text-sm"
+            >
+            <span>📂</span>
+            <span>Load Character Design</span>
+            </button>
+        </div>
 
         {webtoonScript && (
           <div className="flex gap-6">
@@ -248,6 +321,11 @@ export default function CharacterImageGenerator({
           <p className="mt-2 text-sm text-gray-500">Generate images for each scene panel</p>
         </div>
       )}
+      <CharacterLibraryModal
+        isOpen={isLibraryOpen}
+        onClose={() => setIsLibraryOpen(false)}
+        onSelect={handleLoadCharacter}
+      />
     </div>
   );
 }

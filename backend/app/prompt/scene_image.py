@@ -3,12 +3,12 @@ SCENE_IMAGE_TEMPLATE = """
 **VISUAL STYLE**
 - Vertical Webtoon/Manhwa style.
 - Composition must favor verticality (low-angle shots, tall buildings, or standing characters).
-- High-definition, optimized for mobile vertical scrolling.
+- High-definition, 9:16 aspect ratio, optimized for vertical scrolling.
 
 **CRITICAL INSTRUCTION**
-Imagine the image is a smartphone screen placed in the middle of a square black room. 
-Do not extend any part of the scene into the left or right black pillars. 
-Focus all detail and the subject exclusively in the central vertical column.
+Generate a full-screen vertical image with a 9:16 aspect ratio.
+The composition must be strictly vertical, filling the entire frame from top to bottom.
+Avoid any letterboxing, borders, or device frames. The image is the scene itself.
 
 [Character reference handling section]
 {character_description}

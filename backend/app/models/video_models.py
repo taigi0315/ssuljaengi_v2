@@ -12,6 +12,7 @@ class BubbleData(BaseModel):
     y: float = Field(..., ge=0, le=100, description="Y position as percentage (0-100)")
     width: Optional[float] = Field(default=30, ge=5, le=100, description="Width as percentage (5-100)")
     height: Optional[float] = Field(default=15, ge=5, le=100, description="Height as percentage (5-100)")
+    character_name: Optional[str] = None
 
 
 class VideoPanelData(BaseModel):
@@ -31,15 +32,16 @@ class VideoConfig(BaseModel):
     """Configuration for video generation."""
     width: int = 1080
     height: int = 1920  # 9:16 ratio (vertical video for TikTok/Shorts/Reels)
-    base_duration_ms: int = 250
-    bubble_duration_ms: int = 2500
-    final_pause_ms: int = 250
-    transition_duration_ms: int = 1250  # Duration of scroll transition between panels
+    base_duration_ms: int = 750
+    bubble_duration_ms: int = 2000
+    final_pause_ms: int = 750
+    transition_duration_ms: int = 1000  # Duration of scroll transition between panels
     fps: int = 30
     font_size: int = 47
-    bubble_padding: int = 30
+    bubble_padding: int = 20
     bubble_bg_opacity: float = 0.35
     bubble_border_width: int = 5
     bubble_border_color: str = "#4a4a4a"
     bubble_text_color: str = "#000000"
+    bubble_name_color: str = "#6b21a8"  # Purple-800
     crf: int = 18  # FFmpeg quality (lower = better)

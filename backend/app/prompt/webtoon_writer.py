@@ -53,6 +53,7 @@ Each scene is a VISUAL-DIALOGUE UNIT where:
    - Cut any dialogue that doesn't serve multiple purposes
    - Subtext over exposition - show don't tell through dialogue
    - Each character's voice should be distinct and consistent
+   - Include only dialogue only, Do not include other elements such as (V.O) or (SFX)
 
    **Dialogue Techniques:**
    - **Conflict-driven:** Characters want different things, dialogue reflects this

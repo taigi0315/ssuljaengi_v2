@@ -18,17 +18,17 @@ const VIDEO_CONFIG = {
 
   // Timing (in milliseconds)
   // Timing (in milliseconds)
-  BASE_IMAGE_DURATION_MS: 250,     // How long to show image before first bubble
-  DIALOGUE_DURATION_MS: 2500,      // How long each dialogue bubble shows
-  FINAL_PAUSE_MS: 250,             // Pause after last bubble before next panel
-  TRANSITION_DURATION_MS: 1250,    // Duration of scroll transition between panels
+  BASE_IMAGE_DURATION_MS: 750,     // How long to show image before first bubble
+  DIALOGUE_DURATION_MS: 2000,      // How long each dialogue bubble shows
+  FINAL_PAUSE_MS: 750,             // Pause after last bubble before next panel
+  TRANSITION_DURATION_MS: 400,    // Duration of scroll transition between panels
 
   // Bubble styling
   BUBBLE_FONT_SIZE: 47,            // Font size for dialogue text
-  BUBBLE_PADDING: 30,              // Padding inside bubble
+  BUBBLE_PADDING: 20,              // Padding inside bubble
   BUBBLE_BORDER_RADIUS: 20,        // Rounded corner radius
   BUBBLE_BORDER_WIDTH: 5,          // Border thickness
-  BUBBLE_BG_OPACITY: 0.1,          // Background opacity (0-1)
+  BUBBLE_BG_OPACITY: 0.55,          // Background opacity (0-1)
   BUBBLE_BORDER_COLOR: '#4a4a4a',  // Border color
   BUBBLE_TEXT_COLOR: '#1a1a1a',    // Text color
 
@@ -136,7 +136,9 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
 
     // Helper to draw bubble with auto-sizing based on text
     // xPercent and yPercent are relative to the IMAGE area
-    const drawBubble = (text: string, xPercent: number, yPercent: number) => {
+    // Helper to draw bubble with auto-sizing based on text
+    // xPercent and yPercent are relative to the IMAGE area
+    const drawBubble = (text: string, xPercent: number, yPercent: number, characterName?: string) => {
       const { 
         BUBBLE_FONT_SIZE, BUBBLE_PADDING, BUBBLE_BORDER_RADIUS, 
         BUBBLE_BORDER_WIDTH, BUBBLE_BG_OPACITY, BUBBLE_BORDER_COLOR, BUBBLE_TEXT_COLOR 
@@ -145,16 +147,26 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       // Measure text to auto-size bubble
       ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`;
       const textMetrics = ctx.measureText(text);
-      const textWidth = Math.min(textMetrics.width, canvas.width * 0.85); // Max 85% of CANVAS width (visible area)
-      const textHeight = BUBBLE_FONT_SIZE;
+      let textWidth = Math.min(textMetrics.width, canvas.width * 0.85); // Max 85% of CANVAS width (visible area)
+      let textHeight = BUBBLE_FONT_SIZE;
+
+      if (characterName) {
+        // Add height for name line + gap
+        textHeight += BUBBLE_FONT_SIZE * 1.2;
+        
+        // Ensure width fits name too
+        const nameMetrics = ctx.measureText(`${characterName}:`);
+        textWidth = Math.max(textWidth, nameMetrics.width);
+      }
       
       // Calculate bubble dimensions
       const bw = textWidth + BUBBLE_PADDING * 2;
       const bh = textHeight + BUBBLE_PADDING * 2;
       
-      // Position relative to IMAGE area (transforming user placement on original 1:1 image to zoomed canvas space)
-      const absoluteX = imageRect.x + (xPercent / 100) * imageRect.width;
-      const absoluteY = imageRect.y + (yPercent / 100) * imageRect.height;
+      // Position relative to CANVAS area (matching backend logic which now renders on cropped 9:16 frame)
+      // xPercent and yPercent are 0-100 relative to the visible video frame
+      const absoluteX = (xPercent / 100) * canvas.width;
+      const absoluteY = (yPercent / 100) * canvas.height;
       
       // Center bubble on the point
       let bx = absoluteX - bw / 2;
@@ -166,7 +178,7 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       by = Math.max(20, Math.min(canvas.height - bh - 20, by));
       
       // Draw Bubble Background with semi-transparent white
-      ctx.fillStyle = `rgba(255, 255, 255, 0.85)`; // More visible background
+      ctx.fillStyle = `rgba(255, 255, 255, ${BUBBLE_BG_OPACITY})`; 
       ctx.strokeStyle = BUBBLE_BORDER_COLOR;
       ctx.lineWidth = BUBBLE_BORDER_WIDTH;
       
@@ -186,12 +198,29 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       ctx.fill();
       ctx.stroke();
       
-      // Draw Text (guaranteed visible with dark color on light background)
-      ctx.fillStyle = '#000000';
-      ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`;
+      // Draw Text
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(text, bx + bw / 2, by + bh / 2, bw - BUBBLE_PADDING);
+      
+      const centerX = bx + bw / 2;
+      const centerY = by + bh / 2;
+      
+      if (characterName) {
+        // Draw Name 
+        ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`;
+        ctx.fillStyle = '#6b21a8'; // Purple
+        ctx.fillText(`${characterName}:`, centerX, centerY - BUBBLE_FONT_SIZE * 0.6);
+        
+        // Draw Message
+        ctx.font = `${BUBBLE_FONT_SIZE}px Arial`;
+        ctx.fillStyle = BUBBLE_TEXT_COLOR;
+        ctx.fillText(text, centerX, centerY + BUBBLE_FONT_SIZE * 0.6);
+      } else {
+        // Text Only
+        ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`;
+        ctx.fillStyle = BUBBLE_TEXT_COLOR;
+        ctx.fillText(text, centerX, centerY);
+      }
     };
 
     try {
@@ -237,7 +266,7 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
           
           // Draw ONLY the current bubble (auto-sized)
           const bubble = bubbles[bubbleIdx];
-          drawBubble(bubble.text, bubble.x, bubble.y);
+          drawBubble(bubble.text, bubble.x, bubble.y, bubble.characterName);
           
           // Wait for bubble display duration
           await new Promise(r => setTimeout(r, VIDEO_CONFIG.DIALOGUE_DURATION_MS));
@@ -357,7 +386,8 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
                         bubbles: bubbles.map(b => ({
                           text: b.text,
                           x: b.x,
-                          y: b.y
+                          y: b.y,
+                          character_name: b.characterName
                         }))
                       };
                     }).filter(p => p.image_url);

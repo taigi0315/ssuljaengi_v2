@@ -37,10 +37,12 @@ class VideoService:
             try:
                 # Try common system fonts
                 font_paths = [
+                    "/System/Library/Fonts/AppleSDGothicNeo.ttc", # macOS Korean support
+                    "/System/Library/Fonts/Supplemental/Arial Bold.ttf", # macOS
                     "/System/Library/Fonts/Helvetica.ttc",  # macOS
                     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",  # Linux
+                    "C:\\Windows\\Fonts\\arialbd.ttf",  # Windows - Arial Bold
                     "C:\\Windows\\Fonts\\arial.ttf",  # Windows
-                    "/System/Library/Fonts/Supplemental/Arial.ttf",  # macOS alt
                 ]
                 for path in font_paths:
                     if os.path.exists(path):
@@ -104,8 +106,13 @@ class VideoService:
         x_pct: float, 
         y_pct: float,
         w_pct: Optional[float] = None,
-        h_pct: Optional[float] = None
+        h_pct: Optional[float] = None,
+        character_name: Optional[str] = None
     ) -> Image.Image:
+        if character_name:
+            logger.info(f"Rendering bubble with character_name: '{character_name}'")
+        else:
+            logger.info("Rendering bubble without character_name")
         """
         Render a dialogue bubble on the image.
         
@@ -116,122 +123,124 @@ class VideoService:
             y_pct: Y position as percentage (0-100)
             w_pct: Width as percentage (optional)
             h_pct: Height as percentage (optional)
+            character_name: Optional character name to display
         
         Returns:
             Image with bubble overlay
         """
-        img = img.copy()
-        draw = ImageDraw.Draw(img)
+        # Create a transparent overlay for the bubble
+        overlay = Image.new('RGBA', img.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
         
-        # Calculate dimensions
-        if w_pct is not None and h_pct is not None:
-            # Use user-defined dimensions
-            bw = (w_pct / 100) * img.width
-            bh = (h_pct / 100) * img.height
-            
-            # Wrap text to fit width
-            # Approximate chars per line: width / (font_size * 0.6)
-            chars_per_line = int(bw / (self.config.font_size * 0.5))
-            import textwrap
-            wrapped_text = textwrap.fill(text, width=max(5, chars_per_line))
+        # Calculate availability width for text wrapping
+        if w_pct is not None:
+            # Logic A: User defined width
+            target_width = (w_pct / 100) * img.width
+            chars_per_line = int(target_width / (self.config.font_size * 0.5))
         else:
-            # Legacy: Measure text (single line)
-            bbox = draw.textbbox((0, 0), text, font=self.font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-            
-            # Limit text width to 85% of image
-            max_width = int(img.width * 0.85)
-            if text_width > max_width:
-                text_width = max_width
-            
-            # Bubble dimensions with padding
-            padding = self.config.bubble_padding
-            bw = text_width + padding * 2
-            bh = text_height + padding * 2
-            wrapped_text = text
+            # Logic B: Auto width (max 85%)
+            target_width = img.width * 0.85
+            chars_per_line = int(target_width / (self.config.font_size * 0.5))
+
+        import textwrap
+        wrapped_text = textwrap.fill(text, width=max(10, chars_per_line))
         
-        # Position (centered on percentage point)
-        # Frontend logic: top/left percentages are usually top-left of element?
-        # Re-checking frontend: The bubble div uses left: x%, top: y%. 
-        # But render_bubble historically treated x_pct/y_pct as CENTER or Top-Left?
-        # Previous code: bx = abs_x - bw / 2 (Center)
-        # Frontend default: usually assumes top-left anchor unless transform translate is used.
-        # Looking at SceneImageGeneratorV2.tsx: left: `${bubble.x}%`, top: `${bubble.y}%`. 
-        # Does it transform? No. So frontend is TOP-LEFT positioned.
-        # But previous backend logic was CENTER positioned (bx = abs_x - bw / 2).
-        # We should probably switch to TOP-LEFT to match frontend if that's what frontend does.
-        # Frontend jsx: <div style={{left: ..., top: ...}}> ... </div>
-        # Standard CSS positioning is top-left corner.
+        # Measure dimensions
+        # 1. Message Text
+        bbox = draw.multiline_textbbox((0, 0), wrapped_text, font=self.font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
         
-        abs_x = (x_pct / 100) * img.width
-        abs_y = (y_pct / 100) * img.height
+        # 2. Character Name (if exists)
+        name_width = 0
+        name_height = 0
+        display_name = ""
+        if character_name:
+            display_name = f"{character_name}:"
+            name_bbox = draw.textbbox((0, 0), display_name, font=self.font)
+            name_width = name_bbox[2] - name_bbox[0]
+            name_height = (name_bbox[3] - name_bbox[1]) + 5 # Add small gap
         
-        # Switch to Top-Left positioning to match CSS default
-        bx = abs_x
-        by = abs_y
+        # Calculate Total Bubble Dimensions
+        total_text_width = max(text_width, name_width)
+        total_text_height = text_height + name_height
         
-        # Ensure it fits in image (clamping)
+        padding = self.config.bubble_padding
+        bw = total_text_width + padding * 2
+        bh = total_text_height + padding * 2
+        
+        # Override with explicit width/height if provided (clamping if text is larger??)
+        # Usually easier to let text expand height, but respect width
+        if w_pct:
+            bw = (w_pct / 100) * img.width
+            if bw < total_text_width + padding * 2:
+                # Force wrap tighter?? Or just clip/expand?
+                # Let's expand height to compensate if needed in more complex logic,
+                # but for now we trust the wrapping above.
+                pass
+        
+        if h_pct:
+             # User height is a suggestion, we ideally grow to fit text
+             # But if strictly enforcing:
+             bh = max(bh, (h_pct / 100) * img.height)
+
+        # Positioning (Center based on pct)
+        # Convert Center (x_pct, y_pct) to Top-Left (bx, by)
+        center_x_target = (x_pct / 100) * img.width
+        center_y_target = (y_pct / 100) * img.height
+        
+        bx = center_x_target - (bw / 2)
+        by = center_y_target - (bh / 2)
+        
+        # Clamp to image bounds (optional, but good for safety)
         # bx = max(0, min(img.width - bw, bx))
         # by = max(0, min(img.height - bh, by))
+
+        # Draw Bubble Background
+        radius = 20
+        bg_color = (255, 255, 255, int(self.config.bubble_bg_opacity * 255))
+        border_color = self._hex_to_rgb(self.config.bubble_border_color)
         
-        # Draw bubble background
-        assets_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets")
-        bubble_img_path = os.path.join(assets_dir, "bubble.png")
+        draw.rounded_rectangle(
+            [(bx, by), (bx + bw, by + bh)],
+            radius=radius,
+            fill=bg_color,
+            outline=border_color,
+            width=self.config.bubble_border_width
+        )
         
-        custom_bubble_used = False
-        if os.path.exists(bubble_img_path):
-            try:
-                # Load custom bubble
-                bubble_asset = Image.open(bubble_img_path).convert("RGBA")
-                
-                # Resize to target dimensions
-                bubble_asset = bubble_asset.resize((int(bw), int(bh)), Image.Resampling.LANCZOS)
-                
-                # Apply opacity
-                opacity = self.config.bubble_bg_opacity
-                if opacity < 1.0:
-                    r, g, b, a = bubble_asset.split()
-                    a = a.point(lambda p: int(p * opacity))
-                    bubble_asset.putalpha(a)
-                
-                # Paste
-                img.alpha_composite(bubble_asset, (int(bx), int(by)))
-                custom_bubble_used = True
-                
-            except Exception as e:
-                logger.error(f"Failed to load custom bubble asset: {str(e)}")
+        # Draw Content
+        current_y = by + padding
+        center_x = bx + bw / 2
         
-        if not custom_bubble_used:
-            # Fallback: Draw rounded rectangle background
-            radius = 20
-            bg_color = (255, 255, 255, int(self.config.bubble_bg_opacity * 255))
-            border_color = self._hex_to_rgb(self.config.bubble_border_color)
-            
-            draw.rounded_rectangle(
-                [(bx, by), (bx + bw, by + bh)],
-                radius=radius,
-                fill=bg_color,
-                outline=border_color,
-                width=self.config.bubble_border_width
+        # 1. Draw Name (Left aligned or centered?)
+        # Let's center everything for standard bubbles
+        if character_name:
+            name_color = self._hex_to_rgb(getattr(self.config, 'bubble_name_color', '#6b21a8'))
+            draw.text(
+                (center_x, current_y),
+                display_name,
+                font=self.font,
+                fill=name_color,
+                anchor="ma", # Middle-Ascender (top centered)
+                stroke_width=1, # Faux bold
+                stroke_fill=name_color
             )
-        
-        # Draw text centered in bubble
-        text_x = bx + bw / 2
-        text_y = by + bh / 2
+            current_y += name_height
+            
+        # 2. Draw Message
         text_color = self._hex_to_rgb(self.config.bubble_text_color)
-        
-        # Use multiline text drawing
         draw.multiline_text(
-            (text_x, text_y),
+            (center_x, current_y),
             wrapped_text,
             font=self.font,
             fill=text_color,
-            anchor="mm",  # Middle-middle anchor
+            anchor="ma", # Middle-Ascender
             align="center"
         )
         
-        return img
+        # Composite overlay
+        return Image.alpha_composite(img, overlay)
     
     def generate_frame(
         self, 
@@ -254,10 +263,13 @@ class VideoService:
         else:
             img = Image.open(image_url).convert("RGBA")
         
-        # Scale to cover (don't crop yet)
+        # Scale to cover
         img = self._scale_to_cover(img)
         
-        # Render bubbles on scaled full image (preserves relative coordinates logic)
+        # Crop to target size FIRST (Canvas Coordinate System)
+        img = self._crop_center(img)
+        
+        # Render bubbles on the FINAL cropped frame
         for bubble in bubbles:
             img = self.render_bubble(
                 img, 
@@ -265,11 +277,9 @@ class VideoService:
                 bubble.x, 
                 bubble.y,
                 getattr(bubble, 'width', None),
-                getattr(bubble, 'height', None)
+                getattr(bubble, 'height', None),
+                getattr(bubble, 'character_name', None)
             )
-            
-        # Crop to target size
-        img = self._crop_center(img)
         
         return img
     
@@ -350,19 +360,19 @@ class VideoService:
                 
                 # 2. Each bubble sequentially
                 for bubble in panel.bubbles:
-                    # Render bubble on COPY of scaled image
-                    # We use scaled image (not cropped) to calculate position correctly
-                    img_with_bubble = self.render_bubble(
-                        base_scaled.copy(), 
+                    # Render bubble on COPY of FINAL BASE (cropped)
+                    # Coordinates are now relative to the 9:16 canvas
+                    frame_with_bubble = final_base.copy()
+                    
+                    frame_with_bubble = self.render_bubble(
+                        frame_with_bubble, 
                         bubble.text, 
                         bubble.x, 
                         bubble.y,
                         getattr(bubble, 'width', None),
-                        getattr(bubble, 'height', None)
+                        getattr(bubble, 'height', None),
+                        getattr(bubble, 'character_name', None)
                     )
-                    
-                    # THEN crop it
-                    frame_with_bubble = self._crop_center(img_with_bubble)
                     
                     for _ in range(bubble_frames):
                         frame_path = os.path.join(temp_dir, f"frame_{frame_idx:06d}.png")
