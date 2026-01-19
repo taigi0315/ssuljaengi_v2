@@ -30,7 +30,7 @@ export async function searchPosts(criteria: SearchRequest): Promise<SearchRespon
     }
 
     const data = await response.json();
-    
+
     // Transform snake_case response to camelCase for frontend
     return {
       posts: data.posts.map((post: any) => ({
@@ -90,7 +90,7 @@ export async function generateStory(request: StoryRequest): Promise<{ workflowId
     }
 
     const data = await response.json();
-    
+
     return {
       workflowId: data.workflow_id,
       status: data.status,
@@ -127,7 +127,7 @@ export async function getStoryStatus(workflowId: string): Promise<WorkflowStatus
     }
 
     const data = await response.json();
-    
+
     return {
       workflowId: data.workflow_id,
       status: data.status,
@@ -167,7 +167,7 @@ export async function getStory(storyId: string): Promise<StoryResponse> {
     }
 
     const data = await response.json();
-    
+
     return {
       story: {
         id: data.story.id,
@@ -219,13 +219,15 @@ export async function generateWebtoonScript(storyId: string, storyContent?: stri
     }
 
     const data = await response.json();
-    
+
     return {
       script_id: data.script_id,
       story_id: data.story_id,
       characters: data.characters,
       panels: data.panels,
       character_images: data.character_images || {},
+      scene_images: data.scene_images || {},
+      dialogue_bubbles: data.dialogue_bubbles || {},
       created_at: data.created_at,
     };
   } catch (error) {
@@ -260,7 +262,7 @@ export async function generateCharacterImage(request: import('@/types').Generate
     }
 
     const data = await response.json();
-    
+
     return {
       id: data.id,
       character_name: data.character_name,
@@ -300,13 +302,15 @@ export async function getWebtoonScript(scriptId: string): Promise<import('@/type
     }
 
     const data = await response.json();
-    
+
     return {
       script_id: data.script_id,
       story_id: data.story_id,
       characters: data.characters,
       panels: data.panels,
       character_images: data.character_images || {},
+      scene_images: data.scene_images || {},
+      dialogue_bubbles: data.dialogue_bubbles || {},
       created_at: data.created_at,
     };
   } catch (error) {
@@ -374,7 +378,7 @@ export async function getCharacterImages(scriptId: string, characterName: string
     }
 
     const data = await response.json();
-    
+
     return data.map((img: any) => ({
       id: img.id,
       character_name: img.character_name,
@@ -420,7 +424,7 @@ export async function generateSceneImage(request: import('@/types').GenerateScen
     }
 
     const data = await response.json();
-    
+
     return {
       id: data.id,
       panel_number: data.panel_number,
@@ -461,7 +465,7 @@ export async function getSceneImages(scriptId: string, panelNumber: number): Pro
     }
 
     const data = await response.json();
-    
+
     return data.map((img: any) => ({
       id: img.id,
       panel_number: img.panel_number,
@@ -558,14 +562,45 @@ export async function getLibraryCharacters(): Promise<any[]> {
     });
 
     if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
     return await response.json();
   } catch (error) {
     if (error instanceof Error) {
-        throw error;
+      throw error;
     }
     throw new Error('Failed to get library characters');
   }
 }
+
+/**
+ * Generate a shorts script based on a topic
+ * @param topic The topic for the shorts script (empty for random)
+ * @returns ShortsScript with scenes and prompts
+ */
+export async function generateShortsScript(topic?: string): Promise<import('@/types').ShortsScript> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/shorts/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        topic: topic || null
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to generate shorts script');
+  }
+}
+

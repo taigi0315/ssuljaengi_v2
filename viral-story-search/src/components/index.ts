@@ -26,3 +26,7 @@ export { default as ScenePromptEditor } from './ScenePromptEditor';
 export { default as SceneImageCanvas } from './SceneImageCanvas';
 export { default as SceneContextPanel } from './SceneContextPanel';
 export { default as VideoGenerator } from './VideoGenerator';
+export { default as EyeCandyGenerator } from './EyeCandyGenerator';
+export { default as WorkflowSelector } from './WorkflowSelector';
+export { default as ShortsGenerator } from './ShortsGenerator';
+

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SearchControls, ResultsList, ErrorMessage, GenreSelector, SceneImageGenerator, VideoGenerator } from '@/components';
+import { SearchControls, ResultsList, ErrorMessage, GenreSelector, SceneImageGenerator, VideoGenerator, EyeCandyGenerator, WorkflowSelector, ShortsGenerator } from '@/components';
 import StoryTabs from '@/components/StoryTabs';
 import StoryBuilder from '@/components/StoryBuilder';
 import CharacterImageGenerator from '@/components/CharacterImageGenerator';
@@ -20,22 +20,22 @@ export default function Home() {
   const [searchCriteria, setSearchCriteria] = useState<SearchCriteria | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ErrorState | string | null>(null);
-  
+
   // Selection state for story generation - Persistent
   const [selectedPost, setSelectedPost] = useSessionStorage<ViralPost | null>(
-    SESSION_KEYS.SELECTED_POST, 
+    SESSION_KEYS.SELECTED_POST,
     null
   );
   const [customStorySeed, setCustomStorySeed] = useSessionStorage<string>(
-    SESSION_KEYS.CUSTOM_STORY_SEED, 
+    SESSION_KEYS.CUSTOM_STORY_SEED,
     ''
   );
   const [selectedGenre, setSelectedGenre] = useSessionStorage<StoryGenre | null>(
-    SESSION_KEYS.SELECTED_GENRE, 
+    SESSION_KEYS.SELECTED_GENRE,
     null
   );
   const [generatedStoryId, setGeneratedStoryId] = useSessionStorage<string | null>(
-    SESSION_KEYS.GENERATED_STORY_ID, 
+    SESSION_KEYS.GENERATED_STORY_ID,
     null
   );
   const [webtoonScript, setWebtoonScript] = useSessionStorage<WebtoonScript | null>(
@@ -48,11 +48,23 @@ export default function Home() {
   );
 
   // Tab state - persistent
-  const [activeTab, setActiveTab] = useSessionStorage<'search' | 'generate' | 'script' | 'images' | 'scenes' | 'video'>(
-    SESSION_KEYS.ACTIVE_TAB, 
+  const [activeTab, setActiveTab] = useSessionStorage<'search' | 'generate' | 'script' | 'images' | 'scenes' | 'video' | 'eye_candy' | 'shorts'>(
+    SESSION_KEYS.ACTIVE_TAB,
     'search'
   );
-  
+
+  // Eye Candy workflow state
+  const [selectedReferenceImage, setSelectedReferenceImage] = useSessionStorage<import('@/types').CharacterImage | null>(
+    'gossiptoon_selectedReferenceImage',
+    null
+  );
+
+  // Workflow state - persistent
+  const [workflowMode, setWorkflowMode] = useSessionStorage<'story' | 'eye_candy'>(
+    'gossiptoon_workflowMode',
+    'story'
+  );
+
   const router = useRouter();
 
   // Check for stale data on startup - if backend is fresh but frontend has old data
@@ -143,7 +155,7 @@ export default function Home() {
       // Handle successful response
       setPosts(data.posts || []);
       setError(null);
-      
+
       // Cache the successful result
       searchCache.set(criteria, data);
     } catch (err) {
@@ -195,25 +207,31 @@ export default function Home() {
       // Use useSessionStorage hook logic, no need for manual setItem here
       // Just switching tab triggers re-render and saving happens automatically in useEffect if values changed
       // But values are already set via setters (setSelectedPost etc) which trigger save.
-      
+
       // Explicitly clear generated story if we are starting a NEW story
       // (This logic might need refinement if we want to "resume" creation?)
       // For now, assuming "Create Story" button implies "Start Fresh" or "Continue with selection"
-      
+
       // If we want to force clear previous results when clicking Create Story:
       // But we are using persistent state... 
       // Actually, if I select a new post, `generatedStoryId` might still be the OLD one unless I clear it.
       // So I shoud clear derived state.
       setGeneratedStoryId(null);
       setWebtoonScript(null);
-      
+
       // Switch to story building tab
       setActiveTab('generate');
     }
   }, [selectedPost, customStorySeed, selectedGenre, setGeneratedStoryId, setWebtoonScript, setActiveTab]);
 
   // Handle tab change
-  const handleTabChange = useCallback((tab: 'search' | 'generate' | 'script' | 'images' | 'scenes' | 'video') => {
+  const handleTabChange = useCallback((tab: 'search' | 'generate' | 'script' | 'images' | 'scenes' | 'video' | 'eye_candy' | 'shorts') => {
+    // Skip validation for Eye Candy mode
+    if (workflowMode === 'eye_candy') {
+      setActiveTab(tab);
+      return;
+    }
+
     // Allow 'generate' tab if: has post/seed, OR has genre (to write manual story)
     if (tab === 'generate' && !selectedGenre) {
       return;
@@ -231,7 +249,13 @@ export default function Home() {
       return;
     }
     setActiveTab(tab);
-  }, [selectedGenre, generatedStoryId, webtoonScript]);
+  }, [selectedGenre, generatedStoryId, webtoonScript, workflowMode]);
+
+  // Handle proceed to shorts from Eye Candy
+  const handleProceedToShorts = useCallback((referenceImage: import('@/types').CharacterImage) => {
+    setSelectedReferenceImage(referenceImage);
+    setActiveTab('shorts');
+  }, [setSelectedReferenceImage, setActiveTab]);
 
   // Handle story generation complete - go to script tab
   const handleGenerateImages = useCallback((storyId: string) => {
@@ -274,15 +298,15 @@ export default function Home() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const res = await fetch(`${apiUrl}/webtoon/latest`);
       if (!res.ok) throw new Error('No test data found');
-      
+
       const script = await res.json();
       console.log('Loaded test script:', script);
-      
+
       setGeneratedStoryId(script.story_id);
       setWebtoonScript(script);
       setSelectedGenre(script.genre || 'MODERN_ROMANCE_DRAMA_MANHWA');
       setCustomStorySeed('E2E Test Story'); // Dummy to satisfy checks
-      
+
       setActiveTab('video');
     } catch (e: any) {
       alert('Failed to load test story: ' + e.message);
@@ -300,7 +324,6 @@ export default function Home() {
           <p className="text-sm sm:text-base text-gray-600 text-center mt-2">
             Discover the most engaging Reddit stories
           </p>
-          
           {/* Action Buttons */}
           <div className="absolute top-4 right-4 flex gap-2">
             <button
@@ -321,6 +344,22 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Workflow Selector */}
+      <div className="mt-6">
+        <WorkflowSelector
+          activeWorkflow={workflowMode}
+          onChange={(mode: 'story' | 'eye_candy') => {
+            setWorkflowMode(mode);
+            // Default tab switching logic
+            if (mode === 'story') {
+              setActiveTab('search');
+            } else {
+              setActiveTab('eye_candy');
+            }
+          }}
+        />
+      </div>
+
       {/* Tabs */}
       <StoryTabs
         activeTab={activeTab}
@@ -328,6 +367,7 @@ export default function Home() {
         hasSelectedPost={!!(selectedPost || customStorySeed.trim())}
         hasGeneratedStory={!!generatedStoryId}
         hasWebtoonScript={!!webtoonScript}
+        activeWorkflow={workflowMode}
       />
 
       {/* Main Content */}
@@ -368,7 +408,7 @@ export default function Home() {
                   </span>
                 </div>
               </div>
-              
+
               <div className="mt-6">
                 <textarea
                   value={customStorySeed}
@@ -494,7 +534,7 @@ export default function Home() {
             {/* Character Images Tab */}
             {webtoonScript && (
               <div className="max-w-7xl mx-auto">
-                <CharacterImageGenerator 
+                <CharacterImageGenerator
                   storyId={generatedStoryId!}
                   webtoonScript={webtoonScript}
                   onUpdateScript={handleScriptUpdate}
@@ -508,27 +548,41 @@ export default function Home() {
             {/* Scene Images Tab */}
             {webtoonScript && (
               <div className="max-w-7xl mx-auto">
-                <SceneImageGenerator 
-                  webtoonScript={webtoonScript} 
+                <SceneImageGenerator
+                  webtoonScript={webtoonScript}
                   onUpdateScript={handleScriptUpdate}
                   onProceedToVideo={handleProceedToVideo}
                 />
               </div>
             )}
           </>
-        ) : (
+        ) : activeTab === 'video' ? (
           <>
             {/* Video Generator Tab */}
             {webtoonScript && selectedGenre && (
               <div className="max-w-7xl mx-auto">
-                <VideoGenerator 
+                <VideoGenerator
                   webtoonScript={webtoonScript}
                   genre={selectedGenre}
                 />
               </div>
             )}
           </>
-        )}
+        ) : activeTab === 'eye_candy' ? (
+          <>
+            {/* Eye Candy Tab */}
+            <div className="max-w-7xl mx-auto">
+              <EyeCandyGenerator onProceedToShorts={handleProceedToShorts} />
+            </div>
+          </>
+        ) : activeTab === 'shorts' ? (
+          <>
+            {/* Shorts Generator Tab */}
+            <div className="max-w-7xl mx-auto">
+              <ShortsGenerator referenceImage={selectedReferenceImage || undefined} />
+            </div>
+          </>
+        ) : null}
       </main>
 
       {/* Footer */}

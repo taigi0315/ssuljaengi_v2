@@ -19,6 +19,14 @@ export default function StoryBuilder({ post, customStorySeed, selectedGenre, onG
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [workflowId, setWorkflowId] = useState<string | null>(null);
+  const [editedContent, setEditedContent] = useState('');
+
+  // Update edited content when story is loaded
+  useEffect(() => {
+    if (story) {
+      setEditedContent(story.content);
+    }
+  }, [story]);
 
   // Poll for status updates
   useEffect(() => {
@@ -35,7 +43,7 @@ export default function StoryBuilder({ post, customStorySeed, selectedGenre, onG
   useEffect(() => {
     const cachedStory = sessionStorage.getItem('generatedStory');
     const cachedGenre = sessionStorage.getItem('storyGenre');
-    
+
     if (cachedStory && cachedGenre === selectedGenre) {
       // Use cached story if genre matches
       try {
@@ -46,7 +54,7 @@ export default function StoryBuilder({ post, customStorySeed, selectedGenre, onG
         console.error('Failed to parse cached story:', err);
       }
     }
-    
+
     // No cache or genre changed, generate new story
     handleGenerateStory();
   }, []);
@@ -57,7 +65,7 @@ export default function StoryBuilder({ post, customStorySeed, selectedGenre, onG
       setIsGenerating(true);
       setError(null);
       setStory(null);
-      
+
       // Clear any existing cache
       sessionStorage.removeItem('generatedStory');
       sessionStorage.removeItem('storyGenre');
@@ -101,7 +109,7 @@ export default function StoryBuilder({ post, customStorySeed, selectedGenre, onG
         const storyData = await getStory(statusData.storyId);
         setStory(storyData.story);
         setIsGenerating(false);
-        
+
         // Cache the story
         sessionStorage.setItem('generatedStory', JSON.stringify(storyData.story));
         sessionStorage.setItem('storyGenre', selectedGenre);
@@ -208,13 +216,15 @@ export default function StoryBuilder({ post, customStorySeed, selectedGenre, onG
             <span>Your Story</span>
           </h2>
           <div className="space-y-6">
-            <div className="prose prose-lg max-w-none">
-              {story.content.split('\n\n').map((paragraph, index) => (
-                <p key={index} className="text-gray-800 leading-relaxed mb-4">
-                  {paragraph}
-                </p>
-              ))}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800 mb-4">
+              <p>✏️ You can edit the story below before generating the webtoon script.</p>
             </div>
+
+            <textarea
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              className="w-full p-4 text-gray-800 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent min-h-[400px] font-serif text-lg leading-relaxed"
+            />
 
             {/* Story Metadata */}
             <div className="border-t pt-6 mt-8">
@@ -235,7 +245,7 @@ export default function StoryBuilder({ post, customStorySeed, selectedGenre, onG
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">Word Count:</span>
                   <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">
-                    {story.content.split(/\s+/).length}
+                    {editedContent.split(/\s+/).length}
                   </span>
                 </div>
               </div>
@@ -249,10 +259,21 @@ export default function StoryBuilder({ post, customStorySeed, selectedGenre, onG
               >
                 🔄 Generate Another Story
               </button>
-              
+
               {onGenerateImages && (
                 <button
-                  onClick={() => onGenerateImages(story.id)}
+                  onClick={() => {
+                    // Check if content was edited
+                    if (editedContent !== story.content) {
+                      // If edited, treat as manual story
+                      const manualId = `manual_edited_${story.id}`;
+                      sessionStorage.setItem('gossiptoon_manualStoryContent', editedContent);
+                      onGenerateImages(manualId);
+                    } else {
+                      // If unchanged, use original ID
+                      onGenerateImages(story.id);
+                    }
+                  }}
                   className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-lg hover:shadow-lg transition-all transform hover:scale-105"
                 >
                   🎨 Let's Create Webtoon

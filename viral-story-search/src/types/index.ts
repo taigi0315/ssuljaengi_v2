@@ -220,6 +220,8 @@ export interface Character {
   outfit: string;
   mood: string;
   visual_description: string;
+  personality?: string;
+  reference_tag?: string;
 }
 
 export interface WebtoonPanel {
@@ -270,6 +272,7 @@ export interface GenerateCharacterImageRequest {
   description: string;
   gender: string;
   image_style: StoryGenre;
+  reference_image_url?: string;  // Optional reference image for multimodal generation
 }
 
 export type ImageStyle = StoryGenre;
@@ -302,3 +305,22 @@ export interface SceneImageResponse {
   image: SceneImage;
   generation_time: number;
 }
+
+// Shorts Script types
+export interface ShortsScene {
+  scene_id: number;
+  action: string;
+  image_prompt: string;
+  video_prompt: string;
+}
+
+export interface ShortsScriptMetadata {
+  topic: string;
+  style: string;
+}
+
+export interface ShortsScript {
+  metadata: ShortsScriptMetadata;
+  scenes: ShortsScene[];
+}
+

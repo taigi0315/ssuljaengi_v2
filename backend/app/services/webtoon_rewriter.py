@@ -8,7 +8,7 @@ generates an improved version that addresses the identified issues.
 
 import logging
 import json
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from app.services.llm_config import llm_config
 from app.models.story import WebtoonScript

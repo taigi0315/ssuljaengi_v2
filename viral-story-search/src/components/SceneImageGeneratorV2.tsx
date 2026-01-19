@@ -18,17 +18,18 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
   // Removed local sceneImages and dialogueBubbles state in favor of webtoonScript prop
   const [currentImageIndices, setCurrentImageIndices] = useState<Record<number, number>>({});
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draggedDialogue, setDraggedDialogue] = useState<{ text: string; characterName: string } | null>(null);
-  
+
   // UX State
-  const [dragPreviewPos, setDragPreviewPos] = useState<{x: number, y: number} | null>(null);
-  const [resizingBubble, setResizingBubble] = useState<{ 
-    id: string; 
-    startX: number; 
-    startY: number; 
-    startWidth: number; 
-    startHeight: number 
+  const [dragPreviewPos, setDragPreviewPos] = useState<{ x: number, y: number } | null>(null);
+  const [resizingBubble, setResizingBubble] = useState<{
+    id: string;
+    startX: number;
+    startY: number;
+    startWidth: number;
+    startHeight: number
   } | null>(null);
   const [draggingBubble, setDraggingBubble] = useState<{
     id: string;
@@ -37,10 +38,10 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
     startBubbleX: number;
     startBubbleY: number;
   } | null>(null);
-  
+
   const canvasRef = useRef<HTMLDivElement>(null);
   const prevImagesLengthRef = useRef<Record<number, number>>({});
-  
+
   // Get genre from prop or sessionStorage
   const genre = propGenre || (typeof window !== 'undefined'
     ? (sessionStorage.getItem('selectedGenre') as StoryGenre) || 'MODERN_ROMANCE_DRAMA_MANHWA'
@@ -48,7 +49,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
 
   const panels = webtoonScript.panels;
   const currentPanel = panels[currentPanelIndex];
-  
+
   // Initialize prompts from panels
   useEffect(() => {
     const initialPrompts: Record<number, string> = {};
@@ -63,7 +64,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
     if (currentPanel) {
       const panelImages = webtoonScript.scene_images?.[currentPanel.panel_number] || [];
       const prevLength = prevImagesLengthRef.current[currentPanel.panel_number] || 0;
-      
+
       if (panelImages.length > prevLength) {
         setCurrentImageIndices(prev => ({
           ...prev,
@@ -88,7 +89,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
 
       const updatedBubbles = { ...(webtoonScript.dialogue_bubbles || {}) };
       if (updatedBubbles[currentPanel.panel_number]) {
-        updatedBubbles[currentPanel.panel_number] = updatedBubbles[currentPanel.panel_number].map(b => 
+        updatedBubbles[currentPanel.panel_number] = updatedBubbles[currentPanel.panel_number].map(b =>
           b.id === resizingBubble.id ? { ...b, width: newWidth, height: newHeight } : b
         );
         onUpdateScript({
@@ -126,7 +127,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
 
       const updatedBubbles = { ...(webtoonScript.dialogue_bubbles || {}) };
       if (updatedBubbles[currentPanel.panel_number]) {
-        updatedBubbles[currentPanel.panel_number] = updatedBubbles[currentPanel.panel_number].map(b => 
+        updatedBubbles[currentPanel.panel_number] = updatedBubbles[currentPanel.panel_number].map(b =>
           b.id === draggingBubble.id ? { ...b, x: newX, y: newY } : b
         );
         onUpdateScript({
@@ -160,7 +161,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
   // Parse dialogue from panel
   const parseDialogues = (dialogue: any): { characterName: string; text: string }[] => {
     if (!dialogue) return [];
-    
+
     // Check if dialogue is already in list object format
     if (Array.isArray(dialogue)) {
       return dialogue.map((line: any) => ({
@@ -175,24 +176,24 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
       const dialogues: { characterName: string; text: string }[] = [];
       const regex = /\[?([^:\]]+):\s*([^\],]+)\]?/g;
       let match;
-      
+
       while ((match = regex.exec(dialogue)) !== null) {
         dialogues.push({
           characterName: match[1].trim(),
           text: match[2].trim(),
         });
       }
-      
+
       // If no matches, try splitting by newlines
       if (dialogues.length === 0 && dialogue.trim()) {
         dialogue.split('\n').filter(line => line.trim()).forEach(line => {
           dialogues.push({ characterName: 'Character', text: line.trim() });
         });
       }
-      
+
       return dialogues;
     }
-    
+
     return [];
   };
 
@@ -207,10 +208,10 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
 
   const handleGenerateImage = async () => {
     if (!currentPanel || isGenerating) return;
-    
+
     setIsGenerating(true);
     setError(null);
-    
+
     try {
       const newImage = await generateSceneImage({
         script_id: webtoonScript.script_id,
@@ -218,20 +219,20 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
         visual_prompt: currentPrompt,
         genre: genre,
       });
-      
+
       if (onUpdateScript) {
         const updatedSceneImages = { ...(webtoonScript.scene_images || {}) };
         updatedSceneImages[currentPanel.panel_number] = [
           ...(updatedSceneImages[currentPanel.panel_number] || []),
           newImage
         ];
-        
+
         onUpdateScript({
           ...webtoonScript,
           scene_images: updatedSceneImages
         });
       }
-      
+
     } catch (err) {
       console.error('Scene image generation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate scene image');
@@ -240,12 +241,70 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
     }
   };
 
+  const handleGenerateAll = async () => {
+    if (isGeneratingAll) return;
+
+    setIsGeneratingAll(true);
+    setError(null);
+
+    try {
+      // Generate images sequentially for all panels that don't have images yet
+      for (const panel of panels) {
+        const panelImages = webtoonScript.scene_images?.[panel.panel_number] || [];
+        if (panelImages.length === 0) {
+          // Navigate to this panel
+          const panelIndex = panels.findIndex(p => p.panel_number === panel.panel_number);
+          setCurrentPanelIndex(panelIndex);
+
+          // Wait a bit for UI to update
+          await new Promise(resolve => setTimeout(resolve, 300));
+
+          // Generate image for this panel
+          setIsGenerating(true);
+          try {
+            const newImage = await generateSceneImage({
+              script_id: webtoonScript.script_id,
+              panel_number: panel.panel_number,
+              visual_prompt: panelPrompts[panel.panel_number] || panel.visual_prompt,
+              genre: genre,
+            });
+
+            if (onUpdateScript) {
+              const updatedSceneImages = { ...(webtoonScript.scene_images || {}) };
+              updatedSceneImages[panel.panel_number] = [
+                ...(updatedSceneImages[panel.panel_number] || []),
+                newImage
+              ];
+
+              onUpdateScript({
+                ...webtoonScript,
+                scene_images: updatedSceneImages
+              });
+            }
+          } catch (err) {
+            console.error(`Failed to generate image for panel ${panel.panel_number}:`, err);
+          } finally {
+            setIsGenerating(false);
+          }
+
+          // Short delay between panels
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+    } catch (err) {
+      console.error('Batch generation error:', err);
+      setError('Failed to generate all images');
+    } finally {
+      setIsGeneratingAll(false);
+    }
+  };
+
   const handleSelectImage = async () => {
     if (!currentImage) return;
-    
+
     try {
       await selectSceneImage(webtoonScript.script_id, currentPanel.panel_number, currentImage.id);
-      
+
       if (onUpdateScript) {
         const updatedSceneImages = { ...(webtoonScript.scene_images || {}) };
         if (updatedSceneImages[currentPanel.panel_number]) {
@@ -254,7 +313,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
             is_selected: img.id === currentImage.id,
           }));
         }
-        
+
         onUpdateScript({
           ...webtoonScript,
           scene_images: updatedSceneImages
@@ -282,31 +341,31 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
 
   const handleDownload = () => {
     if (!currentImage) return;
-    
+
     const base64Match = currentImage.image_url.match(/^data:([^;]+);base64,(.+)$/);
     if (!base64Match) return;
-    
+
     const mimeType = base64Match[1];
     const base64Data = base64Match[2];
     const ext = mimeType.split('/')[1] || 'png';
-    
+
     try {
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-      
+
       const blob = new Blob([bytes], { type: mimeType });
       const blobUrl = URL.createObjectURL(blob);
-      
+
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = `scene_panel_${currentPanel.panel_number}_v${currentImageIndex + 1}.${ext}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
     } catch (error) {
       console.error('Download error:', error);
@@ -321,7 +380,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
-    
+
     if (canvasRef.current && draggedDialogue) {
       const rect = canvasRef.current.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -333,17 +392,17 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
   const handleDragLeave = () => {
     setDragPreviewPos(null);
   };
-    
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragPreviewPos(null);
-    
+
     if (!draggedDialogue || !canvasRef.current) return;
-    
+
     const rect = canvasRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
-    
+
     const newBubble: DialogueBubble = {
       id: `bubble-${Date.now()}`,
       text: draggedDialogue.text,
@@ -353,20 +412,20 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
       width: 30, // Default width %
       height: 15, // Default height %
     };
-    
+
     if (onUpdateScript) {
       const updatedBubbles = { ...(webtoonScript.dialogue_bubbles || {}) };
       updatedBubbles[currentPanel.panel_number] = [
         ...(updatedBubbles[currentPanel.panel_number] || []),
         newBubble
       ];
-      
+
       onUpdateScript({
         ...webtoonScript,
         dialogue_bubbles: updatedBubbles
       });
     }
-    
+
     setDraggedDialogue(null);
   };
 
@@ -376,7 +435,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
       if (updatedBubbles[currentPanel.panel_number]) {
         updatedBubbles[currentPanel.panel_number] = updatedBubbles[currentPanel.panel_number].filter(b => b.id !== bubbleId);
       }
-      
+
       onUpdateScript({
         ...webtoonScript,
         dialogue_bubbles: updatedBubbles
@@ -417,7 +476,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
 
       {/* Main 3-Column Layout */}
       <div className="flex gap-4 min-h-[700px]">
-        
+
         {/* LEFT: Scene List */}
         <div className="w-48 bg-white rounded-xl shadow-lg p-3 overflow-y-auto">
           <h3 className="text-sm font-bold text-gray-800 mb-3 px-2">📑 Scenes</h3>
@@ -426,15 +485,15 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
               const panelImages = webtoonScript.scene_images?.[panel.panel_number] || [];
               const hasImage = panelImages.length > 0;
               const isSelected = index === currentPanelIndex;
-              
+
               return (
                 <button
                   key={panel.panel_number}
                   onClick={() => setCurrentPanelIndex(index)}
                   className={`
                     w-full p-2 rounded-lg text-left transition-all
-                    ${isSelected 
-                      ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md' 
+                    ${isSelected
+                      ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md'
                       : 'bg-gray-50 hover:bg-gray-100 text-gray-700'}
                   `}
                 >
@@ -467,7 +526,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
             </div>
             <div className="flex items-center gap-2">
               {getActiveCharacterInfo().map(char => (
-                <span 
+                <span
                   key={char.name}
                   className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
                 >
@@ -488,13 +547,39 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
             />
           </div>
 
+          {/* Create All Images Button */}
+          <button
+            onClick={handleGenerateAll}
+            disabled={isGeneratingAll || panels.every(p => (webtoonScript.scene_images?.[p.panel_number] || []).length > 0)}
+            className={`
+              w-full py-3 rounded-lg font-bold text-white mb-2 transition-all
+              ${isGeneratingAll
+                ? 'bg-gray-400 cursor-not-allowed'
+                : panels.every(p => (webtoonScript.scene_images?.[p.panel_number] || []).length > 0)
+                  ? 'bg-green-100 text-green-700 border-2 border-green-300'
+                  : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg hover:scale-[1.02]'
+              }
+            `}
+          >
+            {isGeneratingAll ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                Generating All... ({panels.filter(p => (webtoonScript.scene_images?.[p.panel_number] || []).length > 0).length}/{panels.length})
+              </span>
+            ) : panels.every(p => (webtoonScript.scene_images?.[p.panel_number] || []).length > 0) ? (
+              <span>✅ All Panels Generated</span>
+            ) : (
+              <span>🚀 Create All Images</span>
+            )}
+          </button>
+
           {/* Generate Button */}
           <button
             onClick={handleGenerateImage}
-            disabled={isGenerating}
+            disabled={isGenerating || isGeneratingAll}
             className={`
               w-full py-3 rounded-lg font-bold text-white mb-4 transition-all
-              ${isGenerating
+              ${isGenerating || isGeneratingAll
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:shadow-lg hover:scale-[1.02]'
               }
@@ -511,7 +596,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
           </button>
 
           {/* Image Canvas with Drop Zone */}
-          <div 
+          <div
             ref={canvasRef}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -528,17 +613,17 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
                   alt={`Scene Panel ${currentPanel.panel_number}`}
                   className="w-full h-full object-contain"
                 />
-                
+
                 {/* Dialogue Bubbles Overlay */}
                 {currentBubbles.map(bubble => {
                   const width = bubble.width || 30;
                   const height = bubble.height || 15;
-                  
+
                   return (
                     <div
                       key={bubble.id}
-                      style={{ 
-                        left: `${bubble.x}%`, 
+                      style={{
+                        left: `${bubble.x}%`,
                         top: `${bubble.y}%`,
                         width: `${width}%`,
                         height: `${height}%`,
@@ -564,22 +649,22 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
                       }}
                     >
                       {/* Tail */}
-                      <div 
-                        className="absolute -bottom-2 left-4 w-4 h-4 transform rotate-45" 
-                        style={{ 
+                      <div
+                        className="absolute -bottom-2 left-4 w-4 h-4 transform rotate-45"
+                        style={{
                           backgroundColor: 'rgba(255, 255, 255, 0.1)',
                           borderRight: '3px solid #4a4a4a',
                           borderBottom: '3px solid #4a4a4a',
                         }}
                       />
-                      
+
                       {/* Content - Text only, no name */}
                       <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden">
                         <p className="text-gray-900 font-medium leading-tight w-full break-words" style={{ fontSize: '1em' }}>{bubble.text}</p>
                       </div>
 
                       {/* Delete Button */}
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRemoveBubble(bubble.id);
@@ -590,7 +675,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
                       </button>
 
                       {/* Resize Handle */}
-                      <div 
+                      <div
                         className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize flex items-end justify-end p-0.5 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
                         onMouseDown={(e) => {
                           e.stopPropagation();
@@ -604,9 +689,9 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
                           });
                         }}
                       >
-                         <svg viewBox="0 0 10 10" className="w-3 h-3 text-purple-400 fill-current">
-                           <path d="M10 10 H0 L10 0 Z" />
-                         </svg>
+                        <svg viewBox="0 0 10 10" className="w-3 h-3 text-purple-400 fill-current">
+                          <path d="M10 10 H0 L10 0 Z" />
+                        </svg>
                       </div>
                     </div>
                   );
@@ -615,8 +700,8 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
                 {/* Drag Preview (Ghost Bubble) */}
                 {dragPreviewPos && draggedDialogue && (
                   <div
-                    style={{ 
-                      left: `${dragPreviewPos.x}%`, 
+                    style={{
+                      left: `${dragPreviewPos.x}%`,
                       top: `${dragPreviewPos.y}%`,
                       width: '30%',
                       height: '15%',
@@ -636,7 +721,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
                 </div>
               </div>
             )}
-            
+
             {/* Drop hint overlay - very subtle */}
             {draggedDialogue && (
               <div className="absolute inset-0 bg-purple-500 bg-opacity-5 flex items-center justify-center pointer-events-none">
@@ -665,11 +750,11 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
                   <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </button>
-              
+
               <span className="text-sm font-medium text-gray-600">
                 {currentImageIndex + 1} / {currentPanelImages.length}
               </span>
-              
+
               <button
                 onClick={handleNextImage}
                 disabled={currentImageIndex === currentPanelImages.length - 1}
@@ -705,7 +790,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
             >
               {currentImage?.is_selected ? '✓ Selected' : 'Select as Reference'}
             </button>
-            
+
             <button
               onClick={handleDownload}
               disabled={!currentImage}
@@ -736,7 +821,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
         <div className="w-64 bg-white rounded-xl shadow-lg p-4 flex flex-col">
           <h3 className="text-sm font-bold text-gray-800 mb-3">💬 Dialogues</h3>
           <p className="text-xs text-gray-500 mb-4">Drag dialogues onto the image to create speech bubbles</p>
-          
+
           <div className="flex-1 space-y-3 overflow-y-auto">
             {currentDialogues.length > 0 ? (
               currentDialogues.map((dialogue, index) => (
@@ -783,7 +868,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
           )}
         </div>
       </div>
-      
+
       {/* Proceed to Video Button */}
       {onProceedToVideo && (
         <div className="mt-8 text-center border-t border-gray-200 pt-8">

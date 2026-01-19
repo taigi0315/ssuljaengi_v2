@@ -7,7 +7,7 @@ into structured webtoon scripts with characters and panels using Gemini LLM.
 
 import logging
 import json
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from app.services.llm_config import llm_config
 from app.prompt.webtoon_writer import WEBTOON_WRITER_PROMPT

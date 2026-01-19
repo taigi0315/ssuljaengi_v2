@@ -24,6 +24,7 @@ Modern webtoons use DIALOGUE and CHARACTER INTERACTION to drive stories, not jus
    - Dialogue reveals personality, advances plot, creates emotional beats
    - Multiple dialogue lines in one scene = conversation happening over one image
    - Format: The image shows the scene, dialogue bubbles appear sequentially (3-5 sec total per scene)
+   - multiple dialogue lines in one scene = conversation happening over one image (This method is encouraged for better storytelling)
 
 3. **STORY STRUCTURE (MANDATORY):**
    Your 8-12 scenes must follow this arc:
