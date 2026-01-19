@@ -10,6 +10,8 @@ class BubbleData(BaseModel):
     text: str
     x: float = Field(..., ge=0, le=100, description="X position as percentage (0-100)")
     y: float = Field(..., ge=0, le=100, description="Y position as percentage (0-100)")
+    width: Optional[float] = Field(default=30, ge=5, le=100, description="Width as percentage (5-100)")
+    height: Optional[float] = Field(default=15, ge=5, le=100, description="Height as percentage (5-100)")
 
 
 class VideoPanelData(BaseModel):

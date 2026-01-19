@@ -15,6 +15,7 @@ A full-stack application for discovering viral Reddit stories and transforming t
 - [Features](#features)
 - [Architecture](#architecture)
 - [Quick Start](#quick-start)
+- [Easy Launcher (For Non-Technical Users)](#-easy-launcher-for-non-technical-users)
 - [Development](#development)
 - [API Documentation](#api-documentation)
 - [Troubleshooting](#troubleshooting)
@@ -97,11 +98,14 @@ gossiptoon_v2_2/
 
 ### Prerequisites
 
-| Requirement | Version |
-| ----------- | ------- |
-| Python      | 3.10+   |
-| Node.js     | 18+     |
-| npm         | 9+      |
+| Requirement | Version | Notes |
+| ----------- | ------- | ----- |
+| Python      | 3.10+   | Required |
+| Node.js     | 18+     | Required |
+| npm         | 9+      | Required |
+| **FFmpeg**  | Latest  | **Required for video generation** - [Installation Guide](INSTALL_FFMPEG.md) |
+
+⚠️ **Important:** FFmpeg must be installed and added to your system PATH for video generation to work. Run `INSTALL_FFMPEG.bat` for automatic setup.
 
 ### 1. Clone & Install
 
@@ -165,6 +169,77 @@ npm run dev
 | Frontend | http://localhost:3000      |
 | Backend  | http://localhost:8000      |
 | API Docs | http://localhost:8000/docs |
+
+---
+
+## 🚀 Easy Launcher (For Non-Technical Users)
+
+**Don't want to use the terminal?** We've got you covered! You can now launch the entire application with a simple double-click – perfect for non-technical users.
+
+### Option 1: Batch File Launcher ⚡ (Quickest)
+
+**Just double-click: `START_APP.bat`**
+- ✅ Works immediately, no setup required
+- ✅ Automatically starts both backend and frontend
+- ✅ Opens your browser to the app
+- ✅ Shows helpful status messages
+
+**How to use:**
+1. Find the `START_APP.bat` file in the project root
+2. Double-click it
+3. Two console windows will open (keep them running!)
+4. Your browser will open automatically
+5. Start using the app! 🎉
+
+### Option 2: GUI Launcher 🎨 (Best User Experience)
+
+**Double-click: `launcher_gui.py`** (requires Python)
+- ✅ Beautiful graphical interface
+- ✅ Progress bar showing launch status
+- ✅ Detailed status log
+- ✅ User-friendly buttons and error messages
+
+**How to use:**
+1. Double-click `launcher_gui.py`
+2. Click the "🚀 Launch App" button
+3. Watch the progress bar
+4. Browser opens automatically when ready!
+
+### Option 3: Standalone .exe 📦 (For Distribution)
+
+**Create a single executable file that anyone can run:**
+
+1. Double-click `build_exe.bat`
+2. Choose option 2 (GUI Launcher - recommended)
+3. Wait for the build to complete
+4. Find `Ssuljaengi Launcher.exe` in the `dist/` folder
+5. Distribute this file to users – no Python needed on their machine!
+
+**Benefits:**
+- ✅ No Python installation required for end users
+- ✅ Single-file distribution
+- ✅ Professional appearance
+- ✅ Perfect for non-technical team members
+
+### 📚 Complete Launcher Documentation
+
+For detailed instructions, troubleshooting, and more:
+
+- **[LAUNCHER_README.md](LAUNCHER_README.md)** - Complete launcher guide
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - One-page quick start
+- **[HOW_TO_RUN.md](HOW_TO_RUN.md)** - User manual with troubleshooting
+
+### What the Launchers Do Automatically
+
+All launcher options perform these steps for you:
+1. Clean up any existing processes on ports 8000 and 3000
+2. Start the FastAPI backend server
+3. Wait for backend to initialize
+4. Start the Next.js frontend server
+5. Wait for frontend to start
+6. Open your browser to http://localhost:3000
+
+**No terminal commands needed!** 🎉
 
 ---
 

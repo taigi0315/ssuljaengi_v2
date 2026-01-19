@@ -248,11 +248,15 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
     setError(null);
 
     try {
+      // Create a working copy of the script to accumulate changes
+      let workingScript = { ...webtoonScript };
+
       // Generate images sequentially for all panels that don't have images yet
       for (const panel of panels) {
-        const panelImages = webtoonScript.scene_images?.[panel.panel_number] || [];
+        // Check the WORKING script, not the original prop
+        const panelImages = workingScript.scene_images?.[panel.panel_number] || [];
         if (panelImages.length === 0) {
-          // Navigate to this panel
+          // Navigate to this panel for visual feedback
           const panelIndex = panels.findIndex(p => p.panel_number === panel.panel_number);
           setCurrentPanelIndex(panelIndex);
 
@@ -269,17 +273,21 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
               genre: genre,
             });
 
-            if (onUpdateScript) {
-              const updatedSceneImages = { ...(webtoonScript.scene_images || {}) };
-              updatedSceneImages[panel.panel_number] = [
-                ...(updatedSceneImages[panel.panel_number] || []),
-                newImage
-              ];
+            // Update the WORKING copy
+            const updatedSceneImages = { ...(workingScript.scene_images || {}) };
+            updatedSceneImages[panel.panel_number] = [
+              ...(updatedSceneImages[panel.panel_number] || []),
+              newImage
+            ];
 
-              onUpdateScript({
-                ...webtoonScript,
-                scene_images: updatedSceneImages
-              });
+            workingScript = {
+              ...workingScript,
+              scene_images: updatedSceneImages
+            };
+
+            // Update the parent component with the accumulated changes
+            if (onUpdateScript) {
+              onUpdateScript(workingScript);
             }
           } catch (err) {
             console.error(`Failed to generate image for panel ${panel.panel_number}:`, err);

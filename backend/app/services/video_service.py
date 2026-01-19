@@ -102,7 +102,9 @@ class VideoService:
         img: Image.Image, 
         text: str, 
         x_pct: float, 
-        y_pct: float
+        y_pct: float,
+        w_pct: Optional[float] = None,
+        h_pct: Optional[float] = None
     ) -> Image.Image:
         """
         Render a dialogue bubble on the image.
@@ -112,6 +114,8 @@ class VideoService:
             text: Dialogue text
             x_pct: X position as percentage (0-100)
             y_pct: Y position as percentage (0-100)
+            w_pct: Width as percentage (optional)
+            h_pct: Height as percentage (optional)
         
         Returns:
             Image with bubble overlay
@@ -119,31 +123,57 @@ class VideoService:
         img = img.copy()
         draw = ImageDraw.Draw(img)
         
-        # Measure text
-        bbox = draw.textbbox((0, 0), text, font=self.font)
-        text_width = bbox[2] - bbox[0]
-        text_height = bbox[3] - bbox[1]
-        
-        # Limit text width to 85% of image
-        max_width = int(img.width * 0.85)
-        if text_width > max_width:
-            text_width = max_width
-        
-        # Bubble dimensions
-        padding = self.config.bubble_padding
-        bw = text_width + padding * 2
-        bh = text_height + padding * 2
+        # Calculate dimensions
+        if w_pct is not None and h_pct is not None:
+            # Use user-defined dimensions
+            bw = (w_pct / 100) * img.width
+            bh = (h_pct / 100) * img.height
+            
+            # Wrap text to fit width
+            # Approximate chars per line: width / (font_size * 0.6)
+            chars_per_line = int(bw / (self.config.font_size * 0.5))
+            import textwrap
+            wrapped_text = textwrap.fill(text, width=max(5, chars_per_line))
+        else:
+            # Legacy: Measure text (single line)
+            bbox = draw.textbbox((0, 0), text, font=self.font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            
+            # Limit text width to 85% of image
+            max_width = int(img.width * 0.85)
+            if text_width > max_width:
+                text_width = max_width
+            
+            # Bubble dimensions with padding
+            padding = self.config.bubble_padding
+            bw = text_width + padding * 2
+            bh = text_height + padding * 2
+            wrapped_text = text
         
         # Position (centered on percentage point)
+        # Frontend logic: top/left percentages are usually top-left of element?
+        # Re-checking frontend: The bubble div uses left: x%, top: y%. 
+        # But render_bubble historically treated x_pct/y_pct as CENTER or Top-Left?
+        # Previous code: bx = abs_x - bw / 2 (Center)
+        # Frontend default: usually assumes top-left anchor unless transform translate is used.
+        # Looking at SceneImageGeneratorV2.tsx: left: `${bubble.x}%`, top: `${bubble.y}%`. 
+        # Does it transform? No. So frontend is TOP-LEFT positioned.
+        # But previous backend logic was CENTER positioned (bx = abs_x - bw / 2).
+        # We should probably switch to TOP-LEFT to match frontend if that's what frontend does.
+        # Frontend jsx: <div style={{left: ..., top: ...}}> ... </div>
+        # Standard CSS positioning is top-left corner.
+        
         abs_x = (x_pct / 100) * img.width
         abs_y = (y_pct / 100) * img.height
         
-        bx = abs_x - bw / 2
-        by = abs_y - bh / 2
+        # Switch to Top-Left positioning to match CSS default
+        bx = abs_x
+        by = abs_y
         
-        # Clamp to image bounds
-        bx = max(20, min(img.width - bw - 20, bx))
-        by = max(20, min(img.height - bh - 20, by))
+        # Ensure it fits in image (clamping)
+        # bx = max(0, min(img.width - bw, bx))
+        # by = max(0, min(img.height - bh, by))
         
         # Draw bubble background
         assets_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets")
@@ -154,18 +184,18 @@ class VideoService:
             try:
                 # Load custom bubble
                 bubble_asset = Image.open(bubble_img_path).convert("RGBA")
-                # Resize to fit text dimensions
+                
+                # Resize to target dimensions
                 bubble_asset = bubble_asset.resize((int(bw), int(bh)), Image.Resampling.LANCZOS)
                 
-                # Apply opacity to custom image
-                # Assuming config.bubble_bg_opacity is 0.0-1.0
+                # Apply opacity
                 opacity = self.config.bubble_bg_opacity
                 if opacity < 1.0:
                     r, g, b, a = bubble_asset.split()
                     a = a.point(lambda p: int(p * opacity))
                     bubble_asset.putalpha(a)
                 
-                # Paste onto image (using alpha_composite for correct transparency)
+                # Paste
                 img.alpha_composite(bubble_asset, (int(bx), int(by)))
                 custom_bubble_used = True
                 
@@ -178,7 +208,6 @@ class VideoService:
             bg_color = (255, 255, 255, int(self.config.bubble_bg_opacity * 255))
             border_color = self._hex_to_rgb(self.config.bubble_border_color)
             
-            # Draw filled rounded rectangle
             draw.rounded_rectangle(
                 [(bx, by), (bx + bw, by + bh)],
                 radius=radius,
@@ -192,12 +221,14 @@ class VideoService:
         text_y = by + bh / 2
         text_color = self._hex_to_rgb(self.config.bubble_text_color)
         
-        draw.text(
+        # Use multiline text drawing
+        draw.multiline_text(
             (text_x, text_y),
-            text,
+            wrapped_text,
             font=self.font,
             fill=text_color,
-            anchor="mm"  # Middle-middle anchor
+            anchor="mm",  # Middle-middle anchor
+            align="center"
         )
         
         return img
@@ -228,7 +259,14 @@ class VideoService:
         
         # Render bubbles on scaled full image (preserves relative coordinates logic)
         for bubble in bubbles:
-            img = self.render_bubble(img, bubble.text, bubble.x, bubble.y)
+            img = self.render_bubble(
+                img, 
+                bubble.text, 
+                bubble.x, 
+                bubble.y,
+                getattr(bubble, 'width', None),
+                getattr(bubble, 'height', None)
+            )
             
         # Crop to target size
         img = self._crop_center(img)
@@ -318,7 +356,9 @@ class VideoService:
                         base_scaled.copy(), 
                         bubble.text, 
                         bubble.x, 
-                        bubble.y
+                        bubble.y,
+                        getattr(bubble, 'width', None),
+                        getattr(bubble, 'height', None)
                     )
                     
                     # THEN crop it

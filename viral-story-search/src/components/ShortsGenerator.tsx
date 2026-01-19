@@ -103,8 +103,42 @@ export default function ShortsGenerator({ referenceImage }: ShortsGeneratorProps
         try {
             // Generate images sequentially (one by one)
             for (const scene of script.scenes) {
-                if (!sceneImages[scene.scene_id]) {
-                    await handleGenerateSceneImage(scene.scene_id);
+                // Check current state to see if this scene already has an image
+                const hasImage = sceneImages[scene.scene_id];
+                if (!hasImage) {
+                    // Use a nested try-catch to continue even if one fails
+                    try {
+                        setGeneratingScenes(prev => new Set(prev).add(scene.scene_id));
+
+                        // Use the edited prompt from state
+                        const currentPrompt = editablePrompts[scene.scene_id]?.imagePrompt || scene.image_prompt;
+
+                        const image = await generateCharacterImage({
+                            script_id: scriptId,
+                            character_name: `Scene ${scene.scene_id}`,
+                            description: currentPrompt,
+                            gender: 'male',
+                            image_style: 'MODERN_ROMANCE_DRAMA_MANHWA',
+                            reference_image_url: referenceImage?.image_url
+                        });
+
+                        // Use functional setState to avoid race conditions
+                        setSceneImages(prev => ({ ...prev, [scene.scene_id]: image.image_url }));
+
+                        setGeneratingScenes(prev => {
+                            const next = new Set(prev);
+                            next.delete(scene.scene_id);
+                            return next;
+                        });
+                    } catch (err) {
+                        console.error(`Failed to generate image for scene ${scene.scene_id}:`, err);
+                        setGeneratingScenes(prev => {
+                            const next = new Set(prev);
+                            next.delete(scene.scene_id);
+                            return next;
+                        });
+                        // Continue to next scene even if this one failed
+                    }
                 }
             }
         } catch (error) {
@@ -249,8 +283,8 @@ export default function ShortsGenerator({ referenceImage }: ShortsGeneratorProps
                                                 <button
                                                     onClick={() => handleCopyVideoPrompt(scene.scene_id)}
                                                     className={`px-3 py-1 text-xs rounded-md font-semibold transition-colors ${copiedSceneId === scene.scene_id
-                                                            ? 'bg-green-600 text-white'
-                                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                        ? 'bg-green-600 text-white'
+                                                        : 'bg-blue-600 text-white hover:bg-blue-700'
                                                         }`}
                                                 >
                                                     {copiedSceneId === scene.scene_id ? '✅ Copied!' : '📋 Copy'}
