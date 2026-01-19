@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Character, CharacterImage } from '@/types';
+import { CHARACTER_PRESETS, AGE_OPTIONS } from '@/constants/characterPresets';
 
 interface CharacterImageDisplayProps {
   character: Character;
@@ -10,6 +11,7 @@ interface CharacterImageDisplayProps {
   onSelectImage: (imageId: string) => void;
   isGenerating: boolean;
   onSaveToLibrary?: (character: Character, imageUrl: string) => Promise<void>;
+  isNameEditable?: boolean;
 }
 
 
@@ -21,6 +23,7 @@ export default function CharacterImageDisplay({
   onSelectImage,
   isGenerating,
   onSaveToLibrary,
+  isNameEditable = false,
 }: CharacterImageDisplayProps) {
   // Individual field states
   const [gender, setGender] = useState(character.gender || '');
@@ -30,27 +33,27 @@ export default function CharacterImageDisplay({
   const [body, setBody] = useState(character.body || '');
   const [outfit, setOutfit] = useState(character.outfit || '');
   const [mood, setMood] = useState(character.mood || '');
-  
+
+  // Name state for editable mode
+  const [name, setName] = useState(character.name || '');
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const prevImagesLengthRef = useRef(images.length);
 
   // Reset fields when character changes
   useEffect(() => {
+    setName(character.name || '');
     setGender(character.gender || '');
     setAge(character.age || '');
-    
+
     // Map new fields to old UI fields if old ones are missing
-    setFace(character.face || character.appearance_notes || ''); 
-    setHair(character.hair || ''); 
-    setBody(character.body || ''); 
-    
-    // If we have appearance_notes but no specific hair/body/face, we might want to just put it all in one field or split it.
-    // For now, let's put appearance_notes in 'face' as a catch-all if face is empty, to ensure visibility.
-    // Better yet, let's just use what we have.
-    
-    setOutfit(character.outfit || character.typical_outfit || '');
-    setMood(character.mood || character.personality_brief || '');
-    
+    setFace(character.face || '');
+    setHair(character.hair || '');
+    setBody(character.body || '');
+
+    setOutfit(character.outfit || '');
+    setMood(character.mood || '');
+
     setCurrentImageIndex(0);
     prevImagesLengthRef.current = images.length;
   }, [character]);
@@ -78,7 +81,7 @@ export default function CharacterImageDisplay({
 
   const handleGenerate = async () => {
     const description = getCombinedDescription();
-    await onGenerateImage(character.name, description, gender);
+    await onGenerateImage(name || character.name, description, gender);
   };
 
   const handlePrevious = () => {
@@ -92,18 +95,18 @@ export default function CharacterImageDisplay({
   const handleDownload = (imageUrl: string, characterName: string, imageIndex: number) => {
     // Extract base64 data from data URL
     const base64Match = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
-    
+
     if (!base64Match) {
       console.error('Invalid image URL format');
       return;
     }
-    
+
     const mimeType = base64Match[1];
     const base64Data = base64Match[2];
-    
+
     // Determine file extension from MIME type
     const extension = mimeType.split('/')[1] || 'png';
-    
+
     try {
       // Convert base64 to binary
       const binaryString = atob(base64Data);
@@ -111,13 +114,13 @@ export default function CharacterImageDisplay({
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-      
+
       // Create blob from binary data
       const blob = new Blob([bytes], { type: mimeType });
-      
+
       // Create object URL from blob
       const blobUrl = URL.createObjectURL(blob);
-      
+
       // Create temporary anchor element to trigger download
       const link = document.createElement('a');
       link.href = blobUrl;
@@ -125,7 +128,7 @@ export default function CharacterImageDisplay({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Clean up the blob URL after a short delay
       setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
     } catch (error) {
@@ -137,44 +140,119 @@ export default function CharacterImageDisplay({
     onSelectImage(imageId);
   };
 
+  const getRandomItem = (arr: readonly string[]) => {
+    return arr[Math.floor(Math.random() * arr.length)];
+  };
+
+  const handleRandomize = () => {
+    if (!gender) {
+      alert('Please select a gender first to generate random attributes!');
+      return;
+    }
+
+    const normGender = gender.toLowerCase().trim();
+    let presetKey: 'male' | 'female' | null = null;
+
+    if (normGender === 'male' || normGender === 'man' || normGender === 'boy') {
+      presetKey = 'male';
+    } else if (normGender === 'female' || normGender === 'woman' || normGender === 'girl') {
+      presetKey = 'female';
+    } else {
+      // Default to one or random if unspecific? User said "given a gender".
+      // Let's fallback to random if possible, or just error. 
+      // For now, let's just pick one randomly if it's ambiguous, or force user to pick one of the dropdowns.
+      // Since we are changing to dropdown, validation is easier.
+      presetKey = Math.random() > 0.5 ? 'male' : 'female';
+    }
+
+    const presets = CHARACTER_PRESETS[presetKey];
+
+    setFace(getRandomItem(presets.face));
+    setHair(getRandomItem(presets.hair));
+    setBody(getRandomItem(presets.body));
+    setOutfit(getRandomItem(presets.outfit));
+    setMood(getRandomItem(presets.mood));
+
+    // Also randomize age if empty? User said "between gender and age". 
+    // Maybe we leave age alone or randomize it too?
+    // "And this will create randomly select the face hair body outfit and the mood personally anything." -> "anything" might imply all fields.
+    // Let's randomize age too if they want full random.
+    setAge(getRandomItem(AGE_OPTIONS));
+  };
+
   const currentImage = images[currentImageIndex];
 
   return (
     <div className="space-y-6">
       {/* Character Name */}
       <div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">{character.name}</h3>
+        {isNameEditable ? (
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Character Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 text-xl font-bold border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-gray-900 placeholder-gray-400"
+              placeholder="Enter character name..."
+            />
+          </div>
+        ) : (
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">{character.name}</h3>
+        )}
         <p className="text-sm text-gray-600">Edit individual attributes and generate images</p>
       </div>
 
       {/* Individual Attribute Editors */}
       <div className="space-y-4">
-        {/* Gender */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Gender
-          </label>
-          <input
-            type="text"
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-gray-900"
-            placeholder="e.g., male, female, non-binary"
-          />
-        </div>
+        {/* Gender and Age Row with Dice */}
+        <div className="flex items-end gap-4">
+          {/* Gender */}
+          <div className="flex-1">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Gender
+            </label>
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-gray-900 bg-white"
+            >
+              <option value="">Select Gender</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+            </select>
+          </div>
 
-        {/* Age */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Age
-          </label>
-          <input
-            type="text"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-gray-900"
-            placeholder="e.g., 20, 30s"
-          />
+          {/* Random Dice Button */}
+          <button
+            onClick={handleRandomize}
+            className="mb-[2px] p-2 bg-gradient-to-br from-pink-500 to-purple-600 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all"
+            title="Randomize Attributes"
+            type="button"
+          >
+            <span className="text-2xl">🎲</span>
+          </button>
+
+          {/* Age */}
+          <div className="flex-1">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Age
+            </label>
+            <select
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-gray-900 bg-white"
+            >
+              <option value="">Select Age</option>
+              {AGE_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Face */}
@@ -385,13 +463,27 @@ export default function CharacterImageDisplay({
                     <span>Download Image</span>
                   </button>
                 </div>
-                
+
                 {/* Save to Library Button */}
                 {onSaveToLibrary && (
                   <button
                     onClick={async () => {
                       try {
-                        await onSaveToLibrary(character, currentImage.image_url);
+                        await onSaveToLibrary({
+                          ...character,
+                          name: isNameEditable ? name : character.name,
+                          gender,
+                          age,
+                          face,
+                          hair,
+                          body,
+                          outfit,
+                          mood,
+                          visual_description: getCombinedDescription(),
+                          // Add other required fields if missing
+                          reference_tag: 'eye_candy_generated',
+                          personality: mood, // Fallback for personality
+                        }, currentImage.image_url);
                         alert('Character saved to library!');
                       } catch (e) {
                         console.error(e);

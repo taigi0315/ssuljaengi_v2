@@ -5,7 +5,7 @@ This module implements the Evaluator node that assesses story quality
 and provides feedback for potential improvements.
 """
 
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from app.services.llm_config import llm_config
 from app.models.story import EvaluationResult

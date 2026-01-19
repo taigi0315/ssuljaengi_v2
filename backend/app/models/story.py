@@ -416,6 +416,7 @@ class GenerateCharacterImageRequest(BaseModel):
         description: Visual description for image generation
         gender: Character gender for base style selection
         image_style: Image style/mood selection
+        reference_image_url: Optional reference image URL for consistent character generation
     """
     script_id: str = Field(..., description="Webtoon script ID")
     character_name: str = Field(..., description="Character name")
@@ -424,6 +425,7 @@ class GenerateCharacterImageRequest(BaseModel):
     image_style: Literal["MODERN_ROMANCE_DRAMA_MANHWA", "FANTASY_ROMANCE_MANHWA", "HISTORY_SAGEUK_ROMANCE", "ACADEMY_SCHOOL_LIFE", "ISEKAI_OTOME_FANTASY"] = Field(
         ..., description="Image style/genre selection"
     )
+    reference_image_url: Optional[str] = Field(default=None, description="Optional reference image URL for multimodal generation")
 
 
 class GenerateSceneImageRequest(BaseModel):
@@ -465,3 +467,10 @@ class SceneImage(BaseModel):
     prompt_used: str = Field(..., description="Prompt used for generation")
     is_selected: bool = Field(default=False, description="Is this the selected image")
     created_at: datetime = Field(default_factory=datetime.now, description="Creation timestamp")
+
+
+class GenerateShortsRequest(BaseModel):
+    """
+    Request model for shorts generation.
+    """
+    topic: Optional[str] = Field(default=None, description="Topic for the shorts script")

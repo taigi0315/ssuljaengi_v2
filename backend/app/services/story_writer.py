@@ -5,7 +5,7 @@ This module implements the Writer node that generates initial stories from Reddi
 using the Gemini LLM through LangChain with mood-based style modifiers.
 """
 
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from app.services.llm_config import llm_config
 from app.prompt.story_writer import STORY_WRITER_PROMPT

@@ -5,7 +5,7 @@ This module implements the Rewriter node that improves stories based on
 evaluator feedback.
 """
 
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from app.services.llm_config import llm_config
 from app.prompt.story_rewriter import REWRITER_PROMPT

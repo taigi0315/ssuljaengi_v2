@@ -24,10 +24,13 @@ from app.models.story import (
     WebtoonScriptResponse,
     CharacterImage,
     SceneImage,
-    WebtoonScript
+    WebtoonScript,
+    GenerateShortsRequest
 )
 from app.services.webtoon_writer import webtoon_writer
 from app.services.image_generator import image_generator
+from app.services.shorts_generator import shorts_generator
+from app.models.shorts import ShortsScript
 from app.workflows.webtoon_workflow import run_webtoon_workflow
 from app.models.video_models import GenerateVideoRequest, VideoPanelData, BubbleData
 
@@ -95,6 +98,19 @@ async def get_image_styles():
             "preview_url": "/api/assets/images/genre/ISEKAI_OTOME_FANTASY.png"
         }
     ]
+
+
+@router.post("/shorts/generate", response_model=ShortsScript)
+async def generate_shorts_script(request: GenerateShortsRequest):
+    """
+    Generate a 6-scene shorts script based on a topic.
+    If topic is empty, a random topic will be used.
+    """
+    topic = request.topic
+    if not topic or not topic.strip():
+        topic = "random"
+    
+    return await shorts_generator.generate_script(topic)
 
 
 @router.post("/generate")
@@ -238,19 +254,45 @@ async def generate_character_image(request: GenerateCharacterImageRequest) -> Ch
     logger.info(f"Script ID: {request.script_id}")
     logger.info(f"Available scripts: {list(webtoon_scripts.keys())}")
     
-    # Check if script exists
+    # Check if script exists, or lazily create for eye-candy/shorts mode
     if request.script_id not in webtoon_scripts:
-        logger.error(f"Script {request.script_id} not found in storage")
-        raise HTTPException(status_code=404, detail="Webtoon script not found")
+        if request.script_id.startswith("eye-candy-") or request.script_id.startswith("shorts-"):
+            logger.info(f"Creating lazy script context for: {request.script_id}")
+            webtoon_scripts[request.script_id] = {
+                "script_id": request.script_id,
+                "story_id": "mock_story_id",
+                "characters": [],
+                "panels": [],
+                "character_images": {}
+            }
+            # We don't save immediately here, we'll save when adding the image below
+        else:
+            logger.error(f"Script {request.script_id} not found in storage")
+            raise HTTPException(status_code=404, detail="Webtoon script not found")
+    
     
     try:
-        # Generate image with gender and style
-        image_url, prompt_used = await image_generator.generate_character_image(
-            description=request.description,
-            character_name=request.character_name,
-            gender=request.gender,
-            image_style=request.image_style
-        )
+        # Check if reference image is provided for multimodal generation
+        if request.reference_image_url:
+            logger.info("Using multimodal generation with reference image")
+            logger.info(f"Reference image URL length: {len(request.reference_image_url)}")
+            
+            # Use multimodal generation with reference
+            image_url = await image_generator.generate_scene_image_with_references(
+                prompt=request.description,
+                reference_images=[request.reference_image_url],
+                image_style=request.image_style
+            )
+            prompt_used = request.description
+        else:
+            # Use text-only generation (existing code)
+            logger.info("Using text-only generation (no reference image)")
+            image_url, prompt_used = await image_generator.generate_character_image(
+                description=request.description,
+                character_name=request.character_name,
+                gender=request.gender,
+                image_style=request.image_style
+            )
         
         # Create image record
         image_id = str(uuid.uuid4())
