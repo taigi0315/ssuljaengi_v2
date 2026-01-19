@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Character } from '@/types';
-import { getLibraryCharacters } from '@/lib/apiClient';
+import { getLibraryCharacters, deleteCharacter } from '@/lib/apiClient';
 
 interface CharacterLibraryModalProps {
     isOpen: boolean;
@@ -21,6 +21,7 @@ export default function CharacterLibraryModal({ isOpen, onClose, onSelect }: Cha
     const [characters, setCharacters] = useState<SavedCharacter[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [characterToDelete, setCharacterToDelete] = useState<SavedCharacter | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -39,6 +40,23 @@ export default function CharacterLibraryModal({ isOpen, onClose, onSelect }: Cha
             setError('Failed to load characters. Please try again.');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleDeleteClick = (e: React.MouseEvent, char: SavedCharacter) => {
+        e.stopPropagation();
+        setCharacterToDelete(char);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!characterToDelete) return;
+        try {
+            await deleteCharacter(characterToDelete.id);
+            setCharacters(prev => prev.filter(c => c.id !== characterToDelete.id));
+            setCharacterToDelete(null);
+        } catch (err) {
+            console.error('Failed to delete character:', err);
+            alert('Failed to delete character');
         }
     };
 
@@ -92,9 +110,18 @@ export default function CharacterLibraryModal({ isOpen, onClose, onSelect }: Cha
                             {characters.map((item) => (
                                 <div
                                     key={item.id}
-                                    onClick={() => onSelect({ character: item.character, image_url: item.image_url })}
-                                    className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-purple-300 hover:ring-2 hover:ring-purple-400 hover:ring-offset-2 transition-all cursor-pointer flex flex-col"
+                                    className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-purple-300 hover:ring-2 hover:ring-purple-400 hover:ring-offset-2 transition-all cursor-pointer flex flex-col relative"
                                 >
+                                    {/* Delete Button (visible on hover) */}
+                                    <button
+                                        onClick={(e) => handleDeleteClick(e, item)}
+                                        className="absolute top-2 right-2 z-10 p-1.5 bg-white/90 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-500 text-gray-400"
+                                        title="Delete Character"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
                                     {/* Image / Avatar */}
                                     <div className="aspect-[3/4] bg-gray-100 relative overflow-hidden">
                                         {item.image_url ? (
@@ -145,6 +172,40 @@ export default function CharacterLibraryModal({ isOpen, onClose, onSelect }: Cha
                     )}
                 </div>
             </div>
+
+            
+            {/* Delete Confirmation Modal */}
+            {characterToDelete && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100">
+                        <div className="text-center">
+                            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Character?</h3>
+                            <p className="text-sm text-gray-500 mb-6">
+                                Are you sure you want to delete "{characterToDelete.character.name}"? This action cannot be undone.
+                            </p>
+                            <div className="flex gap-3 justify-center">
+                                <button
+                                    onClick={() => setCharacterToDelete(null)}
+                                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleConfirmDelete}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

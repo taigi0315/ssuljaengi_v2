@@ -143,7 +143,7 @@ CHARACTER_IMAGE_TEMPLATE = """
 **CRITICAL ASPECT RATIO: VERTICAL 9:16 (Portrait Mode)**
 - This MUST be a tall vertical image, NOT square, NOT horizontal
 - Height significantly greater than width (ratio 9:16)
-- Optimized for mobile vertical scrolling webtoon format
+- Optimized for vertical scrolling webtoon format
 
 full body front view, largest and most prominent, 
 masterpiece best quality professional Naver webtoon illustration,

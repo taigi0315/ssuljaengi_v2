@@ -487,7 +487,35 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
 
         {/* LEFT: Scene List */}
         <div className="w-48 bg-white rounded-xl shadow-lg p-3 overflow-y-auto">
-          <h3 className="text-sm font-bold text-gray-800 mb-3 px-2">📑 Scenes</h3>
+          <div className="px-2 mb-3">
+            <h3 className="text-sm font-bold text-gray-800 mb-2">📑 Scenes</h3>
+            
+            {/* Create All Images Button (Moved to Sidebar) */}
+            <button
+              onClick={handleGenerateAll}
+              disabled={isGeneratingAll || panels.every(p => (webtoonScript.scene_images?.[p.panel_number] || []).length > 0)}
+              className={`
+                w-full py-2 rounded-lg font-bold text-xs text-white transition-all shadow-sm
+                ${isGeneratingAll
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : panels.every(p => (webtoonScript.scene_images?.[p.panel_number] || []).length > 0)
+                    ? 'bg-green-100 text-green-700 border-2 border-green-300'
+                    : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow hover:scale-[1.02]'
+                }
+              `}
+            >
+              {isGeneratingAll ? (
+                <span className="flex items-center justify-center gap-1">
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+                  Generating...
+                </span>
+              ) : panels.every(p => (webtoonScript.scene_images?.[p.panel_number] || []).length > 0) ? (
+                <span>✅ Generated All</span>
+              ) : (
+                <span>🚀 Generate All</span>
+              )}
+            </button>
+          </div>
           <div className="space-y-2">
             {panels.map((panel, index) => {
               const panelImages = webtoonScript.scene_images?.[panel.panel_number] || [];
@@ -555,31 +583,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
             />
           </div>
 
-          {/* Create All Images Button */}
-          <button
-            onClick={handleGenerateAll}
-            disabled={isGeneratingAll || panels.every(p => (webtoonScript.scene_images?.[p.panel_number] || []).length > 0)}
-            className={`
-              w-full py-3 rounded-lg font-bold text-white mb-2 transition-all
-              ${isGeneratingAll
-                ? 'bg-gray-400 cursor-not-allowed'
-                : panels.every(p => (webtoonScript.scene_images?.[p.panel_number] || []).length > 0)
-                  ? 'bg-green-100 text-green-700 border-2 border-green-300'
-                  : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg hover:scale-[1.02]'
-              }
-            `}
-          >
-            {isGeneratingAll ? (
-              <span className="flex items-center justify-center gap-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                Generating All... ({panels.filter(p => (webtoonScript.scene_images?.[p.panel_number] || []).length > 0).length}/{panels.length})
-              </span>
-            ) : panels.every(p => (webtoonScript.scene_images?.[p.panel_number] || []).length > 0) ? (
-              <span>✅ All Panels Generated</span>
-            ) : (
-              <span>🚀 Create All Images</span>
-            )}
-          </button>
+
 
           {/* Generate Button */}
           <button
@@ -666,9 +670,12 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
                         }}
                       />
 
-                      {/* Content - Text only, no name */}
+                      {/* Content - Character Name + Text */}
                       <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden">
-                        <p className="text-gray-900 font-medium leading-tight w-full break-words" style={{ fontSize: '1em' }}>{bubble.text}</p>
+                        <p className="text-gray-900 font-medium leading-tight w-full break-words" style={{ fontSize: '1em' }}>
+                          <span className="font-bold text-purple-700 mr-1">{bubble.characterName}:</span>
+                          {bubble.text}
+                        </p>
                       </div>
 
                       {/* Delete Button */}

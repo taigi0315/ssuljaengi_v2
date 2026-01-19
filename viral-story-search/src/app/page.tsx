@@ -232,22 +232,24 @@ export default function Home() {
       return;
     }
 
-    // Allow 'generate' tab if: has post/seed, OR has genre (to write manual story)
-    if (tab === 'generate' && !selectedGenre) {
-      return;
+    // STRICT PIPELINE FLOW:
+    // 1. Search (Always accessible)
+    // 2. Generate (Genre Selection) - Always accessible (gateway)
+    // 3. Script - Access if generatedStoryId exists OR manualStory exists (actually just let them click, check validity inside?)
+    //    Actually, we want to block them if they haven't finished previous steps.
+
+    if (tab === 'generate') {
+        // Always allow going to Generate (Genre Select)
+        setActiveTab('generate');
+        return;
     }
-    if (tab === 'script' && !generatedStoryId) {
-      return;
-    }
-    if (tab === 'images' && !webtoonScript) {
-      return;
-    }
-    if (tab === 'scenes' && !webtoonScript) {
-      return;
-    }
-    if (tab === 'video' && !webtoonScript) {
-      return;
-    }
+    
+    // For subsequent steps, check prerequisites
+    if (tab === 'script' && !generatedStoryId) return;
+    if (tab === 'images' && !webtoonScript) return;
+    if (tab === 'scenes' && !webtoonScript) return;
+    if (tab === 'video' && !webtoonScript) return;
+
     setActiveTab(tab);
   }, [selectedGenre, generatedStoryId, webtoonScript, workflowMode]);
 
@@ -319,10 +321,10 @@ export default function Home() {
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="container mx-auto px-4 py-4 sm:py-6 relative">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 text-center">
-            🔥 Viral Story Search
+            🔥 Webtoon Shorts Creator
           </h1>
           <p className="text-sm sm:text-base text-gray-600 text-center mt-2">
-            Discover the most engaging Reddit stories
+            Handy tool to create webtoon shorts
           </p>
           {/* Action Buttons */}
           <div className="absolute top-4 right-4 flex gap-2">
@@ -379,7 +381,7 @@ export default function Home() {
 
             {/* Error Display */}
             {error && (
-              <div className="mt-6 max-w-4xl mx-auto">
+              <div className="mt-6 max-w-7xl mx-auto">
                 <ErrorMessage error={error} onRetry={handleRetry} />
               </div>
             )}
@@ -397,7 +399,7 @@ export default function Home() {
             )}
 
             {/* Custom Story Seed Input */}
-            <div className="mt-8 max-w-4xl mx-auto">
+            <div className="mt-8 max-w-7xl mx-auto">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-300"></div>
@@ -425,7 +427,7 @@ export default function Home() {
             </div>
 
             {/* Genre Selector */}
-            <div className="mt-8 max-w-4xl mx-auto">
+            <div className="mt-8 max-w-7xl mx-auto">
               <GenreSelector
                 selectedGenre={selectedGenre}
                 onGenreSelect={setSelectedGenre}
@@ -433,7 +435,7 @@ export default function Home() {
             </div>
 
             {/* Create Story Button */}
-            <div className="mt-8 max-w-4xl mx-auto text-center">
+            <div className="mt-8 max-w-7xl mx-auto text-center">
               <button
                 onClick={handleCreateStory}
                 disabled={!canCreateStory}
@@ -458,12 +460,44 @@ export default function Home() {
                 </p>
               )}
             </div>
+
+
+            {/* Skip to Genre Selection (Step 1 -> Step 2) */}
+            <div className="mt-12 text-center pb-8 border-t border-gray-200 pt-8 max-w-7xl mx-auto">
+              <p className="text-gray-600 font-medium mb-4 text-lg">Do you have your own story?</p>
+              <button
+                onClick={() => {
+                  setSelectedPost(null);
+                  setCustomStorySeed('');
+                  setActiveTab('generate');
+                  // Do not clear genre here, let them keep it if selected, or select new one
+                }}
+                className="px-8 py-4 bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl text-indigo-700 font-bold hover:shadow-lg hover:border-indigo-400 hover:scale-[1.02] transition-all flex items-center justify-center gap-3 mx-auto shadow-sm"
+              >
+                <span className="text-xl">⏩</span>
+                <span className="text-lg">Skip Search & Write My Own</span>
+              </button>
+            </div>
           </>
         ) : activeTab === 'generate' ? (
           <>
             {/* Story Building Tab */}
-            {selectedGenre && (
-              <div className="max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto">
+              {!selectedGenre ? (
+                <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Start Your Story</h2>
+                  <p className="text-gray-600 mb-8">Select a genre to begin writing or generating your story.</p>
+                  <GenreSelector
+                    selectedGenre={selectedGenre}
+                    onGenreSelect={(genre) => {
+                       setSelectedGenre(genre);
+                       // Optional: Automatically set mode to manual if nothing else selected?
+                       // For now just selecting genre reveals the interface below
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="max-w-7xl mx-auto">
                 {/* Manual Full Story Input Option */}
                 {!selectedPost && !customStorySeed.trim() && (
                   <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -512,7 +546,8 @@ export default function Home() {
                   />
                 )}
               </div>
-            )}
+                )}
+              </div>
           </>
         ) : activeTab === 'script' ? (
           <>
