@@ -22,35 +22,45 @@ interface GenreSelectorProps {
 }
 
 const GENRE_METADATA: Record<string, { name: string; description: string; previewImage: string }> = {
-  MODERN_ROMANCE_DRAMA_MANHWA: {
+  MODERN_ROMANCE_DRAMA: {
     name: 'Modern Romance Drama',
     description: 'Contemporary Korean romance drama with emotional depth',
     previewImage: modernRomanceImage.src,
   },
-  FANTASY_ROMANCE_MANHWA: {
+  FANTASY_ROMANCE: {
     name: 'Fantasy Romance',
     description: 'Magical academy or mystical world romance',
     previewImage: fantasyRomanceImage.src,
   },
-  HISTORY_SAGEUK_ROMANCE: {
+  HISTORICAL_PERIOD_ROMANCE: {
     name: 'Historical Romance',
     description: 'Elegant sageuk style with dramatic lighting',
     previewImage: historySageukImage.src,
   },
-  ACADEMY_SCHOOL_LIFE: {
+  SCHOOL_YOUTH_ROMANCE: {
     name: 'School Life',
     description: 'Contemporary high school or university romance',
     previewImage: academySchoolImage.src,
   },
-  ISEKAI_OTOME_FANTASY: {
+  REINCARNATION_FANTASY: {
     name: 'Isekai Otome Fantasy',
     description: 'Slow-burn tender feeling with light comedic palace fantasy touch',
     previewImage: isekaiOtomeImage.src,
   },
-  DARK_ROMANCE_REVENGE_MANHWA: {
-    name: 'Dark Romance Revenge',
+  DARK_OBSESSIVE_ROMANCE: {
+    name: 'Dark Obsessive Romance',
     description: 'Intense, vengeful passion involving seduction or entrapment',
     previewImage: darkRomanceImage.src,
+  },
+  WORKPLACE_ROMANCE: {
+    name: 'Workplace Romance',
+    description: 'Office romance with professional tension',
+    previewImage: modernRomanceImage.src, // Reusing modern romance image
+  },
+  CHILDHOOD_FRIENDS_TO_LOVERS: {
+    name: 'Friends to Lovers',
+    description: 'Long friendship evolving into romance',
+    previewImage: academySchoolImage.src, // Reusing school image
   },
   NO_GENRE: {
     name: 'Free Style',

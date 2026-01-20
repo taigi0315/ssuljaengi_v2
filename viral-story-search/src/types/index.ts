@@ -147,15 +147,39 @@ export interface RedditApiClient {
 }
 
 // Story Generation Types (Phase 2)
+// Story Genre - defines narrative content (setting, dialogue, themes, tropes)
 export type StoryGenre =
-  | 'MODERN_ROMANCE_DRAMA_MANHWA'
-  | 'FANTASY_ROMANCE_MANHWA'
-  | 'HISTORY_SAGEUK_ROMANCE'
-  | 'ACADEMY_SCHOOL_LIFE'
-  | 'ISEKAI_OTOME_FANTASY';
+  | 'NO_GENRE'
+  | 'MODERN_ROMANCE_DRAMA'
+  | 'FANTASY_ROMANCE'
+  | 'HISTORICAL_PERIOD_ROMANCE'
+  | 'SCHOOL_YOUTH_ROMANCE'
+  | 'REINCARNATION_FANTASY'
+  | 'DARK_OBSESSIVE_ROMANCE'
+  | 'WORKPLACE_ROMANCE'
+  | 'CHILDHOOD_FRIENDS_TO_LOVERS';
 
 export interface StoryGenreOption {
   id: StoryGenre;
+  name: string;
+  description: string;
+  previewImage: string;
+}
+
+// Image Style - defines visual rendering (colors, lighting, art style)
+export type ImageStyle =
+  | 'NO_STYLE'
+  | 'SOFT_ROMANTIC_WEBTOON'
+  | 'VIBRANT_FANTASY_WEBTOON'
+  | 'DRAMATIC_HISTORICAL_WEBTOON'
+  | 'BRIGHT_YOUTHFUL_WEBTOON'
+  | 'DREAMY_ISEKAI_WEBTOON'
+  | 'DARK_SENSUAL_WEBTOON'
+  | 'CLEAN_MODERN_WEBTOON'
+  | 'PAINTERLY_ARTISTIC_WEBTOON';
+
+export interface ImageStyleOption {
+  id: ImageStyle;
   name: string;
   description: string;
   previewImage: string;
@@ -271,17 +295,8 @@ export interface GenerateCharacterImageRequest {
   character_name: string;
   description: string;
   gender: string;
-  image_style: StoryGenre;
+  image_style: ImageStyle;  // Now uses ImageStyle (visual rendering) instead of StoryGenre
   reference_image_url?: string;  // Optional reference image for multimodal generation
-}
-
-export type ImageStyle = StoryGenre;
-
-export interface ImageStyleOption {
-  id: ImageStyle;
-  name: string;
-  description: string;
-  previewImage: string;
 }
 
 // Scene Image Generation Types (Page 4)
@@ -298,7 +313,7 @@ export interface GenerateSceneImageRequest {
   script_id: string;
   panel_number: number;
   visual_prompt: string;
-  genre: string;
+  image_style: ImageStyle;  // Changed from genre to image_style for consistency
 }
 
 export interface SceneImageResponse {

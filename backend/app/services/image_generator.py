@@ -19,7 +19,7 @@ from app.prompt.character_image import (
     FEMALE_KID, FEMALE_TEEN, FEMALE_20_30, FEMALE_40_50, FEMALE_60_70,
     CHARACTER_IMAGE_TEMPLATE
 )
-from app.prompt.image_mood import CHARACTER_GENRE_MODIFIERS
+from app.prompt.image_mood import VISUAL_STYLE_PROMPTS
 
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class ImageGenerator:
     
     def __init__(self):
         """Initialize the image generator with Gemini 2.5 Flash Image."""
-        self.image_styles = CHARACTER_GENRE_MODIFIERS
+        self.image_styles = VISUAL_STYLE_PROMPTS
         
         # Configure Gemini API
         try:
@@ -83,8 +83,8 @@ class ImageGenerator:
             # Select base style based on gender and description (for age detection)
             base_style = self._get_base_style(gender, description)
             
-            # Get image style prompt
-            image_style_prompt = self.image_styles.get(image_style, self.image_styles["MODERN_ROMANCE_DRAMA_MANHWA"])
+            # Get image style prompt (fallback to SOFT_ROMANTIC_WEBTOON if style not found)
+            image_style_prompt = self.image_styles.get(image_style, self.image_styles.get("SOFT_ROMANTIC_WEBTOON", ""))
             
             # Build final prompt using template
             final_prompt = CHARACTER_IMAGE_TEMPLATE.format(

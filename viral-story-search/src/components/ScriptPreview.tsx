@@ -8,6 +8,7 @@ import { formatGenreName } from '@/utils/formatters';
 interface ScriptPreviewProps {
   storyId: string;
   genre: StoryGenre;
+  imageStyle?: string;
   webtoonScript: WebtoonScript | null;
   onScriptGenerated: (script: WebtoonScript) => void;
   onProceedToCharacters: () => void;
@@ -16,6 +17,7 @@ interface ScriptPreviewProps {
 export default function ScriptPreview({
   storyId,
   genre,
+  imageStyle,
   webtoonScript,
   onScriptGenerated,
   onProceedToCharacters,
@@ -40,7 +42,7 @@ export default function ScriptPreview({
         }
       }
 
-      const script = await generateWebtoonScript(storyId, storyContent);
+      const script = await generateWebtoonScript(storyId, storyContent, imageStyle);
       onScriptGenerated(script);
     } catch (err) {
       console.error('Script generation error:', err);
@@ -108,6 +110,11 @@ export default function ScriptPreview({
         <span className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full text-sm font-bold shadow-md">
           🎭 {formatGenreName(genre)}
         </span>
+        {imageStyle && (
+          <span className="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-full text-sm font-bold shadow-md ml-2">
+            🎨 Style: {imageStyle.replace(/_/g, ' ')}
+          </span>
+        )}
       </div>
 
       {/* Script Overview */}

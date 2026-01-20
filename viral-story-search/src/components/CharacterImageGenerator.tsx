@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { WebtoonScript, Character, CharacterImage, StoryGenre } from '@/types';
+import { WebtoonScript, Character, CharacterImage, ImageStyle } from '@/types';
 import { generateCharacterImage, selectCharacterImage, saveCharacterToLibrary } from '@/lib/apiClient';
 import { formatGenreName } from '@/utils/formatters';
 import CharacterList from './CharacterList';
@@ -12,30 +12,23 @@ import CharacterLibraryModal from './CharacterLibraryModal';
 interface CharacterImageGeneratorProps {
   storyId: string;
   webtoonScript: WebtoonScript;
-  genre?: StoryGenre;
+  imageStyle: ImageStyle;  // Required image style for rendering
   onUpdateScript?: (script: WebtoonScript) => void;
   onProceedToScenes?: () => void;
 }
 
-export default function CharacterImageGenerator({ 
-  storyId, 
+export default function CharacterImageGenerator({
+  storyId,
   webtoonScript,
-  genre: propGenre, 
+  imageStyle,
   onUpdateScript,
-  onProceedToScenes 
+  onProceedToScenes
 }: CharacterImageGeneratorProps) {
   // Use the passed script as source of truth
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
-  
-  // Get genre from prop or sessionStorage
-  const [genre] = useState<StoryGenre>(
-    propGenre || (typeof window !== 'undefined' 
-      ? (sessionStorage.getItem('selectedGenre') as StoryGenre) || 'MODERN_ROMANCE_DRAMA_MANHWA'
-      : 'MODERN_ROMANCE_DRAMA_MANHWA')
-  );
 
   // Auto-select first character on mount
   useEffect(() => {
@@ -60,7 +53,7 @@ export default function CharacterImageGenerator({
         character_name: characterName,
         description,
         gender,
-        image_style: genre,  // Use the stored genre
+        image_style: imageStyle,  // Use the selected image style
       });
 
       // Update webtoon script with new image
@@ -207,11 +200,11 @@ export default function CharacterImageGenerator({
   // Main layout
   return (
     <div className="space-y-6">
-      {/* Genre Badge - Always visible */}
+      {/* Image Style Badge - Always visible */}
       <div className="flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
-        <span className="text-sm font-semibold text-gray-700">Selected Genre:</span>
+        <span className="text-sm font-semibold text-gray-700">Image Style:</span>
         <span className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full text-sm font-bold shadow-md">
-          🎭 {formatGenreName(genre)}
+          🎨 {formatGenreName(imageStyle)}
         </span>
       </div>
 

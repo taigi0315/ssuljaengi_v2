@@ -19,7 +19,7 @@ const VIDEO_CONFIG = {
   // Timing (in milliseconds)
   // Timing (in milliseconds)
   BASE_IMAGE_DURATION_MS: 750,     // How long to show image before first bubble
-  DIALOGUE_DURATION_MS: 2500,      // How long each dialogue bubble shows
+  DIALOGUE_DURATION_MS: 3000,      // How long each dialogue bubble shows
   FINAL_PAUSE_MS: 750,             // Pause after last bubble before next panel
   TRANSITION_DURATION_MS: 400,    // Duration of scroll transition between panels
 

@@ -17,6 +17,7 @@ export { default as RedditPostDisplay } from './RedditPostDisplay';
 export { default as StoryTabs } from './StoryTabs';
 
 export { default as GenreSelector } from './GenreSelector';
+export { default as ImageStyleSelector } from './ImageStyleSelector';
 export { default as StoryBuilder } from './StoryBuilder';
 
 // Scene image generation components

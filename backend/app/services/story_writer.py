@@ -45,7 +45,7 @@ class StoryWriter:
             ChatPromptTemplate with mood modifier applied
         """
         # Get mood modifier (default to modern_romance if not found)
-        mood_modifier = STORY_GENRE_PROMPTS.get(mood, STORY_GENRE_PROMPTS["MODERN_ROMANCE_DRAMA_MANHWA"])
+        mood_modifier = STORY_GENRE_PROMPTS.get(mood, STORY_GENRE_PROMPTS["MODERN_ROMANCE_DRAMA"])
         
         # Replace the {{user_select_genre}} placeholder with the mood modifier
         combined_prompt = STORY_WRITER_PROMPT.replace("{{user_select_genre}}", mood_modifier)

@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { CharacterImage, StoryGenre, Character } from '@/types';
+import { CharacterImage, ImageStyle, Character } from '@/types';
 import { generateCharacterImage } from '@/lib/apiClient';
 import CharacterImageDisplay from './CharacterImageDisplay';
-import GenreSelector from './GenreSelector';
+import ImageStyleSelector from './ImageStyleSelector';
 import CharacterLibraryModal from './CharacterLibraryModal';
 
 const initialCharacter: Character = {
@@ -24,10 +24,10 @@ interface EyeCandyGeneratorProps {
 }
 
 export default function EyeCandyGenerator({ onProceedToShorts }: EyeCandyGeneratorProps = {}) {
-    const [genre, setGenre] = useState<StoryGenre>('MODERN_ROMANCE_DRAMA_MANHWA');
+    const [imageStyle, setImageStyle] = useState<ImageStyle>('SOFT_ROMANTIC_WEBTOON');
     const [allImages, setAllImages] = useState<CharacterImage[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
-    // Create a session ID for this visit to group images if needed by backend, 
+    // Create a session ID for this visit to group images if needed by backend,
     // though we are mocking the strict script relationship.
     const [mockScriptId] = useState(() => `eye-candy-${Date.now()}`);
 
@@ -44,17 +44,17 @@ export default function EyeCandyGenerator({ onProceedToShorts }: EyeCandyGenerat
         try {
             setIsGenerating(true);
 
-            // We map the incoming request to the API. 
+            // We map the incoming request to the API.
             // Note: Backend expects a script_id. We pass our unique session ID.
             // If the backend enforces foreign key constraints on script_id, this might fail unless
-            // there is a "guest" or "sandbox" mode. 
+            // there is a "guest" or "sandbox" mode.
             // User indicated "mocking script_id is fine", so we proceed.
             const newImage = await generateCharacterImage({
                 script_id: mockScriptId,
                 character_name: name,
                 description,
                 gender,
-                image_style: genre,
+                image_style: imageStyle,
             });
 
             // Add to session history
@@ -136,14 +136,11 @@ export default function EyeCandyGenerator({ onProceedToShorts }: EyeCandyGenerat
                 </div>
             </div>
 
-            {/* Genre Selector */}
+            {/* Image Style Selector */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-pink-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <span>🎨</span> Choose Art Style
-                </h3>
-                <GenreSelector
-                    selectedGenre={genre}
-                    onGenreSelect={setGenre}
+                <ImageStyleSelector
+                    selectedStyle={imageStyle}
+                    onStyleSelect={setImageStyle}
                 />
             </div>
 
