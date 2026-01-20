@@ -572,8 +572,7 @@ export default function Home() {
             {generatedStoryId && (
               <div className="max-w-7xl mx-auto">
                 <div className="bg-white rounded-lg shadow-lg p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">🎨 Choose Your Visual Style</h2>
-                  <p className="text-gray-600 mb-8 text-center">Select the art style for your webtoon. This will influence how the scenes are written and generated.</p>
+
                   
                   <ImageStyleSelector
                     selectedStyle={selectedImageStyle}

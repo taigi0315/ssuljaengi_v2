@@ -468,6 +468,497 @@ SCENE 8-10: NEW CHAPTER
 
 MANDATORY BEATS: Established history, comfort-to-tension shift, fear of losing friendship, deep knowledge
 FORBIDDEN: Insta-love, no evidence of friendship, easy decision
+""",
+
+    "MISSED_CONNECTION": """
+=== NARRATIVE PLUGIN: Missed Connection Romance ===
+
+[CHRONO-LOCK: Flexible - Modern or Any Era]
+ALLOWED TECH: Depends on era - trains, buses, phones, letters, any transportation/communication
+ALLOWED LOCATIONS: Transit spaces (stations, airports, trains), crowded public places, fleeting locations
+FORBIDDEN: Static settings where people can easily reconnect, small towns where everyone knows everyone
+ERA: Any, but emphasizes transience and timing
+
+[SOCIOLINGUISTIC LAYER: Urgency and Regret]
+DIALOGUE STYLE:
+- Fragmented, interrupted speech (cut off by circumstances)
+- "Wait!" and "I didn't get to..." phrases
+- Unfinished confessions
+- Internal monologue of what they wanted to say
+- Desperate attempts to exchange info before separation
+EXAMPLES:
+✓ "Wait, I didn't catch your—" [door closes]
+✓ "If I ever see you again..."
+✓ "This is my stop. I..." [hesitates, train doors closing]
+✓ [Internal: "Why didn't I just say it?"]
+✗ Full conversations (undermines the "missed" aspect)
+✗ Easy exchange of contact info
+
+[PROP DATABASE: Transient Moments]
+SEPARATION: Train/bus doors, crowds flowing between them, different platforms, missed trains
+REMNANTS: Dropped item, note left behind, shared umbrella forgotten, coffee cup with number
+TIMING: Clocks, departure boards, countdown timers, closing doors, phone dying
+ATMOSPHERE: Rain (can't hear each other), crowd noise, distance, barriers
+CONNECTION ITEMS: Book they both read, matching items (accidental), shared moment witnessed
+REGRET MARKERS: Empty seat where they sat, hand reaching for closed door, looking back
+
+[TROPE ENGINE: 50-Second Missed Connection]
+SCENE 1-2: THE MOMENT OF CONNECTION
+- Start mid-encounter already happening (on train, in cafe, etc.)
+- Chemistry visible through glances, small talk, shared moment
+- Brief genuine connection established
+
+SCENE 3-5: TIMING BETRAYS
+- Realization they must separate (arrival at stop, meeting someone, wrong timing)
+- Hesitation to speak up or act
+- Circumstance forcing separation (crowd, closing doors, phone call)
+
+SCENE 6-7: THE SEPARATION
+- Physical separation happening (pulling apart by crowd, train leaving, walking away)
+- "Wait!" moment - too late or drowned out
+- One or both trying to return/reach out
+
+SCENE 8-10: THE AFTERMATH
+- Regret, looking back at empty space
+- Final beat options:
+  * Finding item left behind with contact info (hopeful)
+  * Just missing seeing each other again (bittersweet)
+  * Acceptance of beautiful brief moment (melancholic)
+  * Unexpected reunion (miracle ending)
+
+MANDATORY BEATS: Brief connection, forced separation, timing as antagonist, lingering regret
+FORBIDDEN: Easy reconnection, no real obstacle, planned meeting
+""",
+
+    "CONFESSION_MOMENT": """
+=== NARRATIVE PLUGIN: Confession Moment ===
+
+[CHRONO-LOCK: Flexible Setting]
+ALLOWED TECH: Any era appropriate items - letters, phones, gifts as confession aids
+ALLOWED LOCATIONS: Meaningful places (rooftop, under tree, after school, special spot, where they met)
+FORBIDDEN: Casual meaningless settings, crowds preventing privacy
+ERA: Any, but location must feel intentional
+
+[SOCIOLINGUISTIC LAYER: Vulnerable Honesty]
+DIALOGUE STYLE:
+- Stammering build-up then clear declaration
+- "I need to tell you something" openers
+- Direct emotional honesty at peak moment
+- Nervous rambling followed by simple truth
+- Silence before/after the confession (weighted)
+EXAMPLES:
+✓ "I've been trying to say this for so long..."
+✓ "I like you. I really, really like you."
+✓ "I can't keep pretending I don't feel this way."
+✓ "You don't have to say anything. I just needed you to know."
+✗ Indirect hinting (this is THE moment)
+✗ Joking it off or backing down
+
+[PROP DATABASE: Confession Scene]
+CONFESSION AIDS: Love letter (written or held), gift (meaningful), flower, confession object
+NERVOUS TELLS: Fidgeting hands, crumpled paper, sweaty palms, avoiding eye contact then meeting it
+LOCATION: Significant spot, sunset/special lighting, privacy, elevated place (rooftop, hill)
+WEATHER: Cherry blossoms, rain (dramatic), snow (pure), clear sky (hopeful), wind (tousling hair)
+EMOTIONAL PROPS: Crushed letter if rejected, accepted gift, hand reaching, tears (happy or sad)
+WITNESSES: None (private) or supportive friend watching from distance
+
+[TROPE ENGINE: 50-Second Confession]
+SCENE 1-2: THE BUILD-UP
+- Start with confessor psyching themselves up or arriving at location
+- Internal conflict visible (fear, determination, nervousness)
+- Deep breath, resolved expression
+
+SCENE 3-5: THE APPROACH
+- Asking to talk, arriving at meaningful location
+- Other person curious or confused
+- Building tension, getting words ready
+
+SCENE 6-7: THE CONFESSION
+- The actual confession (this is the core)
+- Emotional vulnerability at peak
+- Direct eye contact or looking away then meeting eyes
+- Clear, honest statement of feelings
+
+SCENE 8-10: THE RESPONSE
+- Other person's reaction (shock, tears, smile, confusion)
+- Response: reciprocation, gentle rejection, or need-time
+- Final beat: Embrace, held hands, crying together, or bittersweet acceptance
+
+MANDATORY BEATS: Nervous build-up, vulnerable confession, emotional honesty, clear response
+FORBIDDEN: Interrupted confession without completion, ambiguous confession, joking tone
+""",
+
+    "BREAKUP_MAKEUP": """
+=== NARRATIVE PLUGIN: Breakup/Makeup ===
+
+[CHRONO-LOCK: Contemporary Setting Recommended]
+ALLOWED TECH: Phones (calls, texts, blocking), modern communication adding to conflict
+ALLOWED LOCATIONS: Private spaces (apartments, cars, empty places), or final public confrontation spots
+FORBIDDEN: Happy settings, presence of others interfering
+ERA: Modern preferred (communication tech adds layers)
+
+[SOCIOLINGUISTIC LAYER: Raw Conflict]
+DIALOGUE STYLE:
+- Accusatory then vulnerable
+- "You always..." and "You never..." complaints
+- Voice breaking mid-argument
+- Transition from angry to honest/desperate
+- Apology language mixed with defensiveness
+EXAMPLES:
+✓ "I can't do this anymore."
+✓ "When did we become like this?"
+✓ "I'm sorry. I'm so sorry. Please..."
+✓ "Do you even love me anymore?" / "How can you ask me that?"
+✗ Calm rational discussion (this is emotional peak)
+✗ Easy fix without real pain shown
+
+[PROP DATABASE: Breakup/Makeup Scene]
+BREAKUP SYMBOLS: Packed bags, returned items, removed couple photos, keys on table, ring off
+EMOTIONAL MESS: Tears, destroyed room, thrown items, crumpled tissues, empty bottles
+COMMUNICATION: Phone (checking, blocking, desperate calls), unanswered messages, broken phone
+PROXIMITY: Physical distance in same room, backs turned, door between them, or desperate closeness
+MAKEUP SYMBOLS: Reaching hands, embracing while crying, fallen to knees, foreheads touching
+AFTERMATH: Reconciliation or finality - cleaned space vs left mess, door open vs closed
+
+[TROPE ENGINE: 50-Second Breakup/Makeup]
+SCENE 1-2: THE BREAKING POINT
+- Start mid-argument or moment of decision to end it
+- Emotional rawness visible immediately
+- "I can't do this" or "We need to talk" energy
+
+SCENE 3-5: THE CONFRONTATION
+- Accusations and hurt surfacing
+- What broke them revealed (betrayal, distance, exhaustion)
+- Defensive then vulnerable shifts
+
+SCENE 6-7: THE CRISIS
+- Either: Final words before leaving OR breakthrough honesty
+- Physical: One leaving or both breaking down
+- Truth moment: "I never stopped loving you" or "I can't keep hurting you"
+
+SCENE 8-10: RESOLUTION
+BREAKUP ENDING:
+- One walks away, other watches
+- Final look back or no looking back
+- Empty space, finality, tears
+
+MAKEUP ENDING:
+- Desperate embrace, kissing through tears
+- "Don't leave" / "I'm not going anywhere"
+- Clinging to each other, promise to try again
+
+MANDATORY BEATS: Relationship crisis, raw honesty, emotional peak, definitive choice
+FORBIDDEN: Ambiguous ending (this needs closure either way), easy fix without pain
+""",
+
+    "LOVE_TRIANGLE_CHOICE": """
+=== NARRATIVE PLUGIN: Love Triangle Choice Moment ===
+
+[CHRONO-LOCK: Any Setting]
+ALLOWED TECH: Irrelevant - focus is on emotional choice
+ALLOWED LOCATIONS: Symbolic location (crossroads, between two places, meaningful spot)
+FORBIDDEN: Casual settings, absence of one option (both must be present or represented)
+ERA: Flexible
+
+[SOCIOLINGUISTIC LAYER: Decisive Clarity]
+DIALOGUE STYLE:
+- "Choose" - direct pressure
+- "I need to know" - demanding answer
+- Internal monologue weighing options
+- Clear declaration once decided
+- Apology to unchosen person
+EXAMPLES:
+✓ "You can't have both of us."
+✓ "Who do you choose?"
+✓ "I'm sorry, but it's always been them."
+✓ "I choose you. Only you."
+✗ Continued indecision
+✗ "I need more time" (this is THE moment)
+
+[PROP DATABASE: Choice Scene]
+SYMBOLIC POSITION: Protagonist physically between two people, or looking between them
+PRESSURE: Both suitors present or close by, waiting for answer
+EMOTIONAL MARKERS: Protagonist's torn expression, tears, hand over heart
+SUITOR 1 TRAITS: Visual distinction (different style, posture, energy)
+SUITOR 2 TRAITS: Clearly different from Suitor 1
+DECISION MARKERS: Turning toward chosen, taking hand, walking to them, pushing other away gently
+AFTERMATH: Unchosen person's reaction, chosen person's relief/joy
+
+[TROPE ENGINE: 50-Second Love Triangle Choice]
+SCENE 1-2: THE ULTIMATUM
+- Start with demand for choice or protagonist's decision moment
+- Both options visible or clearly represented
+- Protagonist's conflict visible (torn, emotional)
+
+SCENE 3-5: WEIGHING OPTIONS
+- Quick flash of what each represents
+- Internal conflict shown through expression
+- Both suitors making final case or waiting silently
+
+SCENE 6-7: THE CHOICE
+- Decision made (through action or words)
+- Moving toward chosen person
+- Clear rejection of other option (kind but firm)
+
+SCENE 8-10: AFTERMATH
+- Chosen: Embrace, relief, beginning together
+- Unchosen: Acceptance, heartbreak, stepping back
+- Final beat: Protagonist with chosen one, unchosen walking away
+
+MANDATORY BEATS: Clear two options, forced choice, decisive moment, both acceptance and rejection shown
+FORBIDDEN: Choosing neither, continued triangle, unclear decision
+""",
+
+    "SECRET_RELATIONSHIP_REVEAL": """
+=== NARRATIVE PLUGIN: Secret Relationship Reveal ===
+
+[CHRONO-LOCK: Any Setting with Social Stakes]
+ALLOWED TECH: Modern - phones catching them, security cameras, social media | Historical - witnesses, letters found
+ALLOWED LOCATIONS: Public place for accidental reveal, or private confrontation after discovery
+FORBIDDEN: Settings where secrecy isn't necessary
+ERA: Any, but must have social stakes for secrecy
+
+[SOCIOLINGUISTIC LAYER: Exposure Panic]
+DIALOGUE STYLE:
+- Whispered urgent warnings ("Someone might see!")
+- Defensive explanations when caught
+- "It's not what it looks like" (even when it is)
+- Protective: "Leave them alone, I chose this"
+- Defiant: "Yes, we're together. So what?"
+EXAMPLES:
+✓ "We need to be more careful."
+✓ "How long has this been going on?"
+✓ "Everyone's going to find out!"
+✓ "I don't care who knows anymore."
+✗ Casual about secrecy (undermines stakes)
+✗ No real consequence to reveal
+
+[PROP DATABASE: Secret Relationship]
+HIDDEN SIGNS: Secret touches, quick glances, coded messages, hidden gifts
+RISK ELEMENTS: CCTV, witnesses, dropped evidence (photo, letter), overheard conversation
+REVEAL MOMENT: Caught mid-kiss, photo discovered, walked in on, public slip-up
+SOCIAL PRESSURE: Disapproving authority, scandalized witnesses, rules being broken, social consequences
+PROTECTIVE ACTIONS: Shielding partner, taking blame, defensive stance
+AFTERMATH: Holding hands publicly for first time, defiant kiss, or forced separation
+
+[TROPE ENGINE: 50-Second Secret Relationship Reveal]
+SCENE 1-2: HIDDEN INTIMACY
+- Start with secret moment between couple
+- Awareness of risk, checking surroundings
+- Brief tender moment showing genuine connection
+
+SCENE 3-5: THE REVEAL
+- Discovery moment (caught, seen, evidence found)
+- Panic, scrambling to hide/explain
+- Witness/authority figure reacting
+
+SCENE 6-7: CONFRONTATION
+- Explanation demanded or consequences declared
+- One or both defending relationship
+- Social stakes made clear (scandal, rules, reputation)
+
+SCENE 8-10: DEFIANCE OR CONSEQUENCE
+DEFIANT ENDING:
+- "We're together, deal with it"
+- Public claim of relationship
+- First open display of affection
+
+CONSEQUENCE ENDING:
+- Forced apart by circumstances
+- "We can't do this anymore"
+- Final secret goodbye or promise to wait
+
+MANDATORY BEATS: Secrecy established, stakes clear, reveal moment, social response, choice made
+FORBIDDEN: No real stakes, easy acceptance, secrecy without reason
+""",
+
+    "REVENGE_CONFRONTATION": """
+=== NARRATIVE PLUGIN: Revenge Confrontation ===
+
+[CHRONO-LOCK: Any Era]
+ALLOWED TECH: Any - weapons if appropriate to era, evidence of betrayal, symbolic objects
+ALLOWED LOCATIONS: Confrontational spaces (where betrayal happened, public exposure, trapped location)
+FORBIDDEN: Neutral safe spaces, easy escape routes for betrayer
+ERA: Flexible, but power dynamic must be clear
+
+[SOCIOLINGUISTIC LAYER: Accusatory Power]
+DIALOGUE STYLE:
+- Cold accusatory tone or hot rage
+- "Do you remember what you did?"
+- Listing betrayals, making them face it
+- Shift from power to vulnerability or vice versa
+- "You destroyed me" to "But you didn't break me"
+EXAMPLES:
+✓ "Look at me. Look at what you made me become."
+✓ "Did you think I'd forget?"
+✓ "You took everything from me."
+✓ "This is for what you did."
+✗ Forgiveness without catharsis
+✗ Betrayer easily escaping consequences
+
+[PROP DATABASE: Revenge Scene]
+EVIDENCE: Photos, documents, witnesses, recorded confession, physical proof
+POWER SYMBOLS: High ground position, weapon (or threat), trapped betrayer, public exposure setup
+BETRAYAL MARKERS: Scars (physical/emotional), destroyed life evidence, what was taken visible
+EMOTIONAL INTENSITY: Tears of rage, shaking hands, cold calm rage, or explosive anger
+CONFRONTATION SPACE: Cornered betrayer, public humiliation setup, private reckoning, symbolic location
+RESOLUTION PROPS: Weapon dropped, evidence revealed, final choice moment
+
+[TROPE ENGINE: 50-Second Revenge Confrontation]
+SCENE 1-2: THE CONFRONTATION SETUP
+- Avenger in position of power
+- Betrayer trapped, cornered, or publicly exposed
+- "I've been waiting for this moment"
+
+SCENE 3-5: THE ACCUSATION
+- Betrayal laid out clearly
+- Making them face what they did
+- Betrayer's response: denial, defense, or admission
+
+SCENE 6-7: THE RECKONING
+- Revenge action: exposure, consequence, physical confrontation
+- Betrayer's downfall or realization
+- Avenger's cathartic moment
+
+SCENE 8-10: AFTERMATH
+HOLLOW VICTORY:
+- Revenge complete but empty feeling
+- "Why don't I feel better?"
+
+SATISFYING JUSTICE:
+- Betrayer suffering consequences
+- Avenger walking away stronger
+
+UNEXPECTED TURN:
+- Choosing mercy over revenge
+- Breaking the cycle
+- "I won't become like you"
+
+MANDATORY BEATS: Clear betrayal stated, power reversal, confrontation climax, consequence delivered
+FORBIDDEN: Easy forgiveness, betrayer escaping, avenger losing without catharsis
+""",
+
+    "TIME_SKIP_REUNION": """
+=== NARRATIVE PLUGIN: Time-Skip Reunion ===
+
+[CHRONO-LOCK: Before/After Time Jump]
+ALLOWED TECH: Era shift showing time passage - old vs new phones, changed fashion, aged locations
+ALLOWED LOCATIONS: Meaningful past location now changed, or neutral reunion spot
+FORBIDDEN: Unchanged settings (undermines time passage), no visual aging/growth
+ERA: Any, but time passage must be visible
+
+[SOCIOLINGUISTIC LAYER: Rediscovery Speech]
+DIALOGUE STYLE:
+- "It's been so long..."
+- "You've changed" observations
+- Awkward then familiar rhythm returning
+- "Do you remember when..."
+- Unspoken feelings finally surfacing
+EXAMPLES:
+✓ "I barely recognized you."
+✓ "You cut your hair." [touching change]
+✓ "I thought about you. All these years."
+✓ "We're not kids anymore, are we?"
+✗ Acting like no time passed
+✗ Immediate comfort without adjustment
+
+[PROP DATABASE: Reunion Scene]
+TIME PASSAGE: Different clothes/style, physical changes, matured features, updated tech
+NOSTALGIA: Old location renovated, childhood spot revisited, unchanged meaningful item
+RECOGNITION: Double-take, shocked expression, slow realization, name called hesitantly
+PAST VS PRESENT: Old photo shown vs current, memories flashing, what used to be vs what is
+UNRESOLVED: What was left unsaid, changed feelings, missed opportunities now visible
+RECONNECTION: Hesitant then natural closeness, muscle memory of old familiarity
+
+[TROPE ENGINE: 50-Second Time-Skip Reunion]
+SCENE 1-2: THE RECOGNITION
+- Seeing each other after years
+- Shock, disbelief, hesitation
+- "Is that really you?"
+
+SCENE 3-5: CHANGED YET SAME
+- Noting changes (physical, maturity)
+- Brief flashback to how they were
+- Awkward rediscovery, old habits surfacing
+
+SCENE 6-7: UNRESOLVED SURFACES
+- What was left unsaid years ago
+- "I never forgot you"
+- Feelings that never died or new ones emerging
+
+SCENE 8-10: NEW BEGINNING OR CLOSURE
+ROMANTIC REUNION:
+- "I never stopped loving you"
+- Second chance embrace
+- Picking up where they left off, but better
+
+BITTERSWEET CLOSURE:
+- "We're different people now"
+- Grateful goodbye
+- Cherishing what was, accepting what is
+
+MANDATORY BEATS: Time gap visible, recognition moment, past vs present, unresolved feelings addressed
+FORBIDDEN: No visible change, acting like no time passed, ignoring the gap
+""",
+
+    "SOULMATE_RECOGNITION": """
+=== NARRATIVE PLUGIN: Soulmate Recognition/Fated Meeting ===
+
+[CHRONO-LOCK: Any Setting - Often Fantasy/Magical Realism]
+ALLOWED TECH: Any, but often includes: fate markers, physical responses, magical signs, destined symbols
+ALLOWED LOCATIONS: Fateful spot (where they're "meant" to meet), or ordinary place made extraordinary
+FORBIDDEN: Casual unremarkable setting without weight
+ERA: Flexible, can include magical/fate elements regardless of era
+
+[SOCIOLINGUISTIC LAYER: Destined Certainty]
+DIALOGUE STYLE:
+- "I feel like I've known you forever"
+- Instant deep understanding in words
+- "It's you" recognition
+- Fate/destiny acknowledged openly
+- No need for pretense, immediate honesty
+EXAMPLES:
+✓ "I've been looking for you."
+✓ "How do I already know you?"
+✓ "This feels like coming home."
+✓ "We were meant to find each other."
+✗ Casual dismissal of connection
+✗ Slow burn (this is instant recognition)
+
+[PROP DATABASE: Soulmate Recognition]
+FATE MARKERS: Matching symbols (birthmarks, items, dreams), red string visible, magical glow
+PHYSICAL RESPONSE: Heart racing shown, warm light between them, literal spark, time slowing
+RECOGNITION: Eyes meeting across room, pulled toward each other, immediate knowing
+DESTINY SIGNS: Prophetic elements fulfilled, repeated symbols finally making sense, puzzle pieces clicking
+ENVIRONMENT RESPONSE: World reacting (music swelling, lights brightening, petals falling, magic activating)
+CERTAINTY: No hesitation in touch, immediate trust, completing each other's thoughts
+
+[TROPE ENGINE: 50-Second Soulmate Recognition]
+SCENE 1-2: THE MOMENT OF MEETING
+- Eyes meet across space or unexpected encounter
+- Immediate pull, time slows, world fades
+- "Who are you?"
+
+SCENE 3-5: THE RECOGNITION
+- Physical/magical response to proximity
+- Overwhelming sense of "knowing" them
+- Past life hints or destiny markers activating
+
+SCENE 6-7: THE CERTAINTY
+- "It's you. You're the one."
+- No doubt, no fear, just recognition
+- Fate/destiny explicitly acknowledged
+- Touching for first time feels familiar
+
+SCENE 8-10: TOGETHER AS MEANT TO BE
+- Immediate deep connection
+- "Where have you been all my life?"
+- Final beat: Embrace feeling like homecoming, or
+- Magical seal/bond completing, or
+- Simple certain happiness of "found you"
+
+MANDATORY BEATS: Instant recognition, destined feeling, certainty over doubt, magical/fated element
+FORBIDDEN: Uncertainty, slow realization (must be instant), denying the connection
 """
 }
 

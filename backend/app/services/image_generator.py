@@ -90,7 +90,7 @@ class ImageGenerator:
             final_prompt = CHARACTER_IMAGE_TEMPLATE.format(
                 gender_style=base_style,
                 character_description=description,
-                genre_style=image_style_prompt
+                visual_style=image_style_prompt
             )
             
             logger.info(f"Final prompt length: {len(final_prompt)} characters")

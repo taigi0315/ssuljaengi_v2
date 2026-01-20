@@ -5,13 +5,24 @@ import { useState, useEffect, useRef } from 'react';
 import { getImageStyles } from '@/lib/apiClient';
 import { ChevronLeft, ChevronRight, Palette } from 'lucide-react';
 
+// Import style preview images
+import softRomanticImage from '@/assets/image_styles/SOFT_ROMANTIC_WEBTOON.png';
+import vibrantFantasyImage from '@/assets/image_styles/VIBRANT_FANTASY_WEBTOON.png';
+import dramaticHistoricalImage from '@/assets/image_styles/DRAMATIC_HISTORICAL_WEBTOON.png';
+import brightYouthfulImage from '@/assets/image_styles/BRIGHT_YOUTHFUL_WEBTOON.png';
+import dreamyIsekaiImage from '@/assets/image_styles/DREAMY_ISEKAI_WEBTOON.png';
+import darkSensualImage from '@/assets/image_styles/DARK_SENSUAL_WEBTOON.png';
+import cleanModernImage from '@/assets/image_styles/CLEAN_MODERN_WEBTOON.png';
+import painterlyArtisticImage from '@/assets/image_styles/PAINTERLY_ARTISTIC_WEBTOON.png';
+import emotiveLuxuryImage from '@/assets/image_styles/EMOTIVE_LUXURY_WEBTOON.png';
+
 interface ImageStyleSelectorProps {
   selectedStyle: ImageStyle | null;
   onStyleSelect: (style: ImageStyle) => void;
 }
 
 // Metadata for image styles with placeholder colors/gradients
-const IMAGE_STYLE_METADATA: Record<string, { name: string; description: string; gradient: string; icon: string }> = {
+const IMAGE_STYLE_METADATA: Record<string, { name: string; description: string; gradient: string; icon: string; previewImage?: string }> = {
   NO_STYLE: {
     name: 'Default Style',
     description: 'Default AI rendering without specific style',
@@ -23,48 +34,63 @@ const IMAGE_STYLE_METADATA: Record<string, { name: string; description: string; 
     description: 'Gentle, dreamy, light-filled, ethereal aesthetic',
     gradient: 'from-pink-300 via-rose-200 to-amber-100',
     icon: '🌸',
+    previewImage: softRomanticImage.src,
   },
   VIBRANT_FANTASY_WEBTOON: {
     name: 'Vibrant Fantasy',
     description: 'Magical, bright, enchanting, colorful style',
     gradient: 'from-purple-400 via-pink-300 to-blue-400',
     icon: '✨',
+    previewImage: vibrantFantasyImage.src,
   },
   DRAMATIC_HISTORICAL_WEBTOON: {
     name: 'Dramatic Historical',
     description: 'Moody, elegant, dramatic, candlelit atmosphere',
     gradient: 'from-amber-700 via-red-800 to-stone-900',
     icon: '🕯️',
+    previewImage: dramaticHistoricalImage.src,
   },
   BRIGHT_YOUTHFUL_WEBTOON: {
     name: 'Bright Youthful',
     description: 'Fresh, clean, optimistic, energetic feel',
     gradient: 'from-sky-300 via-yellow-200 to-orange-300',
     icon: '☀️',
+    previewImage: brightYouthfulImage.src,
   },
   DREAMY_ISEKAI_WEBTOON: {
     name: 'Dreamy Isekai',
     description: 'Ethereal, whimsical, romantic fantasy glow',
     gradient: 'from-indigo-300 via-purple-200 to-pink-200',
     icon: '🌙',
+    previewImage: dreamyIsekaiImage.src,
   },
   DARK_SENSUAL_WEBTOON: {
     name: 'Dark Sensual',
     description: 'Intense, dramatic, intimate, mysterious mood',
     gradient: 'from-red-900 via-purple-900 to-black',
     icon: '🖤',
+    previewImage: darkSensualImage.src,
   },
   CLEAN_MODERN_WEBTOON: {
     name: 'Clean Modern',
     description: 'Professional, versatile, commercial standard',
     gradient: 'from-slate-300 via-gray-200 to-zinc-300',
     icon: '💎',
+    previewImage: cleanModernImage.src,
   },
   PAINTERLY_ARTISTIC_WEBTOON: {
     name: 'Painterly Artistic',
     description: 'Artistic, expressive, fine art quality',
     gradient: 'from-teal-400 via-emerald-300 to-cyan-400',
     icon: '🎭',
+    previewImage: painterlyArtisticImage.src,
+  },
+  EMOTIVE_LUXURY_WEBTOON: {
+    name: 'Emotive Luxury',
+    description: 'High-end, detailed, emotional, polished webtoon aesthetic',
+    gradient: 'from-rose-400 via-fuchsia-500 to-indigo-600',
+    icon: '👑',
+    previewImage: emotiveLuxuryImage.src,
   },
 };
 
@@ -104,7 +130,7 @@ export default function ImageStyleSelector({ selectedStyle, onStyleSelect }: Ima
               id: apiStyle.id as ImageStyle,
               name: local?.name || apiStyle.name,
               description: local?.description || apiStyle.description || 'Visual style for webtoon art',
-              previewImage: apiStyle.preview_url || '',
+              previewImage: local?.previewImage || apiStyle.preview_url || '',
             };
           });
 
@@ -124,7 +150,7 @@ export default function ImageStyleSelector({ selectedStyle, onStyleSelect }: Ima
           id: id as ImageStyle,
           name: data.name,
           description: data.description,
-          previewImage: '',
+          previewImage: data.previewImage || '',
         })));
       }
     };

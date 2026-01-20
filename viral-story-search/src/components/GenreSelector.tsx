@@ -21,6 +21,10 @@ interface GenreSelectorProps {
   onGenreSelect: (genre: StoryGenre) => void;
 }
 
+// Fallback image for new genres
+const DEFAULT_GENRE_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="400"%3E%3Crect fill="%23f3f4f6" width="300" height="400"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="24"%3EGenre%3C/text%3E%3C/svg%3E';
+
+
 const GENRE_METADATA: Record<string, { name: string; description: string; previewImage: string }> = {
   MODERN_ROMANCE_DRAMA: {
     name: 'Modern Romance Drama',
@@ -67,11 +71,40 @@ const GENRE_METADATA: Record<string, { name: string; description: string; previe
     description: 'No specific genre restrictions. Create your own unique story!',
     previewImage: noGenreImage.src,
   },
+  MISSED_CONNECTION: {
+    name: 'Missed Connection',
+    description: 'Fleeting encounters, what-ifs, and timing as the antagonist',
+    previewImage: DEFAULT_GENRE_IMAGE,
+  },
+  CONFESSION_MOMENT: {
+    name: 'The Confession',
+    description: 'High-stakes declaration of feelings in a meaningful setting',
+    previewImage: DEFAULT_GENRE_IMAGE,
+  },
+  BREAKUP_MAKEUP: {
+    name: 'Breakup / Makeup',
+    description: 'Intense emotional conflict, raw honesty, and resolution',
+    previewImage: modernRomanceImage.src,
+  },
+  LOVE_TRIANGLE_CHOICE: {
+    name: 'The Choice',
+    description: 'Decisive moment between two paths, love triangle climax',
+    previewImage: DEFAULT_GENRE_IMAGE,
+  },
+  SECRET_RELATIONSHIP_REVEAL: {
+    name: 'Secret Revealed',
+    description: 'High stakes exposure of hidden love and social consequences',
+    previewImage: DEFAULT_GENRE_IMAGE,
+  },
+  REVENGE_CONFRONTATION: {
+    name: 'Revenge',
+    description: 'Cathartic showdown, justice, and power dynamics',
+    previewImage: darkRomanceImage.src,
+  },
 };
 
 
-// Fallback image for new genres
-const DEFAULT_GENRE_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="400"%3E%3Crect fill="%23f3f4f6" width="300" height="400"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="24"%3EGenre%3C/text%3E%3C/svg%3E';
+
 
 export default function GenreSelector({ selectedGenre, onGenreSelect }: GenreSelectorProps) {
   const [genres, setGenres] = useState<StoryGenreOption[]>([]);

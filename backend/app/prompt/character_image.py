@@ -31,46 +31,61 @@ chibi-like proportions, head-to-body ratio 1:3, youthful innocence
 """
 
 MALE_TEEN = """
-teenage boy character, webtoon manhwa art style,
-youthful angular features beginning to mature, sharp jawline developing,
-trendy Korean-style haircut (side-swept, layered, or textured),
-bright expressive eyes, clear unblemished skin, lean athletic build,
-tall slender frame, long limbs, school uniform (blazer, dress shirt, slacks) or trendy streetwear,
-authentic webtoon style character illustration,
-energetic confident posture, height around 170-180cm proportions
+teenage boy character, soft Korean webtoon manhwa art style,
+delicate youthful features, gentle angular face with soft edges,
+smooth clear skin, large expressive eyes with gentle gaze,
+trendy Korean-style haircut (soft side-swept bangs, layered medium-length, or fluffy textured),
+slender graceful build, lean elegant frame without muscle definition,
+tall slim proportions with narrow shoulders, willowy silhouette,
+long slender limbs, refined gentle posture,
+school uniform (neat blazer, crisp white shirt, fitted slacks) or soft casual streetwear,
+authentic Korean webtoon style character illustration,
+clean gentle features, soft approachable demeanor,
+height around 170-178cm with elegant proportions, youthful flower-boy aesthetic
 """
 
 MALE_20_30 = """
-handsome chiseled features, mature but youthful appearance,
-sharp defined jawline, stylish contemporary hair (undercut, pompadour, or textured),
-confident intense gaze, fit athletic build with broad shoulders,
-very tall elegant stature over 180cm, long powerful legs, long athletic torso,
-statuesque model-like figure, elongated graceful proportions,
-contemporary adult fashion (tailored suit, business casual, or modern streetwear),
-authentic webtoon style character illustration,
-flawless skin, commanding presence, perfect posture
+handsome soft masculine features, Korean manhwa male lead aesthetic,
+full body shot showing entire elegant figure from head to shoes,
+standing gracefully in neutral lighting, visible feet and shoes,
+gentle refined jawline (not overly chiseled), soft angular face,
+stylish contemporary Korean hairstyle (soft side-part, gentle waves, fluffy layered, or elegant medium-length),
+warm gentle expression with kind eyes, serene or subtly confident demeanor,
+slender elegant build, graceful narrow shoulders, slim waist,
+very tall slender stature 180-188cm, long lean legs, elongated refined torso,
+willowy model-like proportions, elegant gentle frame without bulk or excessive muscle,
+soft sophisticated silhouette, graceful refined lines,
+contemporary elegant fashion (well-fitted suit with slim cut, business casual with soft fabrics, or refined modern streetwear),
+authentic Korean webtoon manhwa style character illustration,
+flawless porcelain-like skin, gentle refined presence, elegant relaxed posture,
+soft romantic or professional appearance, entire outfit fully visible within frame,
+flower-boy charm, gentle masculine beauty, approachable refined elegance
 """
 
 MALE_40_50 = """
-distinguished middle-aged male character, webtoon manhwa art style,
-mature refined features, subtle crow's feet, slight nasolabial folds,
-dignified commanding presence, well-groomed appearance (neat hair, possible grey streaks),
-strong build with slight weight in torso, broad shoulders maintained,
-professional business attire or sophisticated casual wear,
-authentic webtoon style character illustration,
-stable grounded posture, height around 175-185cm proportions,
-authoritative yet approachable expression, experienced worldly look
+distinguished mature male character, soft Korean webtoon manhwa art style,
+refined gentle features showing maturity, subtle expression lines adding character,
+soft dignified presence, well-groomed elegant appearance,
+neat sophisticated hairstyle (possibly subtle grey at temples),
+slender maintained build, graceful mature frame,
+narrow refined shoulders, elegant slim proportions,
+professional refined attire (well-tailored suit, sophisticated casual wear, soft fabrics),
+authentic Korean webtoon style character illustration,
+graceful composed posture, height around 178-185cm with elegant proportions,
+warm approachable expression, wise gentle demeanor,
+sophisticated soft masculine presence, refined distinguished charm
 """
 
 MALE_60_70 = """
-elderly distinguished male character, webtoon manhwa art style,
-aged weathered features, prominent wrinkles and laugh lines,
-grey or white hair (balding, receding, or full head), wise penetrating eyes,
-grandfatherly or patriarch appearance, slightly stooped but dignified posture,
-comfortable classic clothing (cardigan, slacks, traditional wear),
-authentic webtoon style character illustration,
-shorter stature around 165-175cm, slightly rounded shoulders,
-gentle or stern expression showing life experience, warm or authoritative presence
+elderly distinguished gentleman character, soft Korean webtoon manhwa art style,
+aged refined features with gentle wisdom lines, warm expressive eyes,
+silver or white hair (neat, dignified styling), kind grandfatherly appearance,
+slender elegant elderly frame, graceful aged posture,
+comfortable refined clothing (soft cardigan, elegant casual wear, traditional hanbok),
+authentic Korean webtoon style character illustration,
+gentle dignified stature around 170-175cm, narrow refined shoulders,
+warm gentle expression radiating wisdom and kindness,
+soft approachable grandfatherly presence, elegant aged grace
 """
 
 #--------------------------------------------------------------------
@@ -154,7 +169,7 @@ BASE_STYLE: {gender_style}
 CHARACTER_DETAILS (USE THESE EXACT DESCRIPTIONS):
 {character_description}
 
-ART_STYLE_REFERENCE: {genre_style}
+ART_STYLE_REFERENCE: {visual_style}
 
 IMPORTANT: 
 - Follow the CHARACTER_DETAILS exactly for body type, height, and build
@@ -163,11 +178,3 @@ IMPORTANT:
 
 NEGATIVE: text, watermark, signature, logo, conflicting descriptions, square image, 1:1 ratio, horizontal image, landscape orientation
 """
-
-# CHARACTER_IMAGE_TEMPLATE EXAMPLE
-# BASE_STYLE = {MALE}
-
-# CHARACTER_DETAILS = {DESCRIPTION FROM LLM RESPONSE}
-
-# ART_STYLE_REFERENCE = {GENRE_STYLE FROM image_mood.py}
-
