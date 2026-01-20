@@ -52,12 +52,12 @@ Modern webtoons use DIALOGUE and CHARACTER INTERACTION to drive stories, not jus
 Every `visual_prompt` must be a COMPLETE, READY-TO-USE prompt of 150-250 words following this exact formula:
 
 ```
-{shot_type}, {composition_rule}, {environment_details (40% of words)}, {character_placement_and_action (30% of words)}, {atmospheric_conditions (20% of words)}, {style_tags (10% of words)}
+{{shot_type}}, {{composition_rule}}, {{environment_details (40% of words)}}, {{character_placement_and_action (30% of words)}}, {{atmospheric_conditions (20% of words)}}, {{style_tags (10% of words)}}
 ```
 
 **TEMPLATE:**
 ```
-{shot_type}, vertical 9:16 webtoon panel, {composition_notes}, {detailed_environment_description with 5+ specific elements}, {character_reference_tag} positioned {location_in_frame} {action_verb with body language}, {other_characters if present}, {lighting_description}, {weather/mood}, {genre_style} manhwa style, cinematic depth, photorealistic details
+{{shot_type}}, vertical 9:16 webtoon panel, {{composition_notes}}, {{detailed_environment_description with 5+ specific elements}}, {{character_reference_tag}} positioned {{location_in_frame}} {{action_verb with body language}}, {{other_characters if present}}, {{lighting_description}}, {{weather/mood}}, {{genre_style}} manhwa style, cinematic depth, photorealistic details
 ```
 
 **EXAMPLE COMPLETE VISUAL_PROMPT:**
@@ -100,21 +100,21 @@ Dialogue is an **array of objects** with sequential order. Multiple dialogue lin
 **Format:**
 ```json
 "dialogue": [
-  {
+  {{
     "character": "Ji-hoon",
     "text": "I've been thinking about you.",
     "order": 1
-  },
-  {
+  }},
+  {{
     "character": "Soojin", 
     "text": "What? After all this time?",
     "order": 2
-  },
-  {
+  }},
+  {{
     "character": "Ji-hoon",
     "text": "I never stopped.",
     "order": 3
-  }
+  }}
 ]
 ```
 
@@ -132,21 +132,24 @@ Dialogue is an **array of objects** with sequential order. Multiple dialogue lin
 You must output a valid JSON object with this **exact** structure:
 
 ```json
-{
+{{
   "characters": [
-    {
+    {{
       "name": "string",
       "reference_tag": "string (minimal, e.g. 'Ji-hoon(20s, melancholic)')",
       "gender": "string",
-      "age": "string", 
+      "age": "string",
+      "face": "string",
+      "hair": "string", 
+      "body": "string",
       "appearance_notes": "string (detailed, for reference only)",
       "typical_outfit": "string",
       "personality_brief": "string (1-2 words)",
       "visual_description": "string (legacy field, can be minimal)"
-    }
+    }}
   ],
   "scenes": [
-    {
+    {{
       "panel_number": integer,
       "shot_type": "string (from approved list)",
       "active_character_names": ["string"],
@@ -161,17 +164,17 @@ You must output a valid JSON object with this **exact** structure:
       "environment_frame_percentage": integer (50-85),
       "character_placement_and_action": "string (where + what doing)",
       "dialogue": [
-        {
+        {{
           "character": "string (character name)",
           "text": "string (under 15 words)",
           "order": integer
-        }
+        }}
       ] or null
-    }
+    }}
   ],
   "episode_summary": "string (2-3 sentences)",
-  "character_images": {}
-}
+  "character_images": {{}}
+}}
 ```
 
 ---
@@ -221,7 +224,7 @@ Before outputting JSON, verify:
 **EXAMPLE SCENE WITH MULTIPLE DIALOGUE:**
 
 ```json
-{
+{{
   "panel_number": 5,
   "shot_type": "Medium Shot",
   "active_character_names": ["Ji-hoon", "Soojin"],
@@ -236,28 +239,28 @@ Before outputting JSON, verify:
   "environment_frame_percentage": 60,
   "character_placement_and_action": "Ji-hoon(20s, melancholic) sitting left leaning forward with clasped hands, vulnerable expression, Soojin(20s, gentle) sitting right reaching hand toward him, concerned expression",
   "dialogue": [
-    {
+    {{
       "character": "Ji-hoon",
       "text": "I should have told you back then.",
       "order": 1
-    },
-    {
+    }},
+    {{
       "character": "Soojin",
       "text": "Told me what?",
       "order": 2
-    },
-    {
+    }},
+    {{
       "character": "Ji-hoon",
       "text": "That I was too scared to lose you.",
       "order": 3
-    },
-    {
+    }},
+    {{
       "character": "Soojin",
       "text": "You never lost me, Ji-hoon.",
       "order": 4
-    }
+    }}
   ]
-}
+}}
 ```
 
 ---

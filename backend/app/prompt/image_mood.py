@@ -265,109 +265,28 @@ high-resolution polish, no texture noise,
 luxury webtoon/manhwa standard,
 clean background fades with architectural fantasy hints,
 editorial-grade illustration suitable for top-tier digital comics
+""",
+
+    "OPERATION_TRUE_LOVE": """
+[MEDIUM: Cinematic Modern Manhwa Illustration]
+high-end Korean webtoon/manhwa illustration, semi-realistic anime aesthetic, elegant character anatomy with long proportions, refined facial sculpting with subtle realism, fashion-forward modern wardrobe styling, cinematic romance-drama composition, premium serialized webtoon quality, editorial-grade polish
+
+[LINEWORK: Minimalist Controlled Ink]
+thin, understated lineart with soft pressure variation, clean contour edges without heavy outlines, selective detailing for eyes, nose, and lips, natural hair strand grouping with loose organic flow, linework designed to support realism and mood rather than graphic emphasis, modern mature webtoon inking style
+
+[ILLUMINATOR: Warm Ambient Interior Lighting]
+soft golden-hour illumination, diffused window light bloom, gentle rim lighting along hair and shoulders, atmospheric haze and subtle glow falloff, realistic shadow softness with feathered edges, cinematic indoor lighting reminiscent of quiet evening intimacy, depth-driven light layering
+
+[COLORIST: Muted Warm-Neutral Palette]
+earth-toned palette with beige, caramel, charcoal, and muted rose accents, warm highlights balanced with cool shadow undertones, low-saturation cinematic grading, smooth tonal transitions without hard contrast, painterly gradient shading, realistic skin tones with soft blush nuance
+
+[TEXTURIST: Soft Painterly Depth]
+velvety shading transitions, subtle brush texture for fabric and hair, barely perceptible grain for realism, layered depth separation between foreground and background, atmospheric blur for distance, matte-finish surfaces with controlled highlights
+
+[EMOTION: Quiet Intimate Narrative Tone]
+restrained emotional expression, subtle eye direction and micro-expressions, contemplative mood, romantic tension conveyed through posture and proximity, cinematic framing with natural body language, storytelling emphasis on silence, vulnerability, and connection
+
+[FINISHER: Premium Cinematic Romance Finish]
+film-inspired color grading, soft vignette, gentle bloom highlights, background architecture simplified with depth haze, polished high-resolution finish, no harsh outlines or neon saturation, modern prestige-drama webtoon aesthetic, gallery-ready editorial realism
 """
 }
-
-"""
-==========================================================
-VISUAL STYLE SELECTION GUIDE
-==========================================================
-Match style to VISUAL MOOD, not story genre:
-
-SOFT_ROMANTIC_WEBTOON
-→ When you want: Gentle, dreamy, light-filled, ethereal
-→ Works with: Romance, slice-of-life, healing stories, wholesome content
-→ Lighting: Bright, soft, warm
-→ Color: Pastels, light, warm
-
-VIBRANT_FANTASY_WEBTOON  
-→ When you want: Magical, bright, enchanting, colorful
-→ Works with: Fantasy, adventure, magical stories
-→ Lighting: Glowing, magical, balanced
-→ Color: Pastels with jewel accents
-
-DRAMATIC_HISTORICAL_WEBTOON
-→ When you want: Moody, elegant, dramatic, atmospheric
-→ Works with: Historical, period pieces, dramatic romance
-→ Lighting: Dark, candlelit, chiaroscuro
-→ Color: Rich, muted, elegant
-
-BRIGHT_YOUTHFUL_WEBTOON
-→ When you want: Fresh, clean, optimistic, energetic  
-→ Works with: School, youth, comedy, lighthearted
-→ Lighting: Bright, natural, cheerful
-→ Color: Vibrant pastels, fresh
-
-DREAMY_ISEKAI_WEBTOON
-→ When you want: Ethereal, whimsical, romantic fantasy
-→ Works with: Isekai, otome, royal romance, fairy tales
-→ Lighting: Soft magical, palace glow
-→ Color: Pale pastels with jewel tones
-
-DARK_SENSUAL_WEBTOON
-→ When you want: Intense, dramatic, intimate, mysterious
-→ Works with: Dark romance, mature, psychological, gothic
-→ Lighting: Shadowy, dramatic, candlelit
-→ Color: Deep reds, blacks, warm dramatic
-
-CLEAN_MODERN_WEBTOON
-→ When you want: Professional, versatile, commercial
-→ Works with: Any genre, professional standard
-→ Lighting: Balanced, adaptable
-→ Color: Neutral, sophisticated
-
-PAINTERLY_ARTISTIC_WEBTOON
-→ When you want: Artistic, expressive, fine art quality
-→ Works with: Literary, artistic, prestigious projects
-→ Lighting: Atmospheric, artistic
-→ Color: Expressive, varied
-
-NOTE: Style and Story Genre are INDEPENDENT
-Example: A dark revenge story could use SOFT_ROMANTIC_WEBTOON style for ironic contrast
-Example: A cute school story could use DARK_SENSUAL_WEBTOON for visual drama
-"""
-
-"""
-==========================================================
-HOW TO USE BOTH SYSTEMS TOGETHER
-==========================================================
-
-STEP 1: Choose STORY GENRE (defines what exists and dialogue)
-Example: DARK_OBSESSIVE_ROMANCE
-- Characters trapped in power dynamic
-- Possessive dialogue
-- Isolated mansion setting
-- Restraint props available
-
-STEP 2: Choose VISUAL STYLE (defines how it's rendered)  
-Example: DARK_SENSUAL_WEBTOON
-- Dramatic candlelit rendering
-- Deep red/black color palette
-- Glossy skin highlights
-- Moody atmosphere
-
-STEP 3: Combine in generation
-Story provides: "Character pinned against wall, intense eye contact, isolated bedroom"
-Style provides: "dramatic rim lighting, deep crimson and black palette, glossy skin rendering"
-
-Result: Dark romance scene rendered in dark sensual aesthetic
-
-FLEXIBILITY EXAMPLES:
-
-Modern Romance Story + Soft Romantic Style = Classic romance webtoon
-Modern Romance Story + Dark Sensual Style = Mature/intense romance  
-Modern Romance Story + Painterly Artistic Style = Literary romance
-
-Fantasy Story + Vibrant Fantasy Style = Standard fantasy webtoon
-Fantasy Story + Dramatic Historical Style = Dark/gothic fantasy
-Fantasy Story + Soft Romantic Style = Wholesome fantasy
-
-School Story + Bright Youthful Style = Classic school romance
-School Story + Dark Sensual Style = Psychological school drama
-School Story + Painterly Artistic Style = Coming-of-age art film
-
-The style changes the VISUAL MOOD without changing the STORY CONTENT.
-"""
-
-
-

@@ -204,6 +204,8 @@ class ImageGenerator:
             
             if not image_bytes:
                 logger.error(f"No image in response. Candidates: {response.candidates}")
+                if response.prompt_feedback:
+                    logger.error(f"Prompt feedback: {response.prompt_feedback}")
                 raise Exception("No image data in response")
             
             # Get MIME type

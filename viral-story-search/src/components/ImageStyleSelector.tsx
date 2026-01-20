@@ -6,15 +6,15 @@ import { getImageStyles } from '@/lib/apiClient';
 import { ChevronLeft, ChevronRight, Palette } from 'lucide-react';
 
 // Import style preview images
-import softRomanticImage from '@/assets/image_styles/SOFT_ROMANTIC_WEBTOON.png';
-import vibrantFantasyImage from '@/assets/image_styles/VIBRANT_FANTASY_WEBTOON.png';
-import dramaticHistoricalImage from '@/assets/image_styles/DRAMATIC_HISTORICAL_WEBTOON.png';
-import brightYouthfulImage from '@/assets/image_styles/BRIGHT_YOUTHFUL_WEBTOON.png';
-import dreamyIsekaiImage from '@/assets/image_styles/DREAMY_ISEKAI_WEBTOON.png';
-import darkSensualImage from '@/assets/image_styles/DARK_SENSUAL_WEBTOON.png';
-import cleanModernImage from '@/assets/image_styles/CLEAN_MODERN_WEBTOON.png';
-import painterlyArtisticImage from '@/assets/image_styles/PAINTERLY_ARTISTIC_WEBTOON.png';
-import emotiveLuxuryImage from '@/assets/image_styles/EMOTIVE_LUXURY_WEBTOON.png';
+import softRomanticImage from '@/assets/images/image_styles/SOFT_ROMANTIC_WEBTOON.png';
+import vibrantFantasyImage from '@/assets/images/image_styles/VIBRANT_FANTASY_WEBTOON.png';
+import dramaticHistoricalImage from '@/assets/images/image_styles/DRAMATIC_HISTORICAL_WEBTOON.png';
+import brightYouthfulImage from '@/assets/images/image_styles/BRIGHT_YOUTHFUL_WEBTOON.png';
+import dreamyIsekaiImage from '@/assets/images/image_styles/DREAMY_ISEKAI_WEBTOON.png';
+import darkSensualImage from '@/assets/images/image_styles/DARK_SENSUAL_WEBTOON.png';
+import cleanModernImage from '@/assets/images/image_styles/CLEAN_MODERN_WEBTOON.png';
+import painterlyArtisticImage from '@/assets/images/image_styles/PAINTERLY_ARTISTIC_WEBTOON.png';
+import emotiveLuxuryImage from '@/assets/images/image_styles/EMOTIVE_LUXURY_WEBTOON.png';
 
 interface ImageStyleSelectorProps {
   selectedStyle: ImageStyle | null;

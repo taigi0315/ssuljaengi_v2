@@ -8,13 +8,23 @@ import Image from 'next/image';
 
 // Import genre preview images
 // Import genre preview images
-import modernRomanceImage from '@/assets/images/genre/MODERN_ROMANCE_DRAMA_MANHWA.png';
-import fantasyRomanceImage from '@/assets/images/genre/FANTASY_ROMANCE_MANHWA.png';
-import historySageukImage from '@/assets/images/genre/HISTORY_SAGEUK_ROMANCE.png';
-import academySchoolImage from '@/assets/images/genre/ACADEMY_SCHOOL_LIFE.png';
-import isekaiOtomeImage from '@/assets/images/genre/ISEKAI_OTOME_FANTASY.png';
-import darkRomanceImage from '@/assets/images/genre/DARK_ROMANCE_REVENGE_MANHWA.png'; // New Image
-import noGenreImage from '@/assets/images/genre/NO_GENRE.png'; // New Image
+import modernRomanceImage from '@/assets/images/story_genre/MODERN_ROMANCE_DRAMA.png';
+import fantasyRomanceImage from '@/assets/images/story_genre/FANTASY_ROMANCE.png';
+import historySageukImage from '@/assets/images/story_genre/HISTORY_SAGEUK_ROMANCE.png';
+import academySchoolImage from '@/assets/images/story_genre/ACADEMY_SCHOOL_LIFE.png';
+import isekaiOtomeImage from '@/assets/images/story_genre/ISEKAI_OTOME_FANTASY.png';
+import darkRomanceImage from '@/assets/images/story_genre/DARK_ROMANCE_REVENGE_MANHWA.png'; // New Image
+import noGenreImage from '@/assets/images/story_genre/NO_GENRE.png'; // New Image
+import missedConnectionImage from '@/assets/images/story_genre/MISSED_CONNECTION.png';
+import confessionMomentImage from '@/assets/images/story_genre/CONFESSION_MOMENT.png';
+import breakupMakeupImage from '@/assets/images/story_genre/BREAKUP_MAKEUP.png';
+import loveTriangleImage from '@/assets/images/story_genre/LOVE_TRIANGLE_CHOICE.png';
+import secretRevealImage from '@/assets/images/story_genre/SECRET_RELATIONSHIP_REVEAL.png';
+import revengeConfrontationImage from '@/assets/images/story_genre/REVENGE_CONFRONTATION.png';
+import workplaceRomanceImage from '@/assets/images/story_genre/WORKPLACE_ROMANCE.png';
+import soulmateRecognitionImage from '@/assets/images/story_genre/SOULMATE_RECOGNITION.png';
+import timeSkipReunionImage from '@/assets/images/story_genre/TIME_SKIP_REUNION.png';
+import childhoodFriendsImage from '@/assets/images/story_genre/CHILDHOOD_FRIENDS_TO_LOVERS.png';
 
 interface GenreSelectorProps {
   selectedGenre: StoryGenre | null;
@@ -59,12 +69,12 @@ const GENRE_METADATA: Record<string, { name: string; description: string; previe
   WORKPLACE_ROMANCE: {
     name: 'Workplace Romance',
     description: 'Office romance with professional tension',
-    previewImage: modernRomanceImage.src, // Reusing modern romance image
+    previewImage: workplaceRomanceImage.src,
   },
   CHILDHOOD_FRIENDS_TO_LOVERS: {
     name: 'Friends to Lovers',
     description: 'Long friendship evolving into romance',
-    previewImage: academySchoolImage.src, // Reusing school image
+    previewImage: childhoodFriendsImage.src,
   },
   NO_GENRE: {
     name: 'Free Style',
@@ -74,32 +84,42 @@ const GENRE_METADATA: Record<string, { name: string; description: string; previe
   MISSED_CONNECTION: {
     name: 'Missed Connection',
     description: 'Fleeting encounters, what-ifs, and timing as the antagonist',
-    previewImage: DEFAULT_GENRE_IMAGE,
+    previewImage: missedConnectionImage.src,
   },
   CONFESSION_MOMENT: {
     name: 'The Confession',
     description: 'High-stakes declaration of feelings in a meaningful setting',
-    previewImage: DEFAULT_GENRE_IMAGE,
+    previewImage: confessionMomentImage.src,
   },
   BREAKUP_MAKEUP: {
     name: 'Breakup / Makeup',
     description: 'Intense emotional conflict, raw honesty, and resolution',
-    previewImage: modernRomanceImage.src,
+    previewImage: breakupMakeupImage.src,
   },
   LOVE_TRIANGLE_CHOICE: {
     name: 'The Choice',
     description: 'Decisive moment between two paths, love triangle climax',
-    previewImage: DEFAULT_GENRE_IMAGE,
+    previewImage: loveTriangleImage.src,
   },
   SECRET_RELATIONSHIP_REVEAL: {
     name: 'Secret Revealed',
     description: 'High stakes exposure of hidden love and social consequences',
-    previewImage: DEFAULT_GENRE_IMAGE,
+    previewImage: secretRevealImage.src,
   },
   REVENGE_CONFRONTATION: {
     name: 'Revenge',
     description: 'Cathartic showdown, justice, and power dynamics',
-    previewImage: darkRomanceImage.src,
+    previewImage: revengeConfrontationImage.src,
+  },
+  SOULMATE_RECOGNITION: {
+    name: 'Soulmate Recognition',
+    description: 'Fated encounter or sudden realization of destiny',
+    previewImage: soulmateRecognitionImage.src,
+  },
+  TIME_SKIP_REUNION: {
+    name: 'Reunion',
+    description: 'Meeting again after years apart, changed but still connected',
+    previewImage: timeSkipReunionImage.src,
   },
 };
 
