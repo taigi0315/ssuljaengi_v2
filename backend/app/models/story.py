@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Literal, List
 from datetime import datetime
 from app.prompt.story_mood import STORY_GENRE_PROMPTS
+from app.prompt.image_mood import VISUAL_STYLE_PROMPTS
 
 
 # Story mood types - now dynamic based on keys
@@ -412,6 +413,7 @@ class GenerateWebtoonRequest(BaseModel):
     """
     story_id: str = Field(..., description="Story ID to convert")
     story_content: Optional[str] = Field(default=None, description="Optional direct story content (bypasses story lookup)")
+    image_style: Optional[str] = Field(default="SOFT_ROMANTIC_WEBTOON", description="Visual style/mood for image generation")
 
 
 class GenerateCharacterImageRequest(BaseModel):
@@ -436,8 +438,8 @@ class GenerateCharacterImageRequest(BaseModel):
     @field_validator('image_style')
     @classmethod
     def validate_image_style(cls, v: str) -> str:
-        if v not in STORY_GENRE_PROMPTS:
-            raise ValueError(f"Invalid image_style '{v}'. Must be one of: {list(STORY_GENRE_PROMPTS.keys())}")
+        if v not in VISUAL_STYLE_PROMPTS:
+            raise ValueError(f"Invalid image_style '{v}'. Must be one of: {list(VISUAL_STYLE_PROMPTS.keys())}")
         return v
 
 

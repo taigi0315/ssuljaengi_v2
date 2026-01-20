@@ -198,7 +198,7 @@ export async function getStory(storyId: string): Promise<StoryResponse> {
  * @returns WebtoonScript with characters and panels
  * @throws Error if the request fails
  */
-export async function generateWebtoonScript(storyId: string, storyContent?: string): Promise<import('@/types').WebtoonScript> {
+export async function generateWebtoonScript(storyId: string, storyContent?: string, imageStyle?: string): Promise<import('@/types').WebtoonScript> {
   try {
     const response = await fetch(`${API_BASE_URL}/webtoon/generate`, {
       method: 'POST',
@@ -208,6 +208,7 @@ export async function generateWebtoonScript(storyId: string, storyContent?: stri
       body: JSON.stringify({
         story_id: storyId,
         story_content: storyContent,
+        image_style: imageStyle,
       }),
     });
 
@@ -397,7 +398,7 @@ export async function getCharacterImages(scriptId: string, characterName: string
 
 /**
  * Generate an image for a scene/panel
- * @param request Request with script_id, panel_number, visual_prompt, genre
+ * @param request Request with script_id, panel_number, visual_prompt, image_style
  * @returns SceneImage with image URL
  * @throws Error if the request fails
  */
@@ -412,7 +413,7 @@ export async function generateSceneImage(request: import('@/types').GenerateScen
         script_id: request.script_id,
         panel_number: request.panel_number,
         visual_prompt: request.visual_prompt,
-        genre: request.genre,
+        genre: request.image_style,  // Backend still uses 'genre' field name
       }),
     });
 
@@ -575,10 +576,10 @@ export async function getLibraryCharacters(): Promise<any[]> {
 }
 
 /**
- * Get available story genres
- * @returns List of genres
+ * Get available story genres (for narrative content)
+ * @returns List of story genres with metadata
  */
-export async function getGenres(): Promise<{id: string, name: string}[]> {
+export async function getGenres(): Promise<{id: string, name: string, description?: string, preview_url?: string}[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/webtoon/genres`);
     if (!response.ok) {
@@ -587,6 +588,24 @@ export async function getGenres(): Promise<{id: string, name: string}[]> {
     return await response.json();
   } catch (error) {
     console.error('Failed to fetch genres:', error);
+    // Return empty array as fallback
+    return [];
+  }
+}
+
+/**
+ * Get available image styles (for visual rendering)
+ * @returns List of image styles with metadata
+ */
+export async function getImageStyles(): Promise<{id: string, name: string, description?: string, preview_url?: string}[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/image-styles`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch image styles:', error);
     // Return empty array as fallback
     return [];
   }

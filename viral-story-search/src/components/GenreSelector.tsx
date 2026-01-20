@@ -8,60 +8,123 @@ import Image from 'next/image';
 
 // Import genre preview images
 // Import genre preview images
-import modernRomanceImage from '@/assets/images/genre/MODERN_ROMANCE_DRAMA_MANHWA.png';
-import fantasyRomanceImage from '@/assets/images/genre/FANTASY_ROMANCE_MANHWA.png';
-import historySageukImage from '@/assets/images/genre/HISTORY_SAGEUK_ROMANCE.png';
-import academySchoolImage from '@/assets/images/genre/ACADEMY_SCHOOL_LIFE.png';
-import isekaiOtomeImage from '@/assets/images/genre/ISEKAI_OTOME_FANTASY.png';
-import darkRomanceImage from '@/assets/images/genre/DARK_ROMANCE_REVENGE_MANHWA.png'; // New Image
-import noGenreImage from '@/assets/images/genre/NO_GENRE.png'; // New Image
+import modernRomanceImage from '@/assets/images/story_genre/MODERN_ROMANCE_DRAMA.png';
+import fantasyRomanceImage from '@/assets/images/story_genre/FANTASY_ROMANCE.png';
+import historySageukImage from '@/assets/images/story_genre/HISTORY_SAGEUK_ROMANCE.png';
+import academySchoolImage from '@/assets/images/story_genre/ACADEMY_SCHOOL_LIFE.png';
+import isekaiOtomeImage from '@/assets/images/story_genre/ISEKAI_OTOME_FANTASY.png';
+import darkRomanceImage from '@/assets/images/story_genre/DARK_ROMANCE_REVENGE_MANHWA.png'; // New Image
+import noGenreImage from '@/assets/images/story_genre/NO_GENRE.png'; // New Image
+import missedConnectionImage from '@/assets/images/story_genre/MISSED_CONNECTION.png';
+import confessionMomentImage from '@/assets/images/story_genre/CONFESSION_MOMENT.png';
+import breakupMakeupImage from '@/assets/images/story_genre/BREAKUP_MAKEUP.png';
+import loveTriangleImage from '@/assets/images/story_genre/LOVE_TRIANGLE_CHOICE.png';
+import secretRevealImage from '@/assets/images/story_genre/SECRET_RELATIONSHIP_REVEAL.png';
+import revengeConfrontationImage from '@/assets/images/story_genre/REVENGE_CONFRONTATION.png';
+import workplaceRomanceImage from '@/assets/images/story_genre/WORKPLACE_ROMANCE.png';
+import soulmateRecognitionImage from '@/assets/images/story_genre/SOULMATE_RECOGNITION.png';
+import timeSkipReunionImage from '@/assets/images/story_genre/TIME_SKIP_REUNION.png';
+import childhoodFriendsImage from '@/assets/images/story_genre/CHILDHOOD_FRIENDS_TO_LOVERS.png';
 
 interface GenreSelectorProps {
   selectedGenre: StoryGenre | null;
   onGenreSelect: (genre: StoryGenre) => void;
 }
 
+// Fallback image for new genres
+const DEFAULT_GENRE_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="400"%3E%3Crect fill="%23f3f4f6" width="300" height="400"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="24"%3EGenre%3C/text%3E%3C/svg%3E';
+
+
 const GENRE_METADATA: Record<string, { name: string; description: string; previewImage: string }> = {
-  MODERN_ROMANCE_DRAMA_MANHWA: {
+  MODERN_ROMANCE_DRAMA: {
     name: 'Modern Romance Drama',
     description: 'Contemporary Korean romance drama with emotional depth',
     previewImage: modernRomanceImage.src,
   },
-  FANTASY_ROMANCE_MANHWA: {
+  FANTASY_ROMANCE: {
     name: 'Fantasy Romance',
     description: 'Magical academy or mystical world romance',
     previewImage: fantasyRomanceImage.src,
   },
-  HISTORY_SAGEUK_ROMANCE: {
+  HISTORICAL_PERIOD_ROMANCE: {
     name: 'Historical Romance',
     description: 'Elegant sageuk style with dramatic lighting',
     previewImage: historySageukImage.src,
   },
-  ACADEMY_SCHOOL_LIFE: {
+  SCHOOL_YOUTH_ROMANCE: {
     name: 'School Life',
     description: 'Contemporary high school or university romance',
     previewImage: academySchoolImage.src,
   },
-  ISEKAI_OTOME_FANTASY: {
+  REINCARNATION_FANTASY: {
     name: 'Isekai Otome Fantasy',
     description: 'Slow-burn tender feeling with light comedic palace fantasy touch',
     previewImage: isekaiOtomeImage.src,
   },
-  DARK_ROMANCE_REVENGE_MANHWA: {
-    name: 'Dark Romance Revenge',
+  DARK_OBSESSIVE_ROMANCE: {
+    name: 'Dark Obsessive Romance',
     description: 'Intense, vengeful passion involving seduction or entrapment',
     previewImage: darkRomanceImage.src,
+  },
+  WORKPLACE_ROMANCE: {
+    name: 'Workplace Romance',
+    description: 'Office romance with professional tension',
+    previewImage: workplaceRomanceImage.src,
+  },
+  CHILDHOOD_FRIENDS_TO_LOVERS: {
+    name: 'Friends to Lovers',
+    description: 'Long friendship evolving into romance',
+    previewImage: childhoodFriendsImage.src,
   },
   NO_GENRE: {
     name: 'Free Style',
     description: 'No specific genre restrictions. Create your own unique story!',
     previewImage: noGenreImage.src,
   },
+  MISSED_CONNECTION: {
+    name: 'Missed Connection',
+    description: 'Fleeting encounters, what-ifs, and timing as the antagonist',
+    previewImage: missedConnectionImage.src,
+  },
+  CONFESSION_MOMENT: {
+    name: 'The Confession',
+    description: 'High-stakes declaration of feelings in a meaningful setting',
+    previewImage: confessionMomentImage.src,
+  },
+  BREAKUP_MAKEUP: {
+    name: 'Breakup / Makeup',
+    description: 'Intense emotional conflict, raw honesty, and resolution',
+    previewImage: breakupMakeupImage.src,
+  },
+  LOVE_TRIANGLE_CHOICE: {
+    name: 'The Choice',
+    description: 'Decisive moment between two paths, love triangle climax',
+    previewImage: loveTriangleImage.src,
+  },
+  SECRET_RELATIONSHIP_REVEAL: {
+    name: 'Secret Revealed',
+    description: 'High stakes exposure of hidden love and social consequences',
+    previewImage: secretRevealImage.src,
+  },
+  REVENGE_CONFRONTATION: {
+    name: 'Revenge',
+    description: 'Cathartic showdown, justice, and power dynamics',
+    previewImage: revengeConfrontationImage.src,
+  },
+  SOULMATE_RECOGNITION: {
+    name: 'Soulmate Recognition',
+    description: 'Fated encounter or sudden realization of destiny',
+    previewImage: soulmateRecognitionImage.src,
+  },
+  TIME_SKIP_REUNION: {
+    name: 'Reunion',
+    description: 'Meeting again after years apart, changed but still connected',
+    previewImage: timeSkipReunionImage.src,
+  },
 };
 
 
-// Fallback image for new genres
-const DEFAULT_GENRE_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="400"%3E%3Crect fill="%23f3f4f6" width="300" height="400"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="24"%3EGenre%3C/text%3E%3C/svg%3E';
+
 
 export default function GenreSelector({ selectedGenre, onGenreSelect }: GenreSelectorProps) {
   const [genres, setGenres] = useState<StoryGenreOption[]>([]);

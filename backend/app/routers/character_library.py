@@ -122,7 +122,6 @@ async def delete_character(char_id: str):
         raise HTTPException(status_code=404, detail="Character not found")
         
     del character_library[char_id]
-    del character_library[char_id]
     await character_library.save()
     
     # Sync to GitHub (JSON update only)

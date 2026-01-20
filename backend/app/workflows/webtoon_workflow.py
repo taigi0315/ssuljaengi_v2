@@ -37,7 +37,7 @@ class WebtoonWorkflowState(TypedDict):
         error: Error message if workflow fails
     """
     story: str
-    genre: str
+    image_style: str
     webtoon_script: Optional[dict]  # Serialized WebtoonScript
     evaluation_score: float
     evaluation_feedback: str
@@ -59,11 +59,11 @@ async def webtoon_writer_node(state: WebtoonWorkflowState) -> WebtoonWorkflowSta
     """
     try:
         story = state["story"]
-        genre = state.get("genre", "MODERN_ROMANCE_DRAMA_MANHWA")
+        image_style = state.get("image_style", "SOFT_ROMANTIC_WEBTOON")
         
-        logger.info(f"Generating webtoon script for story ({len(story)} chars) with genre {genre}")
+        logger.info(f"Generating webtoon script for story ({len(story)} chars) with style {image_style}")
         
-        script = await webtoon_writer.convert_story_to_script(story, genre)
+        script = await webtoon_writer.convert_story_to_script(story, image_style)
         
         # Serialize to dict for state (TypedDict doesn't support Pydantic models directly)
         script_dict = {
@@ -284,13 +284,13 @@ def create_webtoon_workflow() -> StateGraph:
 webtoon_workflow = create_webtoon_workflow()
 
 
-async def run_webtoon_workflow(story: str, genre: str = "MODERN_ROMANCE_DRAMA_MANHWA") -> WebtoonScript:
+async def run_webtoon_workflow(story: str, image_style: str = "SOFT_ROMANTIC_WEBTOON") -> WebtoonScript:
     """
     Run the complete webtoon generation workflow.
     
     Args:
         story: The story text to convert
-        genre: Genre style for the webtoon
+        image_style: Visual style for the webtoon
         
     Returns:
         Generated WebtoonScript
@@ -300,7 +300,7 @@ async def run_webtoon_workflow(story: str, genre: str = "MODERN_ROMANCE_DRAMA_MA
     """
     initial_state: WebtoonWorkflowState = {
         "story": story,
-        "genre": genre,
+        "image_style": image_style,
         "webtoon_script": None,
         "evaluation_score": 0.0,
         "evaluation_feedback": "",

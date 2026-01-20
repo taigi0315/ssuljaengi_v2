@@ -1,18 +1,23 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { WebtoonScript, WebtoonPanel, SceneImage, StoryGenre, Character, DialogueBubble } from '@/types';
+import { WebtoonScript, WebtoonPanel, SceneImage, ImageStyle, Character, DialogueBubble } from '@/types';
 import { generateSceneImage, selectSceneImage } from '@/lib/apiClient';
 import { formatGenreName } from '@/utils/formatters';
 
 interface SceneImageGeneratorV2Props {
   webtoonScript: WebtoonScript;
-  genre?: StoryGenre;
+  imageStyle: ImageStyle;  // Required image style for rendering
   onUpdateScript?: (script: WebtoonScript) => void;
   onProceedToVideo?: () => void;
 }
 
-export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre, onUpdateScript, onProceedToVideo }: SceneImageGeneratorV2Props) {
+export default function SceneImageGeneratorV2({
+  webtoonScript,
+  imageStyle,
+  onUpdateScript,
+  onProceedToVideo
+}: SceneImageGeneratorV2Props) {
   const [currentPanelIndex, setCurrentPanelIndex] = useState(0);
   const [panelPrompts, setPanelPrompts] = useState<Record<number, string>>({});
   // Removed local sceneImages and dialogueBubbles state in favor of webtoonScript prop
@@ -41,11 +46,6 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const prevImagesLengthRef = useRef<Record<number, number>>({});
-
-  // Get genre from prop or sessionStorage
-  const genre = propGenre || (typeof window !== 'undefined'
-    ? (sessionStorage.getItem('selectedGenre') as StoryGenre) || 'MODERN_ROMANCE_DRAMA_MANHWA'
-    : 'MODERN_ROMANCE_DRAMA_MANHWA');
 
   const panels = webtoonScript.panels;
   const currentPanel = panels[currentPanelIndex];
@@ -217,7 +217,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
         script_id: webtoonScript.script_id,
         panel_number: currentPanel.panel_number,
         visual_prompt: currentPrompt,
-        genre: genre,
+        image_style: imageStyle,
       });
 
       if (onUpdateScript) {
@@ -270,7 +270,7 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
               script_id: webtoonScript.script_id,
               panel_number: panel.panel_number,
               visual_prompt: panelPrompts[panel.panel_number] || panel.visual_prompt,
-              genre: genre,
+              image_style: imageStyle,
             });
 
             // Update the WORKING copy
@@ -474,11 +474,11 @@ export default function SceneImageGeneratorV2({ webtoonScript, genre: propGenre,
 
   return (
     <div className="space-y-4">
-      {/* Genre Badge */}
+      {/* Image Style Badge */}
       <div className="flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200">
-        <span className="text-sm font-semibold text-gray-700">Selected Genre:</span>
+        <span className="text-sm font-semibold text-gray-700">Image Style:</span>
         <span className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full text-sm font-bold shadow-md">
-          🎭 {formatGenreName(genre)}
+          🎨 {formatGenreName(imageStyle)}
         </span>
       </div>
 

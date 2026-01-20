@@ -38,6 +38,7 @@ from app.models.video_models import GenerateVideoRequest, VideoPanelData, Bubble
 from app.config import get_settings
 from app.utils.persistence import JsonStore
 from app.prompt.story_mood import STORY_GENRE_PROMPTS
+from app.prompt.image_mood import VISUAL_STYLE_PROMPTS
 
 logger = logging.getLogger(__name__)
 
@@ -62,43 +63,66 @@ from app.routers.story import stories
 @router.get("/image-styles")
 async def get_image_styles():
     """
-    Get available image styles with metadata.
-    
+    Get available image/visual styles with metadata.
+    These are visual rendering styles (colors, lighting, art style) for images.
+
     Returns:
         List of image style options with IDs, names, and descriptions
     """
-    return [
-        {
-            "id": "MODERN_ROMANCE_DRAMA_MANHWA",
-            "name": "Modern Romance Drama",
-            "description": "Contemporary Korean romance drama",
-            "preview_url": "/api/assets/images/genre/MODERN_ROMANCE_DRAMA_MANHWA.png"
+    # Metadata for image styles - provides human-readable info
+    IMAGE_STYLE_METADATA = {
+        "NO_STYLE": {
+            "name": "Default Style",
+            "description": "Default AI rendering without specific style"
         },
-        {
-            "id": "FANTASY_ROMANCE_MANHWA",
-            "name": "Fantasy Romance",
-            "description": "Magical academy or mystical world romance",
-            "preview_url": "/api/assets/images/genre/FANTASY_ROMANCE_MANHWA.png"
+        "SOFT_ROMANTIC_WEBTOON": {
+            "name": "Soft Romantic",
+            "description": "Gentle, dreamy, light-filled, ethereal aesthetic"
         },
-        {
-            "id": "HISTORY_SAGEUK_ROMANCE",
-            "name": "Historical Romance",
-            "description": "Elegant sageuk style with dramatic lighting",
-            "preview_url": "/api/assets/images/genre/HISTORY_SAGEUK_ROMANCE.png"
+        "VIBRANT_FANTASY_WEBTOON": {
+            "name": "Vibrant Fantasy",
+            "description": "Magical, bright, enchanting, colorful style"
         },
-        {
-            "id": "ACADEMY_SCHOOL_LIFE",
-            "name": "School Life",
-            "description": "Contemporary school romance",
-            "preview_url": "/api/assets/images/genre/ACADEMY_SCHOOL_LIFE.png"
+        "DRAMATIC_HISTORICAL_WEBTOON": {
+            "name": "Dramatic Historical",
+            "description": "Moody, elegant, dramatic, candlelit atmosphere"
         },
-        {
-            "id": "ISEKAI_OTOME_FANTASY",
-            "name": "Isekai Otome Fantasy",
-            "description": "Reincarnation/transmigration romance",
-            "preview_url": "/api/assets/images/genre/ISEKAI_OTOME_FANTASY.png"
+        "BRIGHT_YOUTHFUL_WEBTOON": {
+            "name": "Bright Youthful",
+            "description": "Fresh, clean, optimistic, energetic feel"
+        },
+        "DREAMY_ISEKAI_WEBTOON": {
+            "name": "Dreamy Isekai",
+            "description": "Ethereal, whimsical, romantic fantasy glow"
+        },
+        "DARK_SENSUAL_WEBTOON": {
+            "name": "Dark Sensual",
+            "description": "Intense, dramatic, intimate, mysterious mood"
+        },
+        "CLEAN_MODERN_WEBTOON": {
+            "name": "Clean Modern",
+            "description": "Professional, versatile, commercial standard"
+        },
+        "PAINTERLY_ARTISTIC_WEBTOON": {
+            "name": "Painterly Artistic",
+            "description": "Artistic, expressive, fine art quality"
         }
-    ]
+    }
+
+    styles = []
+    for key in VISUAL_STYLE_PROMPTS.keys():
+        metadata = IMAGE_STYLE_METADATA.get(key, {})
+        name = metadata.get("name", key.replace("_", " ").title())
+        description = metadata.get("description", "Visual style for webtoon art")
+
+        styles.append({
+            "id": key,
+            "name": name,
+            "description": description,
+            "preview_url": f"/api/assets/images/style/{key}.png"
+        })
+
+    return styles
 
 
 @router.post("/shorts/generate", response_model=ShortsScript)
@@ -117,48 +141,65 @@ async def generate_shorts_script(request: GenerateShortsRequest):
 @router.get("/genres", response_model=List[dict])
 async def get_genres():
     """
-    Get available story genres/styles.
-    Returns a list of genre objects with id and basic metadata.
-    """
-    genres = []
-    
-    # Define mapping for human-readable names and descriptions
-    # Ideally this would be in the prompt file or a separate config,
-    # but for now we map it here or extract from the prompt if possible.
-    # Since the user requested dynamic population based on keys, we will generate basic info
-    # and maybe look up details if we have them.
-    # For now, let's allow the frontend to have the rich metadata (images/descriptions) 
-    # OR we return a list of keys and let frontend map them if they have static assets.
-    # BUT, the user said "expecting to updating more genres down the road".
-    # This implies the backend should provide the Name/Description.
-    
-    # We don't have descriptions in STORY_GENRE_PROMPTS keys directly, only the prompt text.
-    # We can infer a name from the ID.
-    
-    # Let's create a helper map here for now or update `story_mood.py` to include metadata?
-    # Updating `story_mood.py` would be cleaner but let's stick to the router for minimal invasion first,
-    # unless I see I need to edit `story_mood.py` anyway.
-    
-    # Actually, the frontend `GenreSelector.tsx` has `GENRE_OPTIONS` with `name`, `description`, `previewImage`.
-    # If I just return keys, the frontend still needs to know what image/text to show.
-    # If the user adds a NEW genre backend-side, the frontend won't have an image for it unless we serve it or use a placeholder.
-    # The user said "expecting to updating more genres down the road".
-    
-    for key in STORY_GENRE_PROMPTS.keys():
-        # if key == "NO_GENRE":
-        #     continue
+    Get available story genres for narrative content creation.
+    These define the story/narrative style (setting, dialogue, themes, tropes).
+    NOT the visual rendering style - use /image-styles for that.
 
-            
-        # Convert CONSTANT_CASE to Title Case for name if not known
-        name = key.replace("_", " ").title().replace("Manhwa", "").strip()
-        
+    Returns a list of genre objects with id, name, description, and preview_url.
+    """
+    # Metadata for story genres - provides human-readable info
+    STORY_GENRE_METADATA = {
+        "NO_GENRE": {
+            "name": "Free Style",
+            "description": "No narrative constraints - write any story"
+        },
+        "MODERN_ROMANCE_DRAMA": {
+            "name": "Modern Romance Drama",
+            "description": "Contemporary urban romance with emotional depth"
+        },
+        "FANTASY_ROMANCE": {
+            "name": "Fantasy Romance",
+            "description": "Magical worlds, enchanted academies, mystical love"
+        },
+        "HISTORICAL_PERIOD_ROMANCE": {
+            "name": "Historical Period Romance",
+            "description": "Joseon-era sageuk with forbidden love and duty"
+        },
+        "SCHOOL_YOUTH_ROMANCE": {
+            "name": "School Youth Romance",
+            "description": "Sweet high school/university first love stories"
+        },
+        "REINCARNATION_FANTASY": {
+            "name": "Reincarnation/Isekai Fantasy",
+            "description": "Transmigrated into a novel/game world romance"
+        },
+        "DARK_OBSESSIVE_ROMANCE": {
+            "name": "Dark Obsessive Romance",
+            "description": "Intense possessive love with psychological depth"
+        },
+        "WORKPLACE_ROMANCE": {
+            "name": "Workplace Romance",
+            "description": "Office romance with professional tension"
+        },
+        "CHILDHOOD_FRIENDS_TO_LOVERS": {
+            "name": "Childhood Friends to Lovers",
+            "description": "Long friendship evolving into romance"
+        }
+    }
+
+    genres = []
+    for key in STORY_GENRE_PROMPTS.keys():
+        metadata = STORY_GENRE_METADATA.get(key, {})
+        name = metadata.get("name", key.replace("_", " ").title())
+        description = metadata.get("description", "Story genre for webtoon narrative")
+
         genres.append({
             "id": key,
             "name": name,
-            # We will leave description/image to be filled by frontend or use defaults
-            # passing them as None or generic to let frontend decide or use a default
+            "description": description,
+            "preview_url": f"/api/assets/images/genre/{key}.png"
         })
-        
+
     return genres
 
 @router.post("/generate")
@@ -197,7 +238,7 @@ async def generate_webtoon_script(request: GenerateWebtoonRequest) -> WebtoonScr
         # This automatically evaluates the script and rewrites if needed (max 2 times)
         webtoon_script = await run_webtoon_workflow(
             story=story_content,
-            genre="MODERN_ROMANCE_DRAMA_MANHWA"  # Default genre
+            image_style=request.image_style or "SOFT_ROMANTIC_WEBTOON"
         )
         
         # Generate unique script ID
@@ -506,6 +547,7 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
             "character_frame_percentage": 40,
             "environment_frame_percentage": 60,
             "character_placement_and_action": "Characters in scene",
+            "emotional_tone": "neutral",
             "negative_prompt": "worst quality, low quality"
         }
         
@@ -526,6 +568,8 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
                 panel_metadata["atmospheric_conditions"] = panel.get("atmospheric_conditions", "Standard lighting")
                 panel_metadata["character_frame_percentage"] = panel.get("character_frame_percentage", 40)
                 panel_metadata["environment_frame_percentage"] = panel.get("environment_frame_percentage", 60)
+                panel_metadata["character_placement_and_action"] = panel.get("character_placement_and_action", "Characters in scene")
+                panel_metadata["emotional_tone"] = panel.get("emotional_tone", "neutral")
                 panel_metadata["negative_prompt"] = panel.get("negative_prompt", "worst quality, low quality")
                 
                 # Extract SFX effects
@@ -588,7 +632,9 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
             environment_focus=panel_metadata["environment_focus"],
             environment_details=panel_metadata["environment_details"],
             atmospheric_conditions=panel_metadata["atmospheric_conditions"],
-            sfx_description=panel_metadata.get("sfx_description", "No special visual effects for this scene")
+            sfx_description=panel_metadata.get("sfx_description", "No special visual effects for this scene"),
+            emotional_tone=panel_metadata["emotional_tone"],
+            character_placement_and_action=panel_metadata["character_placement_and_action"]
         )
         
         logger.info(f"Final scene prompt (first 500 chars): {final_prompt[:500]}")

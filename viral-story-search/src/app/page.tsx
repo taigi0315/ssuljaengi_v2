@@ -7,7 +7,8 @@ import StoryTabs from '@/components/StoryTabs';
 import StoryBuilder from '@/components/StoryBuilder';
 import CharacterImageGenerator from '@/components/CharacterImageGenerator';
 import ScriptPreview from '@/components/ScriptPreview';
-import { SearchCriteria, ViralPost, ErrorState, StoryGenre, WebtoonScript } from '@/types';
+import ImageStyleSelector from '@/components/ImageStyleSelector';
+import { SearchCriteria, ViralPost, ErrorState, StoryGenre, ImageStyle, WebtoonScript } from '@/types';
 import { searchCache } from '@/utils/searchCache';
 import { debounce } from '@/utils/debounce';
 import { searchPosts } from '@/lib/apiClient';
@@ -42,13 +43,17 @@ export default function Home() {
     SESSION_KEYS.WEBTOON_SCRIPT,
     null
   );
+  const [selectedImageStyle, setSelectedImageStyle] = useSessionStorage<ImageStyle | null>(
+    'gossiptoon_selectedImageStyle',
+    null
+  );
   const [manualFullStory, setManualFullStory] = useSessionStorage<string>(
     'gossiptoon_manualFullStory',
     ''
   );
 
   // Tab state - persistent
-  const [activeTab, setActiveTab] = useSessionStorage<'search' | 'generate' | 'script' | 'images' | 'scenes' | 'video' | 'eye_candy' | 'shorts'>(
+  const [activeTab, setActiveTab] = useSessionStorage<'search' | 'generate' | 'script' | 'style' | 'images' | 'scenes' | 'video' | 'eye_candy' | 'shorts'>(
     SESSION_KEYS.ACTIVE_TAB,
     'search'
   );
@@ -119,6 +124,7 @@ export default function Home() {
       setSelectedGenre(null);
       setGeneratedStoryId(null);
       setWebtoonScript(null);
+      setSelectedImageStyle(null);
       setManualFullStory('');
       setActiveTab('search');
       setPosts([]);
@@ -128,7 +134,7 @@ export default function Home() {
       // Clear search cache
       searchCache.clear();
     }
-  }, [setSelectedPost, setCustomStorySeed, setSelectedGenre, setGeneratedStoryId, setWebtoonScript, setManualFullStory, setActiveTab]);
+  }, [setSelectedPost, setCustomStorySeed, setSelectedGenre, setGeneratedStoryId, setWebtoonScript, setSelectedImageStyle, setManualFullStory, setActiveTab]);
 
   // Handle search execution with caching
   const performSearch = useCallback(async (criteria: SearchCriteria) => {
@@ -225,7 +231,7 @@ export default function Home() {
   }, [selectedPost, customStorySeed, selectedGenre, setGeneratedStoryId, setWebtoonScript, setActiveTab]);
 
   // Handle tab change
-  const handleTabChange = useCallback((tab: 'search' | 'generate' | 'script' | 'images' | 'scenes' | 'video' | 'eye_candy' | 'shorts') => {
+  const handleTabChange = useCallback((tab: 'search' | 'generate' | 'script' | 'style' | 'images' | 'scenes' | 'video' | 'eye_candy' | 'shorts') => {
     // Skip validation for Eye Candy mode
     if (workflowMode === 'eye_candy') {
       setActiveTab(tab);
@@ -235,23 +241,27 @@ export default function Home() {
     // STRICT PIPELINE FLOW:
     // 1. Search (Always accessible)
     // 2. Generate (Genre Selection) - Always accessible (gateway)
-    // 3. Script - Access if generatedStoryId exists OR manualStory exists (actually just let them click, check validity inside?)
-    //    Actually, we want to block them if they haven't finished previous steps.
+    // 3. Style - Access if generatedStoryId exists (select image style BEFORE script generation)
+    // 4. Script - Access if selectedImageStyle exists (script generated with style)
+    // 5. Images - Access if webtoonScript exists
+    // 6. Scenes - Access if webtoonScript exists
+    // 7. Video - Access if webtoonScript exists
 
     if (tab === 'generate') {
         // Always allow going to Generate (Genre Select)
         setActiveTab('generate');
         return;
     }
-    
+
     // For subsequent steps, check prerequisites
-    if (tab === 'script' && !generatedStoryId) return;
+    if (tab === 'style' && !generatedStoryId) return;
+    if (tab === 'script' && !selectedImageStyle) return;
     if (tab === 'images' && !webtoonScript) return;
     if (tab === 'scenes' && !webtoonScript) return;
     if (tab === 'video' && !webtoonScript) return;
 
     setActiveTab(tab);
-  }, [selectedGenre, generatedStoryId, webtoonScript, workflowMode]);
+  }, [selectedGenre, generatedStoryId, webtoonScript, selectedImageStyle, workflowMode]);
 
   // Handle proceed to shorts from Eye Candy
   const handleProceedToShorts = useCallback((referenceImage: import('@/types').CharacterImage) => {
@@ -259,10 +269,10 @@ export default function Home() {
     setActiveTab('shorts');
   }, [setSelectedReferenceImage, setActiveTab]);
 
-  // Handle story generation complete - go to script tab
+  // Handle story generation complete - go to style tab (Step 3)
   const handleGenerateImages = useCallback((storyId: string) => {
     setGeneratedStoryId(storyId);
-    setActiveTab('script');
+    setActiveTab('style');
   }, []);
 
   // Handle webtoon script generated (called from ScriptPreview)
@@ -275,7 +285,12 @@ export default function Home() {
     setWebtoonScript(script);
   }, [setWebtoonScript]);
 
-  // Handle proceed to characters (called from ScriptPreview)
+  // Handle proceed to script (called after selecting image style)
+  const handleProceedToScript = useCallback(() => {
+    setActiveTab('script');
+  }, [setActiveTab]);
+
+  // Handle proceed to characters (called after selecting image style)
   const handleProceedToCharacters = useCallback(() => {
     setActiveTab('images');
   }, [setActiveTab]);
@@ -369,6 +384,7 @@ export default function Home() {
         hasSelectedPost={!!(selectedPost || customStorySeed.trim())}
         hasGeneratedStory={!!generatedStoryId}
         hasWebtoonScript={!!webtoonScript}
+        hasSelectedImageStyle={!!selectedImageStyle}
         activeWorkflow={workflowMode}
       />
 
@@ -521,7 +537,7 @@ export default function Home() {
                           setGeneratedStoryId(storyId);
                           // Store the manual story in session for later use
                           sessionStorage.setItem('gossiptoon_manualStoryContent', manualFullStory);
-                          setActiveTab('script');
+                          setActiveTab('style'); // Go to Style selection next
                         }}
                         className="mt-4 w-full px-6 py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white font-bold text-lg rounded-lg hover:shadow-xl hover:scale-105 transition-all"
                       >
@@ -549,14 +565,44 @@ export default function Home() {
                 )}
               </div>
           </>
+
+        ) : activeTab === 'style' ? (
+          <>
+            {/* Image Style Selection Tab - Now before Script */}
+            {generatedStoryId && (
+              <div className="max-w-7xl mx-auto">
+                <div className="bg-white rounded-lg shadow-lg p-8">
+
+                  
+                  <ImageStyleSelector
+                    selectedStyle={selectedImageStyle}
+                    onStyleSelect={setSelectedImageStyle}
+                  />
+
+                  {/* Proceed Button */}
+                  {selectedImageStyle && (
+                    <div className="mt-8 text-center">
+                      <button
+                        onClick={handleProceedToScript}
+                        className="px-10 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg rounded-lg hover:shadow-xl hover:scale-105 transition-all"
+                      >
+                        📖 Proceed to Webtoon Script →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
         ) : activeTab === 'script' ? (
           <>
-            {/* Script Preview Tab */}
-            {generatedStoryId && selectedGenre && (
+            {/* Script Preview Tab - Now uses selected Style */}
+            {generatedStoryId && selectedGenre && selectedImageStyle && (
               <div className="max-w-7xl mx-auto">
                 <ScriptPreview
                   storyId={generatedStoryId}
                   genre={selectedGenre}
+                  imageStyle={selectedImageStyle}
                   webtoonScript={webtoonScript}
                   onScriptGenerated={handleScriptGenerated}
                   onProceedToCharacters={handleProceedToCharacters}
@@ -567,11 +613,12 @@ export default function Home() {
         ) : activeTab === 'images' ? (
           <>
             {/* Character Images Tab */}
-            {webtoonScript && (
+            {webtoonScript && selectedImageStyle && (
               <div className="max-w-7xl mx-auto">
                 <CharacterImageGenerator
                   storyId={generatedStoryId!}
                   webtoonScript={webtoonScript}
+                  imageStyle={selectedImageStyle}
                   onUpdateScript={handleScriptUpdate}
                   onProceedToScenes={handleProceedToScenes}
                 />
@@ -581,10 +628,11 @@ export default function Home() {
         ) : activeTab === 'scenes' ? (
           <>
             {/* Scene Images Tab */}
-            {webtoonScript && (
+            {webtoonScript && selectedImageStyle && (
               <div className="max-w-7xl mx-auto">
                 <SceneImageGenerator
                   webtoonScript={webtoonScript}
+                  imageStyle={selectedImageStyle}
                   onUpdateScript={handleScriptUpdate}
                   onProceedToVideo={handleProceedToVideo}
                 />
