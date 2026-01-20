@@ -506,6 +506,7 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
             "character_frame_percentage": 40,
             "environment_frame_percentage": 60,
             "character_placement_and_action": "Characters in scene",
+            "emotional_tone": "neutral",
             "negative_prompt": "worst quality, low quality"
         }
         
@@ -526,6 +527,8 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
                 panel_metadata["atmospheric_conditions"] = panel.get("atmospheric_conditions", "Standard lighting")
                 panel_metadata["character_frame_percentage"] = panel.get("character_frame_percentage", 40)
                 panel_metadata["environment_frame_percentage"] = panel.get("environment_frame_percentage", 60)
+                panel_metadata["character_placement_and_action"] = panel.get("character_placement_and_action", "Characters in scene")
+                panel_metadata["emotional_tone"] = panel.get("emotional_tone", "neutral")
                 panel_metadata["negative_prompt"] = panel.get("negative_prompt", "worst quality, low quality")
                 
                 # Extract SFX effects
@@ -588,7 +591,9 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
             environment_focus=panel_metadata["environment_focus"],
             environment_details=panel_metadata["environment_details"],
             atmospheric_conditions=panel_metadata["atmospheric_conditions"],
-            sfx_description=panel_metadata.get("sfx_description", "No special visual effects for this scene")
+            sfx_description=panel_metadata.get("sfx_description", "No special visual effects for this scene"),
+            emotional_tone=panel_metadata["emotional_tone"],
+            character_placement_and_action=panel_metadata["character_placement_and_action"]
         )
         
         logger.info(f"Final scene prompt (first 500 chars): {final_prompt[:500]}")

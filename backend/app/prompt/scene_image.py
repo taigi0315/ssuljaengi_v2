@@ -27,6 +27,14 @@ Primary Setting: {environment_focus}
 Environmental Details: {environment_details}
 Atmospheric Conditions: {atmospheric_conditions}
 
+[Emotional & Character Direction]
+EMOTIONAL TONE: {emotional_tone}
+- This defines the mood and feeling the viewer should experience
+- Color grading, lighting, and character expressions should reflect this emotion
+CHARACTER POSITIONING & ACTION: {character_placement_and_action}
+- Character body language, facial expressions, and spatial positioning
+- This guides how characters are placed and what they're doing in the frame
+
 [Master visual prompt]
 {visual_prompt}
 
