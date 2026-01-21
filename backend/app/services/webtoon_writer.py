@@ -12,7 +12,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from app.services.llm_config import llm_config
 from app.prompt.webtoon_writer import WEBTOON_WRITER_PROMPT
 from app.models.story import WebtoonScript
-from app.prompt.image_mood import VISUAL_STYLE_PROMPTS
+from app.prompt.image_style import VISUAL_STYLE_PROMPTS
 
 
 logger = logging.getLogger(__name__)
@@ -261,12 +261,13 @@ class WebtoonWriter:
         
         return result
     
-    async def convert_story_to_script(self, story: str, image_style: str = "SOFT_ROMANTIC_WEBTOON") -> WebtoonScript:
+    async def convert_story_to_script(self, story: str, story_genre: str, image_style: str = "SOFT_ROMANTIC_WEBTOON") -> WebtoonScript:
         """
         Convert a story into a structured webtoon script.
         
         Args:
             story: The generated story text to convert
+            story_genre: The genre style of the story (e.g. MODERN_ROMANCE_DRAMA)
             image_style: The visual style key for styling (default: SOFT_ROMANTIC_WEBTOON)
             
         Returns:
@@ -285,14 +286,11 @@ class WebtoonWriter:
             
             # Use JSON output parser chain
             chain = prompt | self.llm | self.parser
-            
-            # Get genre style prompt
-            genre_style = VISUAL_STYLE_PROMPTS.get(image_style, VISUAL_STYLE_PROMPTS["SOFT_ROMANTIC_WEBTOON"])
-            
             # Generate webtoon script
             result = await chain.ainvoke({
                 "web_novel_story": story,
-                "genre_style": genre_style,
+                "story_genre": story_genre,
+                "image_style": image_style,
                 "format_instructions": self.parser.get_format_instructions()
             })
             

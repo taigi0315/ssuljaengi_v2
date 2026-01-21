@@ -37,8 +37,8 @@ from app.models.video_models import GenerateVideoRequest, VideoPanelData, Bubble
 
 from app.config import get_settings
 from app.utils.persistence import JsonStore
-from app.prompt.story_mood import STORY_GENRE_PROMPTS
-from app.prompt.image_mood import VISUAL_STYLE_PROMPTS
+from app.prompt.story_genre import STORY_GENRE_PROMPTS
+from app.prompt.image_style import VISUAL_STYLE_PROMPTS
 
 logger = logging.getLogger(__name__)
 
@@ -238,6 +238,7 @@ async def generate_webtoon_script(request: GenerateWebtoonRequest) -> WebtoonScr
         # This automatically evaluates the script and rewrites if needed (max 2 times)
         webtoon_script = await run_webtoon_workflow(
             story=story_content,
+            story_genre=request.genre or "MODERN_ROMANCE_DRAMA", # Assuming we need to add genre to request/workflow
             image_style=request.image_style or "SOFT_ROMANTIC_WEBTOON"
         )
         

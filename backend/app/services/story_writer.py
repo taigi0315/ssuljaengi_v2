@@ -9,7 +9,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from app.services.llm_config import llm_config
 from app.prompt.story_writer import STORY_WRITER_PROMPT
-from app.prompt.story_mood import STORY_GENRE_PROMPTS
+from app.prompt.story_genre import STORY_GENRE_PROMPTS
 
 
 class RedditPost:

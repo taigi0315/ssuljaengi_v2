@@ -14,12 +14,11 @@ from typing import Literal, Tuple, List, Optional
 from google import genai
 from app.config import get_settings
 from app.prompt.character_image import (
-    MALE, FEMALE,
     MALE_KID, MALE_TEEN, MALE_20_30, MALE_40_50, MALE_60_70,
     FEMALE_KID, FEMALE_TEEN, FEMALE_20_30, FEMALE_40_50, FEMALE_60_70,
     CHARACTER_IMAGE_TEMPLATE
 )
-from app.prompt.image_mood import VISUAL_STYLE_PROMPTS
+from app.prompt.image_style import VISUAL_STYLE_PROMPTS
 
 
 logger = logging.getLogger(__name__)

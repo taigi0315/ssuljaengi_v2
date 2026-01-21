@@ -6,7 +6,7 @@ SCENE_IMAGE_TEMPLATE = """
 - High-definition, 9:16 aspect ratio, optimized for vertical scrolling.
 
 **CRITICAL INSTRUCTION**
-Generate a full-screen vertical image with a 9:16 aspect ratio.
+Generate a vertical image with a 9:16 aspect ratio.
 The composition must be strictly vertical, filling the entire frame from top to bottom.
 Avoid any letterboxing, borders, or device frames. The image is the scene itself.
 

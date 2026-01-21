@@ -1,21 +1,21 @@
 # GENERAL GENDER DESCRIPTIONS
 # ====================================================================
 
-MALE = """
-handsome male character, webtoon manhwa art style,
-sharp features, stylish appearance, 
-intense expressive gaze, stylish hair with natural volume,
-modern fashion, confident posture,
-authentic webtoon style character illustration, 
-"""
+# MALE = """
+# handsome male character, webtoon manhwa art style,
+# sharp features, stylish appearance, 
+# intense expressive gaze, stylish hair with natural volume,
+# modern fashion, confident posture,
+# authentic webtoon style character illustration, 
+# """
 
-FEMALE = """
-beautiful female character, webtoon manhwa art style,
-graceful appearance, 
-expressive gaze, stylish hair with natural movement,
-fashionable modern outfit, confident elegant posture,
-authentic webtoon style character illustration, 
-"""
+# FEMALE = """
+# beautiful female character, webtoon manhwa art style,
+# graceful appearance, 
+# expressive gaze, stylish hair with natural movement,
+# fashionable modern outfit, confident elegant posture,
+# authentic webtoon style character illustration, 
+# """
 
 # ====================================================================
 # AGE GROUP DESCRIPTIONS
@@ -55,11 +55,9 @@ slender elegant build, graceful narrow shoulders, slim waist,
 very tall slender stature 180-188cm, long lean legs, elongated refined torso,
 willowy model-like proportions, elegant gentle frame without bulk or excessive muscle,
 soft sophisticated silhouette, graceful refined lines,
-contemporary elegant fashion (well-fitted suit with slim cut, business casual with soft fabrics, or refined modern streetwear),
 authentic Korean webtoon manhwa style character illustration,
 flawless porcelain-like skin, gentle refined presence, elegant relaxed posture,
-soft romantic or professional appearance, entire outfit fully visible within frame,
-flower-boy charm, gentle masculine beauty, approachable refined elegance
+soft romantic or professional appearance, flower-boy charm, gentle masculine beauty, approachable refined elegance
 """
 
 MALE_40_50 = """
@@ -104,9 +102,7 @@ FEMALE_TEEN = """
 teenage girl character, webtoon manhwa art style,
 youthful fresh features, large expressive doe eyes with delicate lashes,
 smooth clear skin with natural blush, cute button nose,
-trendy hairstyle (long straight, soft waves, or side-swept bangs),
 slender developing figure, long slim legs, petite frame,
-school uniform (blouse, pleated skirt, knee socks) or trendy teen fashion,
 authentic webtoon style character illustration,
 height around 160-170cm proportions, graceful youthful posture,
 bright innocent yet stylish expression, emerging beauty
@@ -118,10 +114,7 @@ extremely long toned legs (leg length exceeding torso), dramatically elongated g
 long elegant torso, perfect upright posture, hourglass silhouette with prominent natural breasts,
 full voluptuous bust, narrow defined waist, wide feminine hips, sexy mature curves,
 flawless glossy porcelain skin, stunning beautiful facial features,
-seductive confident expression, alluring intense gaze, glamorous makeup,
-luxurious flowing hair (long wavy, sleek straight, or voluminous styled),
-modern chic fashion highlighting long legs and bust (bodycon dress, tailored suit, or elegant casual),
-authentic webtoon style character illustration,
+modern chic fashion highlighting long legs and bust, authentic webtoon style character illustration,
 sophisticated powerful presence, in realistic human proportions with no cartoon exaggeration
 """
 

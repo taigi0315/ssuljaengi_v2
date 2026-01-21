@@ -8,8 +8,8 @@ workflow status tracking, and evaluation results.
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Literal, List
 from datetime import datetime
-from app.prompt.story_mood import STORY_GENRE_PROMPTS
-from app.prompt.image_mood import VISUAL_STYLE_PROMPTS
+from app.prompt.story_genre import STORY_GENRE_PROMPTS
+from app.prompt.image_style import VISUAL_STYLE_PROMPTS
 
 
 # Story mood types - now dynamic based on keys
@@ -413,6 +413,7 @@ class GenerateWebtoonRequest(BaseModel):
     """
     story_id: str = Field(..., description="Story ID to convert")
     story_content: Optional[str] = Field(default=None, description="Optional direct story content (bypasses story lookup)")
+    genre: Optional[str] = Field(default="MODERN_ROMANCE_DRAMA", description="Story genre for narrative style")
     image_style: Optional[str] = Field(default="SOFT_ROMANTIC_WEBTOON", description="Visual style/mood for image generation")
 
 

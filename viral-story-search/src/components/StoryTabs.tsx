@@ -62,35 +62,15 @@ export default function StoryTabs({
                 </div>
               </button>
 
-              {/* Tab 3: Script Preview */}
-              <button
-                onClick={() => onTabChange('script')}
-                disabled={!hasGeneratedStory}
-                className={`
-                  px-4 sm:px-6 py-4 font-semibold text-sm sm:text-base transition-all relative whitespace-nowrap
-                  ${activeTab === 'script'
-                    ? 'text-purple-600 border-b-2 border-purple-600'
-                    : hasGeneratedStory
-                      ? 'text-gray-600 hover:text-gray-900'
-                      : 'text-gray-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">📖</span>
-                  <span>Webtoon Script</span>
-                </div>
-              </button>
-
-              {/* Tab 4: Image Style (NEW) */}
+              {/* Tab 3: Image Style (Now before Script) */}
               <button
                 onClick={() => onTabChange('style')}
-                disabled={!hasWebtoonScript}
+                disabled={!hasGeneratedStory}
                 className={`
                   px-4 sm:px-6 py-4 font-semibold text-sm sm:text-base transition-all relative whitespace-nowrap
                   ${activeTab === 'style'
                     ? 'text-purple-600 border-b-2 border-purple-600'
-                    : hasWebtoonScript
+                    : hasGeneratedStory
                       ? 'text-gray-600 hover:text-gray-900'
                       : 'text-gray-400 cursor-not-allowed'
                   }
@@ -102,15 +82,35 @@ export default function StoryTabs({
                 </div>
               </button>
 
+              {/* Tab 4: Webtoon Script */}
+              <button
+                onClick={() => onTabChange('script')}
+                disabled={!hasSelectedImageStyle}
+                className={`
+                  px-4 sm:px-6 py-4 font-semibold text-sm sm:text-base transition-all relative whitespace-nowrap
+                  ${activeTab === 'script'
+                    ? 'text-purple-600 border-b-2 border-purple-600'
+                    : hasSelectedImageStyle
+                      ? 'text-gray-600 hover:text-gray-900'
+                      : 'text-gray-400 cursor-not-allowed'
+                  }
+                `}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📖</span>
+                  <span>Webtoon Script</span>
+                </div>
+              </button>
+
               {/* Tab 5: Character Images */}
               <button
                 onClick={() => onTabChange('images')}
-                disabled={!hasSelectedImageStyle}
+                disabled={!hasWebtoonScript}
                 className={`
                   px-4 sm:px-6 py-4 font-semibold text-sm sm:text-base transition-all relative whitespace-nowrap
                   ${activeTab === 'images'
                     ? 'text-purple-600 border-b-2 border-purple-600'
-                    : hasSelectedImageStyle
+                    : hasWebtoonScript
                       ? 'text-gray-600 hover:text-gray-900'
                       : 'text-gray-400 cursor-not-allowed'
                   }
@@ -125,12 +125,12 @@ export default function StoryTabs({
               {/* Tab 6: Scene Images */}
               <button
                 onClick={() => onTabChange('scenes')}
-                disabled={!hasSelectedImageStyle}
+                disabled={!hasWebtoonScript}
                 className={`
                   px-4 sm:px-6 py-4 font-semibold text-sm sm:text-base transition-all relative whitespace-nowrap
                   ${activeTab === 'scenes'
                     ? 'text-purple-600 border-b-2 border-purple-600'
-                    : hasSelectedImageStyle
+                    : hasWebtoonScript
                       ? 'text-gray-600 hover:text-gray-900'
                       : 'text-gray-400 cursor-not-allowed'
                   }
@@ -145,12 +145,12 @@ export default function StoryTabs({
               {/* Tab 7: Final Video */}
               <button
                 onClick={() => onTabChange('video')}
-                disabled={!hasSelectedImageStyle}
+                disabled={!hasWebtoonScript}
                 className={`
                   px-4 sm:px-6 py-4 font-semibold text-sm sm:text-base transition-all relative whitespace-nowrap
                   ${activeTab === 'video'
                     ? 'text-purple-600 border-b-2 border-purple-600'
-                    : hasSelectedImageStyle
+                    : hasWebtoonScript
                       ? 'text-gray-600 hover:text-gray-900'
                       : 'text-gray-400 cursor-not-allowed'
                   }

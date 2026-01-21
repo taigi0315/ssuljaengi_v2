@@ -255,7 +255,7 @@ export default function Home() {
 
     // For subsequent steps, check prerequisites
     if (tab === 'style' && !generatedStoryId) return;
-    if (tab === 'script' && !selectedImageStyle) return;
+    if (tab === 'script' && (!generatedStoryId || !selectedImageStyle)) return;
     if (tab === 'images' && !webtoonScript) return;
     if (tab === 'scenes' && !webtoonScript) return;
     if (tab === 'video' && !webtoonScript) return;
