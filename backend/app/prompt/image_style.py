@@ -288,5 +288,9 @@ restrained emotional expression, subtle eye direction and micro-expressions, con
 
 [FINISHER: Premium Cinematic Romance Finish]
 film-inspired color grading, soft vignette, gentle bloom highlights, background architecture simplified with depth haze, polished high-resolution finish, no harsh outlines or neon saturation, modern prestige-drama webtoon aesthetic, gallery-ready editorial realism
+""",
+
+    "NOIR_ROMANCE_MANHWA": """ 
+    [MEDIUM: Cinematic Webtoon Drama] premium digital manhwa illustration, semi-realistic anime proportions, sophisticated character design, mature romance-fantasy aesthetic, sharp architectural backgrounds, polished serialized webtoon format [LINEWORK: Precision Fine-Line] ultra-thin clean contours, intricate hair strand detailing, sharp angular jawlines and noses, delicate eyelash rendering, consistent line weight with subtle tapering, refined ink style suitable for serious drama [ILLUMINATOR: Dramatic Atmospheric Lighting] moody cinematic lighting, strong heavy shadows (chiaroscuro), emotional color casting (deep blues for sorrow, warm ambers for memory), pronounced rim lighting on characters, gloom and rain atmosphere, intense contrast between light and dark [COLORIST: Muted Deep Tones] desaturated earthy base palette enriched with dramatic colored lighting, deep navy, slate gray, olive, and burgundy tones, skin tones rendered with soft airbrush gradients, glassy reflection in eyes and tears, sophisticated and somber color grading [EMOTION: Stoic Melancholy] intense serious expressions, cold/distant male leads, vulnerable/tearful female leads, emphasis on micro-expressions of pain and longing, psychological tension, heavy emotional weight [FINISHER: High-Fidelity Serialized Polish] smooth digital finish, atmospheric depth of field, soft glow effects without excessive sparkle, clean professional webtoon composition, crisp high-resolution rendering
 """
 }
