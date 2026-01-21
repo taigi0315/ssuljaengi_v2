@@ -321,7 +321,7 @@ export default function Home() {
 
       setGeneratedStoryId(script.story_id);
       setWebtoonScript(script);
-      setSelectedGenre(script.genre || 'MODERN_ROMANCE_DRAMA_MANHWA');
+      setSelectedGenre(script.genre || 'MODERN_ROMANCE_DRAMA');
       setCustomStorySeed('E2E Test Story'); // Dummy to satisfy checks
 
       setActiveTab('video');

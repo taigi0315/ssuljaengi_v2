@@ -48,7 +48,7 @@ async def get_characters():
         
     # Sort by created_at desc
     chars = list(character_library.values())
-    return sorted(chars, key=lambda x: x.get('created_at', ''), reverse=True)
+    return sorted(chars, key=lambda x: str(x.get('created_at', '')), reverse=True)
 
 @router.post("/character", response_model=SavedCharacter)
 async def save_character(request: SaveCharacterRequest):
@@ -64,7 +64,7 @@ async def save_character(request: SaveCharacterRequest):
         tags=request.tags
     )
     
-    character_library[char_id] = saved_char.model_dump()
+    character_library[char_id] = saved_char.model_dump(mode='json')
     await character_library.save()
     
     logger.info(f"Saved character to library: {request.character.name} ({char_id})")

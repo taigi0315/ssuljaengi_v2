@@ -7,7 +7,7 @@ import { generateStory, getStoryStatus, getStory } from '@/lib/apiClient';
 
 export default function StoryGeneratePage() {
   const [post, setPost] = useState<ViralPost | null>(null);
-  const [genre, setGenre] = useState<StoryGenre>('MODERN_ROMANCE_DRAMA_MANHWA');
+  const [genre, setGenre] = useState<StoryGenre>('MODERN_ROMANCE_DRAMA');
   const [story, setStory] = useState<Story | null>(null);
   const [status, setStatus] = useState<WorkflowStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);

@@ -66,7 +66,7 @@ export default function ShortsGenerator({ referenceImage }: ShortsGeneratorProps
                 character_name: `Scene ${sceneId}`,
                 description: currentPrompt,
                 gender: 'male', // Default, could be made dynamic
-                image_style: 'MODERN_ROMANCE_DRAMA_MANHWA',
+                image_style: 'SOFT_ROMANTIC_WEBTOON',
                 reference_image_url: referenceImage?.image_url // Pass reference image if available
             });
 
@@ -118,7 +118,7 @@ export default function ShortsGenerator({ referenceImage }: ShortsGeneratorProps
                             character_name: `Scene ${scene.scene_id}`,
                             description: currentPrompt,
                             gender: 'male',
-                            image_style: 'MODERN_ROMANCE_DRAMA_MANHWA',
+                            image_style: 'SOFT_ROMANTIC_WEBTOON',
                             reference_image_url: referenceImage?.image_url
                         });
 
