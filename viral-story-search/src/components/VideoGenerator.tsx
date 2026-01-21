@@ -21,16 +21,16 @@ const VIDEO_CONFIG = {
   BASE_IMAGE_DURATION_MS: 350,     // How long to show image before first bubble
   // Dynamic Dialogue Duration Config
   MIN_BUBBLE_DURATION_MS: 750,    // Minimum duration for any bubble
-  PER_CHAR_DURATION_MS: 40,        // Additional duration per character
+  PER_CHAR_DURATION_MS: 50,        // Additional duration per character
   // DIALOGUE_DURATION_MS: 2000,   // REMOVED: Static duration replaced by dynamic logic
-  FINAL_PAUSE_MS: 350,             // Pause after last bubble before next panel
+  FINAL_PAUSE_MS: 450,             // Pause after last bubble before next panel
   TRANSITION_DURATION_MS: 400,    // Duration of scroll transition between panels
 
   // Bubble styling
-  BUBBLE_FONT_SIZE: 52,            // Font size for dialogue text
-  BUBBLE_PADDING: 20,              // Padding inside bubble
+  BUBBLE_FONT_SIZE: 55,            // Font size for dialogue text
+  BUBBLE_PADDING: 30,              // Padding inside bubble
   BUBBLE_BORDER_RADIUS: 20,        // Rounded corner radius
-  BUBBLE_BORDER_WIDTH: 5,          // Border thickness
+  BUBBLE_BORDER_WIDTH: 7,          // Border thickness
   BUBBLE_BG_OPACITY: 0.25,          // Background opacity (0-1)
   BUBBLE_BORDER_COLOR: '#4a4a4a',  // Border color
   BUBBLE_TEXT_COLOR: '#1a1a1a',    // Text color
@@ -161,7 +161,14 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
 
     // Helper to draw bubble with auto-sizing based on text
     // xPercent and yPercent are relative to the IMAGE area
-    const drawBubble = (text: string, xPercent: number, yPercent: number, characterName?: string) => {
+    const drawBubble = (
+      text: string, 
+      xPercent: number, 
+      yPercent: number, 
+      wPercent?: number, 
+      hPercent?: number,
+      characterName?: string
+    ) => {
       const { 
         BUBBLE_FONT_SIZE, BUBBLE_PADDING, BUBBLE_BORDER_RADIUS, 
         BUBBLE_BORDER_WIDTH, BUBBLE_BG_OPACITY, BUBBLE_BORDER_COLOR, BUBBLE_TEXT_COLOR 
@@ -169,11 +176,19 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       
       ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`;
       
-      // Calculate max width for wrapping (85% of canvas)
-      const maxTextWidth = canvas.width * 0.85;
+      // Calculate max width for wrapping
+      // Logic A: User defined width
+      let targetWidth: number;
+      if (wPercent) {
+        targetWidth = canvas.width * (wPercent / 100);
+      } else {
+        // Logic B: Auto width (max 85%)
+        targetWidth = canvas.width * 0.85;
+      }
       
       // Wrap text
-      const wrappedLines = wrapText(ctx, text, maxTextWidth);
+      // We need to wrap it to fit within targetWidth (minus padding)
+      const wrappedLines = wrapText(ctx, text, targetWidth - (BUBBLE_PADDING * 2));
       
       // Measure actual dimensions
       let textWidth = 0;
@@ -182,19 +197,28 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       });
       
       let textHeight = wrappedLines.length * BUBBLE_FONT_SIZE * 1.2; // 1.2 line height
-
+      
+      // Add name height if present
       if (characterName) {
-        // Add height for name line + gap
-        textHeight += BUBBLE_FONT_SIZE * 1.5;
-        
-        // Ensure width fits name too
-        const nameMetrics = ctx.measureText(`${characterName}:`);
-        textWidth = Math.max(textWidth, nameMetrics.width);
+         textHeight += BUBBLE_FONT_SIZE * 1.5; // Name + Gap
       }
       
-      // Calculate bubble dimensions
-      const bw = textWidth + BUBBLE_PADDING * 2;
-      const bh = textHeight + BUBBLE_PADDING * 2;
+      // Final Dimensions
+      let bw: number, bh: number;
+      
+      if (wPercent) {
+          bw = targetWidth; // Force width
+      } else {
+          bw = textWidth + (BUBBLE_PADDING * 2);
+      }
+      
+      if (hPercent) {
+          // Suggested height, but ensure it fits text
+          const targetHeight = canvas.height * (hPercent / 100);
+          bh = Math.max(targetHeight, textHeight + (BUBBLE_PADDING * 2));
+      } else {
+          bh = textHeight + (BUBBLE_PADDING * 2);
+      }
       
       // Position relative to CANVAS area (matching backend logic which now renders on cropped 9:16 frame)
       // xPercent and yPercent are 0-100 relative to the visible video frame
@@ -337,7 +361,14 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
           
           // Draw ONLY the current bubble (auto-sized)
           const bubble = bubbles[bubbleIdx];
-          drawBubble(bubble.text, bubble.x, bubble.y, bubble.characterName);
+          drawBubble(
+            bubble.text, 
+            bubble.x, 
+            bubble.y, 
+            bubble.width, 
+            bubble.height, 
+            bubble.characterName
+          );
           
           // Dynamic Duration Calculation
           const textLength = bubble.text.length;

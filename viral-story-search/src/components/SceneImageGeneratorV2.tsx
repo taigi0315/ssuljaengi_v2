@@ -614,7 +614,7 @@ export default function SceneImageGeneratorV2({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={`
-              flex-1 relative bg-gray-100 rounded-lg overflow-hidden min-h-[400px]
+              relative bg-gray-900 rounded-lg overflow-hidden aspect-[9/16] w-full max-w-[400px] mx-auto shadow-2xl border-4 border-gray-800
               ${draggedDialogue ? 'ring-4 ring-purple-400 ring-opacity-50' : ''}
             `}
           >
@@ -639,7 +639,9 @@ export default function SceneImageGeneratorV2({
                         top: `${bubble.y}%`,
                         width: `${width}%`,
                         height: `${height}%`,
-                        fontSize: `clamp(10px, ${Math.max(0.8, height / 10)}vw, 24px)`,
+                        transform: 'translate(-50%, -50%)', // Center based positioning to match backend
+                        fontSize: '11px', // Fixed size for readability in editor
+                        lineHeight: '1.2',
                         backgroundColor: 'rgba(255, 255, 255, 0.1)',
                         border: '3px solid #4a4a4a',
                       }}
@@ -720,6 +722,7 @@ export default function SceneImageGeneratorV2({
                       top: `${dragPreviewPos.y}%`,
                       width: '30%',
                       height: '15%',
+                      transform: 'translate(-50%, -50%)',
                     }}
                     className="absolute bg-white/50 border-2 border-purple-400 border-dashed rounded-xl flex items-center justify-center pointer-events-none z-30"
                   >
