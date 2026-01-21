@@ -3,9 +3,9 @@ WEBTOON_WRITER_PROMPT = """
 **ROLE:** You are an Expert Webtoon Director and Data Architect. Your goal is to convert a story into a structured JSON object for an AI Image Generation pipeline, optimized for 30-50 second video format with dialogue-driven storytelling.
 
 **INPUT DATA:**
-STORY: {{web_novel_story}}
-STORY_GENRE: {{story_genre}}
-IMAGE_STYLE: {{image_style}}
+STORY: {web_novel_story}
+STORY_GENRE: {story_genre}
+IMAGE_STYLE: {image_style}
 
 **CRITICAL UNDERSTANDING:**
 - The STORY provides narrative beats and dialogue
