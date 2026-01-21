@@ -11,7 +11,7 @@ class BubbleData(BaseModel):
     x: float = Field(..., ge=0, le=100, description="X position as percentage (0-100)")
     y: float = Field(..., ge=0, le=100, description="Y position as percentage (0-100)")
     width: Optional[float] = Field(default=30, ge=5, le=100, description="Width as percentage (5-100)")
-    height: Optional[float] = Field(default=15, ge=5, le=100, description="Height as percentage (5-100)")
+    height: Optional[float] = Field(default=None, ge=5, le=100, description="Height as percentage (5-100)")
     character_name: Optional[str] = None
 
 
@@ -33,7 +33,9 @@ class VideoConfig(BaseModel):
     width: int = 1080
     height: int = 1920  # 9:16 ratio (vertical video for TikTok/Shorts/Reels)
     base_duration_ms: int = 350
-    bubble_duration_ms: int = 2750
+    # bubble_duration_ms: int = 2750  # REMOVED: Replaced by dynamic duration
+    min_bubble_duration_ms: int = 1500  # Minimum duration
+    per_char_duration_ms: int = 50      # Added duration per character
     final_pause_ms: int = 350
     transition_duration_ms: int = 550  # Duration of scroll transition between panels
     fps: int = 30

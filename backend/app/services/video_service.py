@@ -198,18 +198,21 @@ class VideoService:
         bx = max(margin, min(img.width - bw - margin, bx))
         by = max(margin, min(img.height - bh - margin, by))
 
-        # Draw Bubble Background
-        radius = 20
-        bg_color = (255, 255, 255, int(self.config.bubble_bg_opacity * 255))
-        border_color = self._hex_to_rgb(self.config.bubble_border_color)
-        
-        draw.rounded_rectangle(
-            [(bx, by), (bx + bw, by + bh)],
-            radius=radius,
-            fill=bg_color,
-            outline=border_color,
-            width=self.config.bubble_border_width
-        )
+        is_narrator = character_name and character_name.lower() == "narrator"
+
+        # Draw Bubble Background (Skip for Narrator)
+        if not is_narrator:
+            radius = 20
+            bg_color = (255, 255, 255, int(self.config.bubble_bg_opacity * 255))
+            border_color = self._hex_to_rgb(self.config.bubble_border_color)
+            
+            draw.rounded_rectangle(
+                [(bx, by), (bx + bw, by + bh)],
+                radius=radius,
+                fill=bg_color,
+                outline=border_color,
+                width=self.config.bubble_border_width
+            )
         
         # Draw Content
         current_y = by + padding
@@ -219,26 +222,48 @@ class VideoService:
         # Let's center everything for standard bubbles
         if character_name:
             name_color = self._hex_to_rgb(getattr(self.config, 'bubble_name_color', '#6b21a8'))
+            
+            # Add stroke for narrator to ensure readability without box
+            stroke_width = 2 if is_narrator else 1
+            if is_narrator:
+                 # Narrator Name: Gray with Black Stroke
+                 name_color = (204, 204, 204) # #CCCCCC
+                 stroke_fill = (0, 0, 0)
+            else:
+                 name_color = self._hex_to_rgb(getattr(self.config, 'bubble_name_color', '#6b21a8'))
+                 stroke_fill = name_color
+            
             draw.text(
                 (center_x, current_y),
                 display_name,
                 font=self.font,
                 fill=name_color,
                 anchor="ma", # Middle-Ascender (top centered)
-                stroke_width=1, # Faux bold
-                stroke_fill=name_color
+                stroke_width=stroke_width,
+                stroke_fill=stroke_fill
             )
             current_y += name_height
             
         # 2. Draw Message
-        text_color = self._hex_to_rgb(self.config.bubble_text_color)
+        # For Narrator: White text with black stroke
+        if is_narrator:
+            text_color = (255, 255, 255)
+            stroke_width = 2
+            stroke_fill = (0, 0, 0) # Black outline
+        else:
+            text_color = self._hex_to_rgb(self.config.bubble_text_color)
+            stroke_width = 0
+            stroke_fill = None
+
         draw.multiline_text(
             (center_x, current_y),
             wrapped_text,
             font=self.font,
             fill=text_color,
             anchor="ma", # Middle-Ascender
-            align="center"
+            align="center",
+            stroke_width=stroke_width,
+            stroke_fill=stroke_fill
         )
         
         # Composite overlay
@@ -350,10 +375,10 @@ class VideoService:
                 
                 # Calculate frame counts
                 base_frames = int(self.config.base_duration_ms / 1000 * self.config.fps)
-                bubble_frames = int(self.config.bubble_duration_ms / 1000 * self.config.fps)
+                # bubble_frames removed here, calculated per bubble
                 final_frames = int(self.config.final_pause_ms / 1000 * self.config.fps)
                 
-                logger.info(f"Frame Config - FPS: {self.config.fps} | Base: {base_frames} frames ({self.config.base_duration_ms}ms) | Bubble: {bubble_frames} frames ({self.config.bubble_duration_ms}ms) | Final: {final_frames} frames ({self.config.final_pause_ms}ms)")
+                logger.info(f"Frame Config - FPS: {self.config.fps} | Base: {base_frames} frames ({self.config.base_duration_ms}ms) | Final: {final_frames} frames ({self.config.final_pause_ms}ms)")
                 
                 # 1. Base image without bubbles
                 for _ in range(base_frames):
@@ -377,6 +402,13 @@ class VideoService:
                         getattr(bubble, 'height', None),
                         getattr(bubble, 'character_name', None)
                     )
+                    
+                    # Calculate dynamic duration for this bubble
+                    char_count = len(bubble.text)
+                    duration_ms = self.config.min_bubble_duration_ms + (char_count * self.config.per_char_duration_ms)
+                    bubble_frames = int(duration_ms / 1000 * self.config.fps)
+                    
+                    logger.info(f"Bubble duration: {duration_ms}ms ({bubble_frames} frames) for {char_count} chars")
                     
                     for _ in range(bubble_frames):
                         frame_path = os.path.join(temp_dir, f"frame_{frame_idx:06d}.png")

@@ -18,17 +18,20 @@ const VIDEO_CONFIG = {
 
   // Timing (in milliseconds)
   // Timing (in milliseconds)
-  BASE_IMAGE_DURATION_MS: 750,     // How long to show image before first bubble
-  DIALOGUE_DURATION_MS: 3000,      // How long each dialogue bubble shows
-  FINAL_PAUSE_MS: 750,             // Pause after last bubble before next panel
+  BASE_IMAGE_DURATION_MS: 350,     // How long to show image before first bubble
+  // Dynamic Dialogue Duration Config
+  MIN_BUBBLE_DURATION_MS: 750,    // Minimum duration for any bubble
+  PER_CHAR_DURATION_MS: 40,        // Additional duration per character
+  // DIALOGUE_DURATION_MS: 2000,   // REMOVED: Static duration replaced by dynamic logic
+  FINAL_PAUSE_MS: 350,             // Pause after last bubble before next panel
   TRANSITION_DURATION_MS: 400,    // Duration of scroll transition between panels
 
   // Bubble styling
-  BUBBLE_FONT_SIZE: 47,            // Font size for dialogue text
+  BUBBLE_FONT_SIZE: 52,            // Font size for dialogue text
   BUBBLE_PADDING: 20,              // Padding inside bubble
   BUBBLE_BORDER_RADIUS: 20,        // Rounded corner radius
   BUBBLE_BORDER_WIDTH: 5,          // Border thickness
-  BUBBLE_BG_OPACITY: 0.55,          // Background opacity (0-1)
+  BUBBLE_BG_OPACITY: 0.25,          // Background opacity (0-1)
   BUBBLE_BORDER_COLOR: '#4a4a4a',  // Border color
   BUBBLE_TEXT_COLOR: '#1a1a1a',    // Text color
 
@@ -207,33 +210,49 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       bx = Math.max(20, Math.min(canvas.width - bw - 20, bx));
       by = Math.max(20, Math.min(canvas.height - bh - 20, by));
       
-      // Draw Bubble Background with semi-transparent white
-      ctx.fillStyle = `rgba(255, 255, 255, ${BUBBLE_BG_OPACITY})`; 
-      ctx.strokeStyle = BUBBLE_BORDER_COLOR;
-      ctx.lineWidth = BUBBLE_BORDER_WIDTH;
-      
-      // Rounded rect
-      const radius = BUBBLE_BORDER_RADIUS;
-      ctx.beginPath();
-      // ctx.roundRect is standard now but check support, otherwise fallback or polyfill
-      // Using manual path for safety as before
-      ctx.moveTo(bx + radius, by);
-      ctx.lineTo(bx + bw - radius, by);
-      ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + radius);
-      ctx.lineTo(bx + bw, by + bh - radius);
-      ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - radius, by + bh);
-      ctx.lineTo(bx + radius, by + bh);
-      ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - radius);
-      ctx.lineTo(bx, by + radius);
-      ctx.quadraticCurveTo(bx, by, bx + radius, by);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      const isNarrator = characterName?.toLowerCase() === 'narrator';
+
+      // Draw Bubble Background (Skip for Narrator)
+      if (!isNarrator) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${BUBBLE_BG_OPACITY})`; 
+        ctx.strokeStyle = BUBBLE_BORDER_COLOR;
+        ctx.lineWidth = BUBBLE_BORDER_WIDTH;
+        
+        // Rounded rect
+        const radius = BUBBLE_BORDER_RADIUS;
+        ctx.beginPath();
+        // ctx.roundRect is standard now but check support, otherwise fallback or polyfill
+        // Using manual path for safety as before
+        ctx.moveTo(bx + radius, by);
+        ctx.lineTo(bx + bw - radius, by);
+        ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + radius);
+        ctx.lineTo(bx + bw, by + bh - radius);
+        ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - radius, by + bh);
+        ctx.lineTo(bx + radius, by + bh);
+        ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - radius);
+        ctx.lineTo(bx, by + radius);
+        ctx.quadraticCurveTo(bx, by, bx + radius, by);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
       
       // Draw Text
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = BUBBLE_TEXT_COLOR;
+      
+      // Configure Text Colors
+      if (isNarrator) {
+        // Narrator: White text with heavy black stroke
+        ctx.fillStyle = '#FFFFFF';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3;
+      } else {
+        // Standard: Config text color, no stroke
+        ctx.fillStyle = BUBBLE_TEXT_COLOR;
+        ctx.strokeStyle = 'transparent'; // No stroke
+        ctx.lineWidth = 0;
+      }
       
       const centerX = bx + bw / 2;
       let currentY = by + BUBBLE_PADDING + (BUBBLE_FONT_SIZE * 0.6); // Start Y
@@ -241,16 +260,35 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       if (characterName) {
         // Draw Name 
         ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`;
-        ctx.fillStyle = '#6b21a8'; // Purple
-        ctx.fillText(`${characterName}:`, centerX, currentY);
+        
+        // Name colors
+        if (isNarrator) {
+           ctx.fillStyle = '#000000ff'; // Gray name
+           // Stroke already set (black, width 3) - kept for visibility against complex backgrounds
+           ctx.strokeText(`${characterName}:`, centerX, currentY);
+           ctx.fillText(`${characterName}:`, centerX, currentY);
+        } else {
+           ctx.fillStyle = '#6b21a8'; // Purple
+           // No stroke
+           ctx.fillText(`${characterName}:`, centerX, currentY);
+        }
+        
         currentY += BUBBLE_FONT_SIZE * 1.5; // Gap
       } 
       
       // Draw Message Lines
       ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`; // Keep bold for readability
-      ctx.fillStyle = BUBBLE_TEXT_COLOR;
+      
+      if (isNarrator) {
+          ctx.fillStyle = '#FFFFFF'; 
+      } else {
+          ctx.fillStyle = BUBBLE_TEXT_COLOR;
+      }
       
       wrappedLines.forEach((line) => {
+          if (isNarrator) {
+              ctx.strokeText(line, centerX, currentY);
+          }
           ctx.fillText(line, centerX, currentY);
           currentY += BUBBLE_FONT_SIZE * 1.2;
       });
@@ -301,8 +339,13 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
           const bubble = bubbles[bubbleIdx];
           drawBubble(bubble.text, bubble.x, bubble.y, bubble.characterName);
           
-          // Wait for bubble display duration
-          await new Promise(r => setTimeout(r, VIDEO_CONFIG.DIALOGUE_DURATION_MS));
+          // Dynamic Duration Calculation
+          const textLength = bubble.text.length;
+          const { MIN_BUBBLE_DURATION_MS, PER_CHAR_DURATION_MS } = VIDEO_CONFIG;
+          const duration = MIN_BUBBLE_DURATION_MS + (textLength * PER_CHAR_DURATION_MS);
+
+          // Wait for calculating dynamic duration
+          await new Promise(r => setTimeout(r, duration));
         }
         
         // Final frame: just the image (last bubble disappears)

@@ -180,17 +180,21 @@ class ImageGenerator:
             logger.info(f"Total contents parts: {len(contents)}")
             
             # Generate with multimodal input
+            from google.genai import types
             response = self.client.models.generate_content(
                 model=model_name,
                 contents=contents,
-                config={
-                    "safety_settings": [
+                config=types.GenerateContentConfig(
+                    image_config=types.ImageConfig(
+                        aspect_ratio="9:16",
+                    ),
+                    safety_settings=[
                         {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
                         {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
                         {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}, # 
+                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
                     ],
-                }
+                )
             )
             
             # Extract image from response
