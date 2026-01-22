@@ -20,17 +20,17 @@ const VIDEO_CONFIG = {
   // Timing (in milliseconds)
   BASE_IMAGE_DURATION_MS: 350,     // How long to show image before first bubble
   // Dynamic Dialogue Duration Config
-  MIN_BUBBLE_DURATION_MS: 750,    // Minimum duration for any bubble
+  MIN_BUBBLE_DURATION_MS: 1000,    // Minimum duration for any bubble
   PER_CHAR_DURATION_MS: 50,        // Additional duration per character
   // DIALOGUE_DURATION_MS: 2000,   // REMOVED: Static duration replaced by dynamic logic
   FINAL_PAUSE_MS: 450,             // Pause after last bubble before next panel
   TRANSITION_DURATION_MS: 400,    // Duration of scroll transition between panels
 
   // Bubble styling
-  BUBBLE_FONT_SIZE: 55,            // Font size for dialogue text
-  BUBBLE_PADDING: 30,              // Padding inside bubble
+  BUBBLE_FONT_SIZE: 45,            // Font size for dialogue text
+  BUBBLE_PADDING: 20,              // Padding inside bubble
   BUBBLE_BORDER_RADIUS: 20,        // Rounded corner radius
-  BUBBLE_BORDER_WIDTH: 7,          // Border thickness
+  BUBBLE_BORDER_WIDTH: 4,          // Border thickness
   BUBBLE_BG_OPACITY: 0.25,          // Background opacity (0-1)
   BUBBLE_BORDER_COLOR: '#4a4a4a',  // Border color
   BUBBLE_TEXT_COLOR: '#1a1a1a',    // Text color

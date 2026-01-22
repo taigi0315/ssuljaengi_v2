@@ -110,6 +110,7 @@ export default function CharacterLibraryModal({ isOpen, onClose, onSelect }: Cha
                             {characters.map((item) => (
                                 <div
                                     key={item.id}
+                                    onClick={() => onSelect(item)}
                                     className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-purple-300 hover:ring-2 hover:ring-purple-400 hover:ring-offset-2 transition-all cursor-pointer flex flex-col relative"
                                 >
                                     {/* Delete Button (visible on hover) */}

@@ -30,6 +30,14 @@ export default function CharacterImageGenerator({
   const [error, setError] = useState<string | null>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
 
+  // Main Layout State
+  const [libraryMode, setLibraryMode] = useState<'load' | 'reference'>('load');
+  const [pendingGeneration, setPendingGeneration] = useState<{
+        name: string;
+        description: string;
+        gender: string;
+  } | null>(null);
+
   // Auto-select first character on mount
   useEffect(() => {
     if (webtoonScript.characters.length > 0 && !selectedCharacter) {
@@ -57,7 +65,6 @@ export default function CharacterImageGenerator({
       });
 
       // Update webtoon script with new image
-      // Update webtoon script with new image
       if (webtoonScript && onUpdateScript) {
         const updatedImages = { ...webtoonScript.character_images };
         if (!updatedImages[characterName]) {
@@ -77,6 +84,12 @@ export default function CharacterImageGenerator({
     } finally {
       setIsGeneratingImage(false);
     }
+  };
+
+  const handleGenerateWithReference = (name: string, description: string, gender: string) => {
+      setPendingGeneration({ name, description, gender });
+      setLibraryMode('reference');
+      setIsLibraryOpen(true);
   };
 
   const handleCharacterSelect = (character: Character) => {
@@ -116,14 +129,52 @@ export default function CharacterImageGenerator({
 
   const handleLoadCharacter = (saved: { character: Character, image_url?: string }) => {
     if (!selectedCharacter || !onUpdateScript || !webtoonScript) return;
+    
+    // Check mode
+    if (libraryMode === 'reference' && saved.image_url && pendingGeneration) {
+        // IMAGE-TO-IMAGE GENERATION MODE
+        setIsLibraryOpen(false); // Close modal
+        
+        // Trigger generation with reference image
+        setIsGeneratingImage(true);
+        setError(null);
+        
+        import('@/lib/apiClient').then(({ generateCharacterImage }) => {
+            generateCharacterImage({
+                script_id: webtoonScript.script_id,
+                character_name: pendingGeneration.name,
+                description: pendingGeneration.description,
+                gender: pendingGeneration.gender,
+                image_style: imageStyle,
+                reference_image_url: saved.image_url // Pass the reference image!
+            }).then(image => {
+                 if (onUpdateScript && webtoonScript) {
+                    const charName = pendingGeneration.name;
+                    const currentImages = { ...(webtoonScript.character_images || {}) };
+                    if (!currentImages[charName]) {
+                        currentImages[charName] = [];
+                    }
+                    currentImages[charName].push(image);
+                    
+                    onUpdateScript({
+                        ...webtoonScript,
+                        character_images: currentImages
+                    });
+                 }
+            }).catch(err => {
+                console.error("Failed to generate with reference:", err);
+                setError("Failed to generate character with reference image");
+            }).finally(() => {
+                setIsGeneratingImage(false);
+                setPendingGeneration(null);
+                setLibraryMode('load'); // Reset mode
+            });
+        });
+        return;
+    }
 
+    // NORMAL LOAD MODE
     // We want to apply the saved character's visual description (and maybe name?) to the CURRENT selected character in the script.
-    // Usually we want to keep the script's character name but adopt the visual style.
-    // Let's ask the user? Or just adopt style.
-    // For now, I'll update the visual_description and other physical traits, but KEEP the Name if possible?
-    // Actually, user might want to swap the character entirely.
-    // But the script depends on the Name. If I change the name, I break the script references.
-    // So I will only update visual traits.
     
     const updatedCharacters = webtoonScript.characters.map(c => {
       if (c.name === selectedCharacter.name) {
@@ -143,29 +194,42 @@ export default function CharacterImageGenerator({
       return c;
     });
 
-    // If there is an image, we should probably add it to the character images list
-    let updatedImages = { ...(webtoonScript.character_images || {}) };
+    // If there is an image, import it to get a valid backend ID
     if (saved.image_url) {
         const charName = selectedCharacter.name;
-        if (!updatedImages[charName]) {
-            updatedImages[charName] = [];
-        }
-        // Add as a reference image
-        updatedImages[charName].push({
-            id: `loaded-${Date.now()}`,
-            character_name: charName,
-            description: saved.character.visual_description,
-            image_url: saved.image_url,
-            created_at: new Date().toISOString(),
-            is_selected: true // Select it by default?
+        
+        import('@/lib/apiClient').then(({ importCharacterImage }) => {
+            importCharacterImage(
+                webtoonScript.script_id, 
+                charName, 
+                saved.image_url!, 
+                saved.character.visual_description
+            ).then(importedImage => {
+                 if (onUpdateScript && webtoonScript) {
+                     const currentImages = { ...(webtoonScript.character_images || {}) };
+                     if (!currentImages[charName]) {
+                         currentImages[charName] = [];
+                     }
+                     currentImages[charName].push(importedImage);
+                     
+                     onUpdateScript({
+                         ...webtoonScript,
+                         characters: updatedCharacters,
+                         character_images: currentImages
+                     });
+                 }
+            }).catch(err => {
+                console.error("Failed to import character image:", err);
+                setError("Failed to import character image reference");
+            });
+        });
+    } else {
+        // Just update characters if no image
+        onUpdateScript({
+          ...webtoonScript,
+          characters: updatedCharacters,
         });
     }
-
-    onUpdateScript({
-      ...webtoonScript,
-      characters: updatedCharacters,
-      character_images: updatedImages
-    });
 
     // Update local selection to trigger re-render
     const newSelected = updatedCharacters.find(c => c.name === selectedCharacter.name);
@@ -247,6 +311,7 @@ export default function CharacterImageGenerator({
                   images={(webtoonScript.character_images || {})[selectedCharacter.name] || []}
                   onGenerateImage={handleGenerateImage}
                   onSelectImage={handleSelectImage}
+                  onGenerateWithReference={handleGenerateWithReference} // Add this
                   isGenerating={isGeneratingImage}
                   onSaveToLibrary={async (char, imgUrl) => {
                     try {

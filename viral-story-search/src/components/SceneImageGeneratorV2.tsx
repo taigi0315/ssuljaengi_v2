@@ -417,8 +417,8 @@ export default function SceneImageGeneratorV2({
       characterName: draggedDialogue.characterName,
       x: Math.max(5, Math.min(85, x)),
       y: Math.max(5, Math.min(85, y)),
-      width: 30, // Default width %
-      height: 15, // Default height %
+      width: 60, // Default to rectangle (max 60% width)
+      height: 10, // Slimmer height for rectangular look
     };
 
     if (onUpdateScript) {

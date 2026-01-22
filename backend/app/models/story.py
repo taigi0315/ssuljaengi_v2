@@ -444,6 +444,22 @@ class GenerateCharacterImageRequest(BaseModel):
         return v
 
 
+class ImportCharacterImageRequest(BaseModel):
+    """
+    Request model for importing an existing character image into a script context.
+    
+    Attributes:
+        script_id: ID of the target webtoon script
+        character_name: Name of the character
+        image_url: URL of the existing image to import
+        description: Visual description for the image record
+    """
+    script_id: str = Field(..., description="Target webtoon script ID")
+    character_name: str = Field(..., description="Character name")
+    image_url: str = Field(..., description="Image URL to import")
+    description: str = Field(..., description="Visual description for record")
+
+
 class GenerateSceneImageRequest(BaseModel):
     """
     Request model for scene image generation.

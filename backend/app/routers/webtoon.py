@@ -25,7 +25,13 @@ from app.models.story import (
     CharacterImage,
     SceneImage,
     WebtoonScript,
-    GenerateShortsRequest
+    GenerateSceneImageRequest,
+    WebtoonScriptResponse,
+    CharacterImage,
+    SceneImage,
+    WebtoonScript,
+    GenerateShortsRequest,
+    ImportCharacterImageRequest
 )
 from app.services.webtoon_writer import webtoon_writer
 from app.services.image_generator import image_generator
@@ -421,6 +427,74 @@ async def generate_character_image(request: GenerateCharacterImageRequest) -> Ch
     except Exception as e:
         logger.error(f"Character image generation failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Image generation failed: {str(e)}")
+
+
+@router.post("/character/image/import")
+async def import_character_image(request: ImportCharacterImageRequest) -> CharacterImage:
+    """
+    Import an existing character image (e.g. from library) into the current script context.
+    
+    Args:
+        request: Request with script_id, character_name, image_url, description
+        
+    Returns:
+        CharacterImage with new ID
+    """
+    
+    logger.info(f"Importing image for character: {request.character_name}")
+    
+    # Check if script exists
+    if request.script_id not in webtoon_scripts:
+        logger.error(f"Script {request.script_id} not found in storage")
+        raise HTTPException(status_code=404, detail="Webtoon script not found")
+        
+    try:
+        # Create image record with NEW ID
+        image_id = str(uuid.uuid4())
+        
+        character_image = CharacterImage(
+            id=image_id,
+            character_name=request.character_name,
+            description=request.description,
+            image_url=request.image_url,
+            is_selected=True,  # Auto-select imported images
+            prompt_used="Imported from library"
+        )
+        
+        # Store image in global store
+        image_key = f"{request.script_id}:{request.character_name}"
+        if image_key not in character_images:
+            character_images[image_key] = []
+        
+        # Deselect others for this character
+        for img in character_images[image_key]:
+            img["is_selected"] = False
+            
+        character_images[image_key].append(character_image.model_dump())
+        await character_images.save()
+        
+        # Update script's character_images
+        script_data = webtoon_scripts[request.script_id]
+        if "character_images" not in script_data:
+            script_data["character_images"] = {}
+            
+        if request.character_name not in script_data["character_images"]:
+            script_data["character_images"][request.character_name] = []
+            
+        # Deselect others in script data too
+        for img in script_data["character_images"][request.character_name]:
+            img["is_selected"] = False
+        
+        script_data["character_images"][request.character_name].append(character_image.model_dump())
+        await webtoon_scripts.save()
+        
+        logger.info(f"Character image imported: {image_id}")
+        
+        return character_image
+        
+    except Exception as e:
+        logger.error(f"Character image import failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Image import failed: {str(e)}")
 
 
 @router.get("/latest")

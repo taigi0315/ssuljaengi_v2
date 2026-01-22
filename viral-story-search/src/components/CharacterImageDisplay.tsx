@@ -12,6 +12,7 @@ interface CharacterImageDisplayProps {
   isGenerating: boolean;
   onSaveToLibrary?: (character: Character, imageUrl: string) => Promise<void>;
   isNameEditable?: boolean;
+  onGenerateWithReference?: (characterName: string, description: string, gender: string) => void;
 }
 
 
@@ -24,6 +25,7 @@ export default function CharacterImageDisplay({
   isGenerating,
   onSaveToLibrary,
   isNameEditable = false,
+  onGenerateWithReference,
 }: CharacterImageDisplayProps) {
   // Individual field states
   const [gender, setGender] = useState(character.gender || '');
@@ -355,6 +357,35 @@ export default function CharacterImageDisplay({
           <span>🎨 Generate Image</span>
         )}
       </button>
+
+      {/* Generate with Reference Button */}
+      {onGenerateWithReference && (
+        <button
+          onClick={() => {
+            const description = getCombinedDescription();
+            onGenerateWithReference(name || character.name, description, gender);
+          }}
+          disabled={isGenerating || !getCombinedDescription().trim()}
+          className={`
+            w-full px-6 py-4 rounded-lg font-bold text-lg transition-all border-2
+            ${isGenerating || !getCombinedDescription().trim()
+              ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+              : 'bg-white text-purple-600 border-purple-600 hover:bg-purple-50 hover:shadow-lg hover:scale-105'
+            }
+          `}
+        >
+          {isGenerating ? (
+            <span className="flex items-center justify-center gap-2">
+               ⏳ Processing...
+            </span>
+          ) : (
+            <span className="flex items-center justify-center gap-2">
+              <span>🧬</span>
+              <span>Use Existing Look & Generate (Image-to-Image)</span>
+            </span>
+          )}
+        </button>
+      )}
 
       {/* Image Display */}
       {images.length > 0 && (

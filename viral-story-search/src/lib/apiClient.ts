@@ -576,6 +576,50 @@ export async function getLibraryCharacters(): Promise<any[]> {
 }
 
 /**
+ * Import a character image from library/external url into script context
+ * @param scriptId Script ID
+ * @param characterName Character Name
+ * @param imageUrl Image URL
+ * @param description Visual Description
+ * @returns Imported CharacterImage
+ */
+export async function importCharacterImage(
+  scriptId: string, 
+  characterName: string, 
+  imageUrl: string, 
+  description: string
+): Promise<import('@/types').CharacterImage> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/character/image/import`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        script_id: scriptId,
+        character_name: characterName,
+        image_url: imageUrl,
+        description: description
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: { message: 'Failed to import character image' },
+      }));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to import character image');
+  }
+}
+
+/**
  * Get available story genres (for narrative content)
  * @returns List of story genres with metadata
  */
