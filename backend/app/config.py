@@ -150,6 +150,24 @@ class Settings(BaseSettings):
         le=500
     )
 
+    # SFX Rendering Configuration (v2.0.0)
+    sfx_font_path: Optional[str] = Field(
+        default=None,
+        description="Path to custom font for impact text. If None, uses default system font."
+    )
+    sfx_assets_dir: str = Field(
+        default="assets/sfx",
+        description="Directory containing SFX overlay assets (PNG files)"
+    )
+    sfx_default_text_color: str = Field(
+        default="#FFFFFF",
+        description="Default color for impact text (hex)"
+    )
+    sfx_default_outline_color: str = Field(
+        default="#000000",
+        description="Default outline color for impact text (hex)"
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

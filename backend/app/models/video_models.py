@@ -1,8 +1,11 @@
 """
 Video generation models for Pydantic validation.
 """
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from app.models.sfx import SFXBundle
 
 
 class BubbleData(BaseModel):
@@ -20,6 +23,10 @@ class VideoPanelData(BaseModel):
     panel_number: int
     image_url: str
     bubbles: List[BubbleData] = []
+    sfx_bundle: Optional[dict] = Field(
+        default=None,
+        description="Optional SFX bundle data for visual effects (serialized SFXBundle)"
+    )
 
 
 class GenerateVideoRequest(BaseModel):

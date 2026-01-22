@@ -8,12 +8,49 @@ workflow status tracking, and evaluation results.
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Literal, List
 from datetime import datetime
+from enum import Enum
 from app.prompt.story_genre import STORY_GENRE_PROMPTS
 from app.prompt.image_style import VISUAL_STYLE_PROMPTS
 
 
 # Story mood types - now dynamic based on keys
 StoryMood = str
+
+
+class ShotType(str, Enum):
+    """
+    Enumeration of shot types for cinematography planning.
+
+    Used by the Cinematographer agent to plan visual variety
+    and by the evaluator to score shot distribution.
+    """
+    EXTREME_CLOSE_UP = "extreme_close_up"  # Eyes, lips, small details - 85-100% frame
+    CLOSE_UP = "close_up"                   # Face/head - 70-85% frame
+    MEDIUM_CLOSE_UP = "medium_close_up"     # Head and shoulders - 50-70% frame
+    MEDIUM = "medium"                       # Waist up - 30-50% frame
+    MEDIUM_WIDE = "medium_wide"             # Knees up - 20-40% frame
+    WIDE = "wide"                           # Full body with environment - 15-30% frame
+    EXTREME_WIDE = "extreme_wide"           # Establishing shot - 5-15% frame
+    DETAIL = "detail"                       # Objects, hands, symbolic elements
+    OVER_SHOULDER = "over_shoulder"         # Conversation shot - 40-60% frame
+    POV = "pov"                             # Point of view shot
+
+    @classmethod
+    def get_frame_percentage_range(cls, shot_type: "ShotType") -> tuple[int, int]:
+        """Return typical frame percentage range for character in this shot type."""
+        ranges = {
+            cls.EXTREME_CLOSE_UP: (85, 100),
+            cls.CLOSE_UP: (70, 85),
+            cls.MEDIUM_CLOSE_UP: (50, 70),
+            cls.MEDIUM: (30, 50),
+            cls.MEDIUM_WIDE: (20, 40),
+            cls.WIDE: (15, 30),
+            cls.EXTREME_WIDE: (5, 15),
+            cls.DETAIL: (10, 90),  # Varies based on subject
+            cls.OVER_SHOULDER: (40, 60),
+            cls.POV: (0, 100),  # Varies
+        }
+        return ranges.get(shot_type, (30, 50))
 
 
 class StoryRequest(BaseModel):
@@ -216,6 +253,161 @@ class Character(BaseModel):
         }
 
 
+class CameraAngle(str, Enum):
+    """Camera angle for shot composition."""
+    EYE_LEVEL = "eye_level"         # Standard, neutral
+    LOW_ANGLE = "low_angle"         # Looking up, adds power/dominance
+    HIGH_ANGLE = "high_angle"       # Looking down, vulnerability/smallness
+    DUTCH_ANGLE = "dutch_angle"     # Tilted, tension/unease
+    BIRDS_EYE = "birds_eye"         # Directly above
+    WORMS_EYE = "worms_eye"         # Directly below
+
+
+class Shot(BaseModel):
+    """
+    A single shot planned by the Cinematographer agent.
+
+    Represents one visual moment that will be generated as an image
+    or as part of a multi-panel page.
+    """
+    shot_id: str = Field(
+        ...,
+        description="Unique identifier for this shot (e.g., 'scene_1_shot_3')"
+    )
+    shot_type: ShotType = Field(
+        ...,
+        description="Type of shot (close_up, wide, detail, etc.)"
+    )
+    subject: str = Field(
+        ...,
+        description="What/who is the focus (e.g., 'character_a_face', 'both_characters', 'hands_on_table')"
+    )
+    subject_characters: List[str] = Field(
+        default_factory=list,
+        description="Character names involved in this shot"
+    )
+    frame_percentage: int = Field(
+        ...,
+        description="Percentage of frame the subject occupies (0-100)",
+        ge=0,
+        le=100
+    )
+    angle: CameraAngle = Field(
+        default=CameraAngle.EYE_LEVEL,
+        description="Camera angle for this shot"
+    )
+    emotional_purpose: str = Field(
+        ...,
+        description="Why this shot exists narratively (e.g., 'show_tension', 'reveal_reaction', 'establish_mood')"
+    )
+    emotional_intensity: int = Field(
+        default=5,
+        description="Emotional intensity of this moment (1-10, drives style modifiers)",
+        ge=1,
+        le=10
+    )
+    belongs_to_scene: int = Field(
+        ...,
+        description="Scene number this shot belongs to",
+        ge=1
+    )
+    story_beat: str = Field(
+        default="",
+        description="Brief description of what happens in this shot"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "shot_id": "scene_1_shot_2",
+                "shot_type": "close_up",
+                "subject": "character_a_face",
+                "subject_characters": ["Ji-hoon"],
+                "frame_percentage": 75,
+                "angle": "eye_level",
+                "emotional_purpose": "show_determination",
+                "emotional_intensity": 7,
+                "belongs_to_scene": 1,
+                "story_beat": "Ji-hoon realizes the truth"
+            }
+        }
+
+
+class ShotPlan(BaseModel):
+    """
+    Complete shot plan output from the Cinematographer agent.
+
+    Contains all planned shots for a webtoon with variety scoring.
+    """
+    shots: List[Shot] = Field(
+        ...,
+        description="Ordered list of all shots",
+        min_items=1
+    )
+    total_scenes: int = Field(
+        ...,
+        description="Total number of scenes covered",
+        ge=1
+    )
+    variety_score: float = Field(
+        default=0.0,
+        description="Shot variety score (0.0-1.0). Higher = better distribution",
+        ge=0.0,
+        le=1.0
+    )
+    shot_type_distribution: dict = Field(
+        default_factory=dict,
+        description="Count of each shot type used"
+    )
+
+    def calculate_variety_score(self) -> float:
+        """Calculate and update the variety score based on shot distribution."""
+        if not self.shots:
+            return 0.0
+
+        from collections import Counter
+        shot_types = [s.shot_type for s in self.shots]
+        counts = Counter(shot_types)
+        total = len(shot_types)
+
+        # Penalize if >50% are same type
+        most_common_ratio = max(counts.values()) / total
+        base_score = 1.0 - max(0, (most_common_ratio - 0.3) * 1.5)
+
+        # Bonus for having close-ups and detail shots
+        has_closeup = any(st in counts for st in [ShotType.CLOSE_UP, ShotType.EXTREME_CLOSE_UP])
+        has_detail = ShotType.DETAIL in counts
+
+        bonus = (0.1 if has_closeup else 0) + (0.1 if has_detail else 0)
+
+        self.variety_score = min(1.0, max(0.0, base_score + bonus))
+        self.shot_type_distribution = {st.value: count for st, count in counts.items()}
+
+        return self.variety_score
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "shots": [
+                    {
+                        "shot_id": "scene_1_shot_1",
+                        "shot_type": "wide",
+                        "subject": "coffee_shop_interior",
+                        "subject_characters": [],
+                        "frame_percentage": 20,
+                        "angle": "eye_level",
+                        "emotional_purpose": "establish_location",
+                        "emotional_intensity": 3,
+                        "belongs_to_scene": 1,
+                        "story_beat": "Establishing the coffee shop setting"
+                    }
+                ],
+                "total_scenes": 5,
+                "variety_score": 0.85,
+                "shot_type_distribution": {"wide": 3, "medium": 5, "close_up": 4, "detail": 2}
+            }
+        }
+
 
 class WebtoonPanel(BaseModel):
     """
@@ -271,9 +463,15 @@ class WebtoonPanel(BaseModel):
         max_length=500
     )
     story_beat: str = Field(
-        default="", 
+        default="",
         description="Narrative action in this panel.",
         max_length=500
+    )
+    emotional_intensity: int = Field(
+        default=5,
+        description="Emotional intensity of this panel (1-10). Drives shot selection and style modifiers. 1=calm/neutral, 5=moderate, 10=peak emotion.",
+        ge=1,
+        le=10
     )
     character_frame_percentage: int = Field(
         default=40, 
