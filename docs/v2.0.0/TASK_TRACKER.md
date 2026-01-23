@@ -80,13 +80,50 @@
 
 ### 1.6 SFX Planning
 
-| ID    | Task                             | Status | Dependencies | Notes                                                |
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Conversation compacted · ctrl+o for history  
+════════════════════════════════════════════════════ ════════════════════════════════════════════════════
+⎿ Read tests/test_enhanced_workflow.py (481 lines)  
+ ⎿ Referenced file app/workflows/enhanced_webtoon_workflow.py  
+ ⎿ Referenced file ../docs/v2.0.0/TASK_TRACKER.md  
+ ⎿ Referenced file app/services/webtoon_evaluator.py  
+ ⎿ Referenced file app/routers/webtoon.py  
+ ⎿ You've hit your limit · resets 1am (America/Chicago)
+
+✻ Brewed for 4m 10s
+
+❯ /rate-limit-options ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Conversation compacted · ctrl+o for history  
+════════════════════════════════════════════════════ ════════════════════════════════════════════════════
+⎿ Read tests/test_enhanced_workflow.py (481 lines)  
+ ⎿ Referenced file app/workflows/enhanced_webtoon_workflow.py  
+ ⎿ Referenced file ../docs/v2.0.0/TASK_TRACKER.md  
+ ⎿ Referenced file app/services/webtoon_evaluator.py  
+ ⎿ Referenced file app/routers/webtoon.py  
+ ⎿ You've hit your limit · resets 1am (America/Chicago)
+
+✻ Brewed for 4m 10s
+
+❯ /rate-limit-options ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Conversation compacted · ctrl+o for history  
+════════════════════════════════════════════════════ ════════════════════════════════════════════════════
+⎿ Read tests/test_enhanced_workflow.py (481 lines)  
+ ⎿ Referenced file app/workflows/enhanced_webtoon_workflow.py  
+ ⎿ Referenced file ../docs/v2.0.0/TASK_TRACKER.md  
+ ⎿ Referenced file app/services/webtoon_evaluator.py  
+ ⎿ Referenced file app/routers/webtoon.py  
+ ⎿ You've hit your limit · resets 1am (America/Chicago)
+
+✻ Brewed for 4m 10s
+
+❯ /rate-limit-options  
+| ID | Task | Status | Dependencies | Notes |
 | ----- | -------------------------------- | ------ | ------------ | ---------------------------------------------------- |
-| 1.6.1 | Create `prompt/sfx_planner.py`   | [x]    | -            | System prompt, user prompt, panel format template    |
-| 1.6.2 | Create `services/sfx_planner.py` | [x]    | 1.4.6, 1.6.1 | SFXPlanner class with rule-based and LLM modes       |
-| 1.6.3 | Define `SFX_TRIGGERS` mapping    | [x]    | 1.6.2        | + EMOTION_KEYWORDS, ACTION_KEYWORDS                  |
-| 1.6.4 | Implement `plan_sfx()` function  | [x]    | 1.6.3        | plan*sfx(), \_analyze_panel(), \_apply*\*\_effects() |
-| 1.6.5 | Unit tests for SFX planner       | [x]    | 1.6.4        | 31 tests passing                                     |
+| 1.6.1 | Create `prompt/sfx_planner.py` | [x] | - | System prompt, user prompt, panel format template |
+| 1.6.2 | Create `services/sfx_planner.py` | [x] | 1.4.6, 1.6.1 | SFXPlanner class with rule-based and LLM modes |
+| 1.6.3 | Define `SFX_TRIGGERS` mapping | [x] | 1.6.2 | + EMOTION_KEYWORDS, ACTION_KEYWORDS |
+| 1.6.4 | Implement `plan_sfx()` function | [x] | 1.6.3 | plan*sfx(), \_analyze_panel(), \_apply*\*\_effects() |
+| 1.6.5 | Unit tests for SFX planner | [x] | 1.6.4 | 31 tests passing |
 
 ---
 
@@ -105,14 +142,14 @@
 
 ### 2.1 Modular Style Models
 
-| ID    | Task                                                            | Status | Dependencies | Notes                                                                                                |
-| ----- | --------------------------------------------------------------- | ------ | ------------ | ---------------------------------------------------------------------------------------------------- |
-| 2.1.1 | Create `models/style.py`                                        | [x]    | -            | Created with comprehensive enums and models                                                          |
-| 2.1.2 | Add `BaseStyle` model                                           | [x]    | 2.1.1        | name, medium_description, color_palette_base, line_quality, rendering_quality, style_keywords        |
-| 2.1.3 | Add `SceneMood` model                                           | [x]    | 2.1.1        | color_temperature, saturation, lighting_mood, detail_level, expression_style, special_effects        |
+| ID    | Task                                                            | Status | Dependencies | Notes                                                                                                                                                                                      |
+| ----- | --------------------------------------------------------------- | ------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2.1.1 | Create `models/style.py`                                        | [x]    | -            | Created with comprehensive enums and models                                                                                                                                                |
+| 2.1.2 | Add `BaseStyle` model                                           | [x]    | 2.1.1        | name, medium_description, color_palette_base, line_quality, rendering_quality, style_keywords                                                                                              |
+| 2.1.3 | Add `SceneMood` model                                           | [x]    | 2.1.1        | color_temperature, saturation, lighting_mood, detail_level, expression_style, special_effects                                                                                              |
 | 2.1.4 | Define `MOOD_PRESETS` dict                                      | [x]    | 2.1.3        | 13 presets: neutral, comedy, romantic_tension, romantic_confession, serious_conflict, sad_emotional, flashback, climax, peaceful, mysterious, action, tense, dreamy. 47 unit tests passing |
-| 2.1.5 | Create multi‑panel prompt template (`multi_panel_generator.py`) | [x]    | -            | Prompt utilities for generating N panels in one LLM call                                             |
-| 2.1.6 | Implement MultiPanelGenerator service                           | [x]    | 2.1.5        | Service that calls Gemini with the generated prompt and parses panel outputs. 4 unit tests passing.  |
+| 2.1.5 | Create multi‑panel prompt template (`multi_panel_generator.py`) | [x]    | -            | Prompt utilities for generating N panels in one LLM call                                                                                                                                   |
+| 2.1.6 | Implement MultiPanelGenerator service                           | [x]    | 2.1.5        | Service that calls Gemini with the generated prompt and parses panel outputs. 4 unit tests passing.                                                                                        |
 
 ---
 
@@ -129,32 +166,32 @@
 
 ### 2.3 Mood Designer Service
 
-| ID    | Task                               | Status | Dependencies | Notes                                                                                                              |
-| ----- | ---------------------------------- | ------ | ------------ | ------------------------------------------------------------------------------------------------------------------ |
-| 2.3.1 | Create `prompt/mood_designer.py`   | [x]    | -            | System prompt, user prompt, panel context format, emotion/intensity keywords                                       |
-| 2.3.2 | Create `services/mood_designer.py` | [x]    | 2.1.3, 2.3.1 | MoodDesigner class with rule-based and LLM modes, MoodAssignment result class                                      |
-| 2.3.3 | Implement `assign_moods()`         | [x]    | 2.3.2        | Analyzes panels, detects context from keywords, applies shot type biases, generates reasoning                      |
-| 2.3.4 | Implement auto-preset selection    | [x]    | 2.3.3, 2.1.4 | get_mood_for_intensity(), detect_context_from_text(), smooth_transitions(), customized mood generation             |
-| 2.3.5 | Unit tests for mood designer       | [x]    | 2.3.4        | 41 tests passing - context detection, intensity modifiers, shot type bias, assignment, transitions, edge cases     |
+| ID    | Task                               | Status | Dependencies | Notes                                                                                                          |
+| ----- | ---------------------------------- | ------ | ------------ | -------------------------------------------------------------------------------------------------------------- |
+| 2.3.1 | Create `prompt/mood_designer.py`   | [x]    | -            | System prompt, user prompt, panel context format, emotion/intensity keywords                                   |
+| 2.3.2 | Create `services/mood_designer.py` | [x]    | 2.1.3, 2.3.1 | MoodDesigner class with rule-based and LLM modes, MoodAssignment result class                                  |
+| 2.3.3 | Implement `assign_moods()`         | [x]    | 2.3.2        | Analyzes panels, detects context from keywords, applies shot type biases, generates reasoning                  |
+| 2.3.4 | Implement auto-preset selection    | [x]    | 2.3.3, 2.1.4 | get_mood_for_intensity(), detect_context_from_text(), smooth_transitions(), customized mood generation         |
+| 2.3.5 | Unit tests for mood designer       | [x]    | 2.3.4        | 41 tests passing - context detection, intensity modifiers, shot type bias, assignment, transitions, edge cases |
 
 ---
 
 ### 2.4 Integration
 
-| ID    | Task                                  | Status | Dependencies | Notes                                                                                                                                                              |
-| ----- | ------------------------------------- | ------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2.4.1 | Update webtoon workflow for mood step | [x]    | 2.3.3        | Mood computed at image generation time based on panel emotional_intensity and detected context. Avoids workflow complexity.                                       |
-| 2.4.2 | Update image generation to use mood   | [x]    | 2.2.2, 2.4.1 | Updated generate_scene_image to detect context, compose style with mood, and append to prompt. Added mood-preview endpoint.                                        |
-| 2.4.3 | Integration test: mood variation      | [x]    | 2.4.2        | 14 integration tests in test_mood_integration.py covering detection, assignment, style composition, full pipeline, and edge cases.                                 |
+| ID    | Task                                  | Status | Dependencies | Notes                                                                                                                              |
+| ----- | ------------------------------------- | ------ | ------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 2.4.1 | Update webtoon workflow for mood step | [x]    | 2.3.3        | Mood computed at image generation time based on panel emotional_intensity and detected context. Avoids workflow complexity.        |
+| 2.4.2 | Update image generation to use mood   | [x]    | 2.2.2, 2.4.1 | Updated generate_scene_image to detect context, compose style with mood, and append to prompt. Added mood-preview endpoint.        |
+| 2.4.3 | Integration test: mood variation      | [x]    | 2.4.2        | 14 integration tests in test_mood_integration.py covering detection, assignment, style composition, full pipeline, and edge cases. |
 
 ---
 
 ### Phase 2 Checkpoint
 
-| ID    | Task                                   | Status | Dependencies | Notes                                                                                                    |
-| ----- | -------------------------------------- | ------ | ------------ | -------------------------------------------------------------------------------------------------------- |
-| 2.T.1 | Test mood variation across scenes      | [x]    | 2.4.3        | Integration tests verify mood detection and assignment across varying panel types                         |
-| 2.T.2 | Verify style shifts align with emotion | [x]    | 2.T.1        | Tests confirm romantic/sad/conflict/comedy contexts get appropriate mood settings                         |
+| ID    | Task                                   | Status | Dependencies | Notes                                                                                                      |
+| ----- | -------------------------------------- | ------ | ------------ | ---------------------------------------------------------------------------------------------------------- |
+| 2.T.1 | Test mood variation across scenes      | [x]    | 2.4.3        | Integration tests verify mood detection and assignment across varying panel types                          |
+| 2.T.2 | Verify style shifts align with emotion | [x]    | 2.T.1        | Tests confirm romantic/sad/conflict/comedy contexts get appropriate mood settings                          |
 | 2.T.3 | Compare with monolithic style output   | [ ]    | 2.T.2        | Manual visual inspection needed - use mood-preview endpoint to review, then generate images for comparison |
 
 ---
@@ -163,47 +200,47 @@
 
 ### 3.1 Multi-Panel Prompt
 
-| ID    | Task                                    | Status | Dependencies | Notes                                                              |
-| ----- | --------------------------------------- | ------ | ------------ | ------------------------------------------------------------------ |
-| 3.1.1 | Create `prompt/multi_panel.py`          | [x]    | -            | Created with templates and formatting functions                     |
-| 3.1.2 | Define `MULTI_PANEL_TEMPLATE`           | [x]    | 3.1.1        | Structured "Panel N:" format with style and character refs          |
-| 3.1.3 | Implement `format_multi_panel_prompt()` | [x]    | 3.1.2        | Multiple formatters for different input types                       |
-| 3.1.4 | Unit tests for prompt formatting        | [x]    | 3.1.3        | 29 tests covering all formatting functions                          |
+| ID    | Task                                    | Status | Dependencies | Notes                                                      |
+| ----- | --------------------------------------- | ------ | ------------ | ---------------------------------------------------------- |
+| 3.1.1 | Create `prompt/multi_panel.py`          | [x]    | -            | Created with templates and formatting functions            |
+| 3.1.2 | Define `MULTI_PANEL_TEMPLATE`           | [x]    | 3.1.1        | Structured "Panel N:" format with style and character refs |
+| 3.1.3 | Implement `format_multi_panel_prompt()` | [x]    | 3.1.2        | Multiple formatters for different input types              |
+| 3.1.4 | Unit tests for prompt formatting        | [x]    | 3.1.3        | 29 tests covering all formatting functions                 |
 
 ---
 
 ### 3.2 Panel Composer Service
 
-| ID    | Task                                 | Status | Dependencies | Notes                                                               |
-| ----- | ------------------------------------ | ------ | ------------ | ------------------------------------------------------------------- |
-| 3.2.1 | Create `prompt/panel_composer.py`    | [x]    | -            | LLM prompt templates for grouping                                   |
-| 3.2.2 | Create `services/panel_composer.py`  | [x]    | 3.2.1        | Rule-based and LLM-based grouping                                   |
-| 3.2.3 | Add `Page` model to models/story.py  | [x]    | -            | Page dataclass in panel_composer.py with layout_type, is_single     |
-| 3.2.4 | Implement `group_shots_into_pages()` | [x]    | 3.2.2, 3.2.3 | Groups panels by scene type, respects intensity triggers            |
-| 3.2.5 | Define grouping rules                | [x]    | 3.2.4        | Action=4, Dialogue=3, Emotional=2, Climax=1 (single)                |
-| 3.2.6 | Unit tests for panel composer        | [x]    | 3.2.5        | 34 tests for grouping, detection, statistics                        |
+| ID    | Task                                 | Status | Dependencies | Notes                                                           |
+| ----- | ------------------------------------ | ------ | ------------ | --------------------------------------------------------------- |
+| 3.2.1 | Create `prompt/panel_composer.py`    | [x]    | -            | LLM prompt templates for grouping                               |
+| 3.2.2 | Create `services/panel_composer.py`  | [x]    | 3.2.1        | Rule-based and LLM-based grouping                               |
+| 3.2.3 | Add `Page` model to models/story.py  | [x]    | -            | Page dataclass in panel_composer.py with layout_type, is_single |
+| 3.2.4 | Implement `group_shots_into_pages()` | [x]    | 3.2.2, 3.2.3 | Groups panels by scene type, respects intensity triggers        |
+| 3.2.5 | Define grouping rules                | [x]    | 3.2.4        | Action=4, Dialogue=3, Emotional=2, Climax=1 (single)            |
+| 3.2.6 | Unit tests for panel composer        | [x]    | 3.2.5        | 34 tests for grouping, detection, statistics                    |
 
 ---
 
 ### 3.3 Image Generation Update
 
-| ID    | Task                                     | Status | Dependencies | Notes                                                                                              |
-| ----- | ---------------------------------------- | ------ | ------------ | -------------------------------------------------------------------------------------------------- |
-| 3.3.1 | Add multi-panel support to image gen     | [x]    | 3.1.3        | Added `generate_multi_panel_page()` method to ImageGenerator                                       |
-| 3.3.2 | Update `routers/webtoon.py`              | [x]    | 3.3.1        | Added 3 endpoints: /pages/generate, /page/{n}/image, /pages/preview                                |
-| 3.3.3 | Implement single vs multi-panel routing  | [x]    | 3.3.2, 3.2.4 | Routes based on Page.is_single_panel to existing or new generation method                          |
-| 3.3.4 | Integration test: multi-panel generation | [x]    | 3.3.3        | 63 tests passing for prompt formatting and panel composition                                       |
+| ID    | Task                                     | Status | Dependencies | Notes                                                                     |
+| ----- | ---------------------------------------- | ------ | ------------ | ------------------------------------------------------------------------- |
+| 3.3.1 | Add multi-panel support to image gen     | [x]    | 3.1.3        | Added `generate_multi_panel_page()` method to ImageGenerator              |
+| 3.3.2 | Update `routers/webtoon.py`              | [x]    | 3.3.1        | Added 3 endpoints: /pages/generate, /page/{n}/image, /pages/preview       |
+| 3.3.3 | Implement single vs multi-panel routing  | [x]    | 3.3.2, 3.2.4 | Routes based on Page.is_single_panel to existing or new generation method |
+| 3.3.4 | Integration test: multi-panel generation | [x]    | 3.3.3        | 63 tests passing for prompt formatting and panel composition              |
 
 ---
 
 ### 3.4 Workflow Integration
 
-| ID    | Task                               | Status | Dependencies | Notes                                                                             |
-| ----- | ---------------------------------- | ------ | ------------ | --------------------------------------------------------------------------------- |
-| 3.4.1 | Update scene count targets         | [x]    | 3.2.4        | Updated PANEL_COUNT_TARGET: min=10, ideal=15-25, max=30                            |
-| 3.4.2 | Update evaluator for new counts    | [x]    | 3.4.1        | Updated scene_count scoring to use new targets                                     |
-| 3.4.3 | Add page count validation          | [x]    | 3.4.2        | Added PAGE_COUNT_TARGET (4-10, ideal 5-8) and score_page_grouping() method        |
-| 3.4.4 | End-to-end test: full panel system | [x]    | 3.4.3        | 63 tests passing, imports verified                                                 |
+| ID    | Task                               | Status | Dependencies | Notes                                                                      |
+| ----- | ---------------------------------- | ------ | ------------ | -------------------------------------------------------------------------- |
+| 3.4.1 | Update scene count targets         | [x]    | 3.2.4        | Updated PANEL_COUNT_TARGET: min=10, ideal=15-25, max=30                    |
+| 3.4.2 | Update evaluator for new counts    | [x]    | 3.4.1        | Updated scene_count scoring to use new targets                             |
+| 3.4.3 | Add page count validation          | [x]    | 3.4.2        | Added PAGE_COUNT_TARGET (4-10, ideal 5-8) and score_page_grouping() method |
+| 3.4.4 | End-to-end test: full panel system | [x]    | 3.4.3        | 63 tests passing, imports verified                                         |
 
 ---
 
@@ -314,17 +351,22 @@ backend/app/
 
 ## Session Log
 
-| Date       | Tasks Completed                          | Notes                                                                                                                                                                    |
-| ---------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-01-22 | 1.1.1, 1.1.2, 1.1.3, 1.1.4               | Data models complete. Added ShotType enum, CameraAngle enum, Shot model, ShotPlan model with variety scoring, emotional_intensity to WebtoonPanel. Branch: release/2.0.0 |
-| 2026-01-22 | 1.2.1, 1.2.2, 1.2.3, 1.2.4, 1.2.5, 1.2.6 | Cinematographer service complete. Created prompt template, service with LLM integration, variety rules enforcement, scoring function. 19 unit tests passing.             |
-| 2026-01-22 | 1.3.1, 1.3.2, 1.3.3, 1.3.4, 1.3.5        | Enhanced evaluator complete. Added score_shot_variety(), score_visual_dynamism(), EVALUATION_WEIGHTS constant, detailed feedback. 23 unit tests passing.                 |
-| 2026-01-22 | 1.4.1-1.4.6                              | SFX Models complete. ImpactText, MotionEffect, ScreenEffect, EmotionalEffect models + SFXBundle + SFX_TRIGGERS mapping. 33 unit tests passing.                           |
-| 2026-01-22 | 1.5.1-1.5.7, 1.5.9                       | SFX Renderer complete. SFXRenderer class with impact text, screen effects (flash/shake/vignette), motion lines, emotional effects. 41 unit tests passing.                |
-| 2026-01-22 | 1.6.1-1.6.5                              | SFX Planner complete. Prompt template + SFXPlanner service with rule-based/LLM modes + keyword detection. 31 unit tests passing.                                         |
-| 2026-01-22 | 2.1.5, 2.1.6                             | Phase 2 Kick-off. Multi-Panel Generation framework implemented. `MultiPanelGenerator` service + prompt template + unit tests.                                            |
-| 2026-01-22 | 2.1.1, 2.1.2, 2.1.3, 2.1.4               | Modular Style System complete. Created `models/style.py` with BaseStyle, SceneMood, ComposedStyle models, 13 MOOD_PRESETS, 8 BASE_STYLES, utility functions. 47 tests.   |
-| 2026-01-22 | 2.2.1, 2.2.2, 2.2.3, 2.2.4               | Style Composer Service complete. Created `services/style_composer.py` with compose_style(), get_style_for_scene(), compose_styles_for_panels(), StyleComposer class. 40 tests. |
-| 2026-01-22 | 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.3.5        | Mood Designer Service complete. Created `prompt/mood_designer.py` + `services/mood_designer.py` with context detection, auto-preset selection, transition smoothing. 41 tests.  |
-| 2026-01-22 | 2.4.1, 2.4.2, 2.4.3                      | Phase 2.4 Integration complete. Updated `routers/webtoon.py` to detect context, compose style with mood at image generation time. Added mood-preview endpoint. 14 integration tests. |
+| Date       | Tasks Completed                                    | Notes                                                                                                                                                                                             |
+| ---------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-01-22 | 1.1.1, 1.1.2, 1.1.3, 1.1.4                         | Data models complete. Added ShotType enum, CameraAngle enum, Shot model, ShotPlan model with variety scoring, emotional_intensity to WebtoonPanel. Branch: release/2.0.0                          |
+| 2026-01-22 | 1.2.1, 1.2.2, 1.2.3, 1.2.4, 1.2.5, 1.2.6           | Cinematographer service complete. Created prompt template, service with LLM integration, variety rules enforcement, scoring function. 19 unit tests passing.                                      |
+| 2026-01-22 | 1.3.1, 1.3.2, 1.3.3, 1.3.4, 1.3.5                  | Enhanced evaluator complete. Added score_shot_variety(), score_visual_dynamism(), EVALUATION_WEIGHTS constant, detailed feedback. 23 unit tests passing.                                          |
+| 2026-01-22 | 1.4.1-1.4.6                                        | SFX Models complete. ImpactText, MotionEffect, ScreenEffect, EmotionalEffect models + SFXBundle + SFX_TRIGGERS mapping. 33 unit tests passing.                                                    |
+| 2026-01-22 | 1.5.1-1.5.7, 1.5.9                                 | SFX Renderer complete. SFXRenderer class with impact text, screen effects (flash/shake/vignette), motion lines, emotional effects. 41 unit tests passing.                                         |
+| 2026-01-22 | 1.6.1-1.6.5                                        | SFX Planner complete. Prompt template + SFXPlanner service with rule-based/LLM modes + keyword detection. 31 unit tests passing.                                                                  |
+| 2026-01-22 | 2.1.5, 2.1.6                                       | Phase 2 Kick-off. Multi-Panel Generation framework implemented. `MultiPanelGenerator` service + prompt template + unit tests.                                                                     |
+| 2026-01-22 | 2.1.1, 2.1.2, 2.1.3, 2.1.4                         | Modular Style System complete. Created `models/style.py` with BaseStyle, SceneMood, ComposedStyle models, 13 MOOD_PRESETS, 8 BASE_STYLES, utility functions. 47 tests.                            |
+| 2026-01-22 | 2.2.1, 2.2.2, 2.2.3, 2.2.4                         | Style Composer Service complete. Created `services/style_composer.py` with compose_style(), get_style_for_scene(), compose_styles_for_panels(), StyleComposer class. 40 tests.                    |
+| 2026-01-22 | 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.3.5                  | Mood Designer Service complete. Created `prompt/mood_designer.py` + `services/mood_designer.py` with context detection, auto-preset selection, transition smoothing. 41 tests.                    |
+| 2026-01-22 | 2.4.1, 2.4.2, 2.4.3                                | Phase 2.4 Integration complete. Updated `routers/webtoon.py` to detect context, compose style with mood at image generation time. Added mood-preview endpoint. 14 integration tests.              |
 | 2026-01-22 | 3.1.1-3.1.4, 3.2.1-3.2.6, 3.3.1-3.3.4, 3.4.1-3.4.4 | Phase 3 complete. Multi-panel prompt templates (29 tests), Panel composer service (34 tests), Image generator multi-panel support, 3 new endpoints. Updated evaluator with page grouping scoring. |
+
+## Phase 4 – Agent Separation & LangGraph Workflow (In Progress)
+
+- Started Phase 4 tasks. See ticket [TASK-030-phase4](../tickets/todo/TASK-030-phase4.md) for details.
+- Updated checkpoint table in this document.

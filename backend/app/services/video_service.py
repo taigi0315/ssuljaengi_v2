@@ -19,16 +19,26 @@ import httpx
 from PIL import Image, ImageDraw, ImageFont
 
 from app.models.video_models import BubbleData, VideoPanelData, VideoConfig
+from app.models.sfx import SFXBundle, SFXTiming
+from app.services.sfx_renderer import SFXRenderer
 
 logger = logging.getLogger(__name__)
 
 
 class VideoService:
-    """Service for generating videos with dialogue bubble overlays."""
+    """Service for generating videos with dialogue bubble overlays and SFX effects."""
     
     def __init__(self, config: Optional[VideoConfig] = None):
         self.config = config or VideoConfig()
         self._font: Optional[ImageFont.FreeTypeFont] = None
+        self._sfx_renderer: Optional[SFXRenderer] = None
+    
+    @property
+    def sfx_renderer(self) -> SFXRenderer:
+        """Lazy load SFX renderer."""
+        if self._sfx_renderer is None:
+            self._sfx_renderer = SFXRenderer()
+        return self._sfx_renderer
     
     @property
     def font(self) -> ImageFont.FreeTypeFont:
@@ -380,14 +390,30 @@ class VideoService:
                 
                 logger.info(f"Frame Config - FPS: {self.config.fps} | Base: {base_frames} frames ({self.config.base_duration_ms}ms) | Final: {final_frames} frames ({self.config.final_pause_ms}ms)")
                 
-                # 1. Base image without bubbles
-                for _ in range(base_frames):
+                # Parse SFX bundle if present
+                sfx_bundle = self._parse_sfx_bundle(panel.sfx_bundle)
+                if sfx_bundle and sfx_bundle.has_effects:
+                    logger.info(f"Panel {panel.panel_number} has {sfx_bundle.total_effects} SFX effects")
+                
+                # 1. Base image without bubbles (ON_ENTER timing for SFX)
+                for enter_frame_idx in range(base_frames):
+                    frame_to_save = final_base.copy()
+                    
+                    # Apply ON_ENTER SFX effects
+                    if sfx_bundle and sfx_bundle.has_effects:
+                        frame_to_save = self._apply_sfx_to_frame(
+                            frame_to_save,
+                            sfx_bundle,
+                            SFXTiming.ON_ENTER,
+                            enter_frame_idx
+                        )
+                    
                     frame_path = os.path.join(temp_dir, f"frame_{frame_idx:06d}.png")
-                    final_base.convert("RGB").save(frame_path, "PNG")
+                    frame_to_save.convert("RGB").save(frame_path, "PNG")
                     frame_paths.append(frame_path)
                     frame_idx += 1
                 
-                # 2. Each bubble sequentially
+                # 2. Each bubble sequentially (WITH_DIALOGUE timing for SFX)
                 for bubble in panel.bubbles:
                     # Render bubble on COPY of FINAL BASE (cropped)
                     # Coordinates are now relative to the 9:16 canvas
@@ -410,16 +436,38 @@ class VideoService:
                     
                     logger.info(f"Bubble duration: {duration_ms}ms ({bubble_frames} frames) for {char_count} chars")
                     
-                    for _ in range(bubble_frames):
+                    for dialogue_frame_idx in range(bubble_frames):
+                        frame_to_save = frame_with_bubble.copy()
+                        
+                        # Apply WITH_DIALOGUE SFX effects
+                        if sfx_bundle and sfx_bundle.has_effects:
+                            frame_to_save = self._apply_sfx_to_frame(
+                                frame_to_save,
+                                sfx_bundle,
+                                SFXTiming.WITH_DIALOGUE,
+                                dialogue_frame_idx
+                            )
+                        
                         frame_path = os.path.join(temp_dir, f"frame_{frame_idx:06d}.png")
-                        frame_with_bubble.convert("RGB").save(frame_path, "PNG")
+                        frame_to_save.convert("RGB").save(frame_path, "PNG")
                         frame_paths.append(frame_path)
                         frame_idx += 1
                 
-                # 3. Final pause (image only)
-                for _ in range(final_frames):
+                # 3. Final pause (image only, ON_EXIT timing for SFX)
+                for exit_frame_idx in range(final_frames):
+                    frame_to_save = final_base.copy()
+                    
+                    # Apply ON_EXIT SFX effects
+                    if sfx_bundle and sfx_bundle.has_effects:
+                        frame_to_save = self._apply_sfx_to_frame(
+                            frame_to_save,
+                            sfx_bundle,
+                            SFXTiming.ON_EXIT,
+                            exit_frame_idx
+                        )
+                    
                     frame_path = os.path.join(temp_dir, f"frame_{frame_idx:06d}.png")
-                    final_base.convert("RGB").save(frame_path, "PNG")
+                    frame_to_save.convert("RGB").save(frame_path, "PNG")
                     frame_paths.append(frame_path)
                     frame_idx += 1
 
@@ -563,6 +611,76 @@ class VideoService:
         """Convert hex color to RGB tuple."""
         hex_color = hex_color.lstrip('#')
         return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    
+    def _parse_sfx_bundle(self, sfx_data: Optional[dict]) -> Optional[SFXBundle]:
+        """
+        Parse SFX bundle data from dict to SFXBundle model.
+        
+        Args:
+            sfx_data: Raw SFX bundle dict from VideoPanelData
+            
+        Returns:
+            SFXBundle instance or None if no data
+        """
+        if not sfx_data:
+            return None
+        
+        try:
+            return SFXBundle.model_validate(sfx_data)
+        except Exception as e:
+            logger.warning(f"Failed to parse SFX bundle: {e}")
+            return None
+    
+    def _apply_sfx_to_frame(
+        self,
+        image: Image.Image,
+        sfx_bundle: SFXBundle,
+        timing: SFXTiming,
+        frame_index: int = 0
+    ) -> Image.Image:
+        """
+        Apply SFX effects to a frame based on timing.
+        
+        Args:
+            image: Base PIL Image
+            sfx_bundle: SFX bundle containing all effects
+            timing: Which timing phase to apply (ON_ENTER, WITH_DIALOGUE, etc.)
+            frame_index: Current frame index for animated effects
+            
+        Returns:
+            Image with applicable SFX applied
+        """
+        # Filter effects by timing
+        filtered_bundle = SFXBundle(
+            panel_number=sfx_bundle.panel_number,
+            impact_texts=[
+                it for it in sfx_bundle.impact_texts 
+                if it.timing == timing or it.timing == SFXTiming.CONTINUOUS
+            ],
+            motion_effects=[
+                me for me in sfx_bundle.motion_effects 
+                if me.timing == timing or me.timing == SFXTiming.CONTINUOUS
+            ],
+            screen_effects=[
+                se for se in sfx_bundle.screen_effects 
+                if se.timing == timing or se.timing == SFXTiming.CONTINUOUS
+            ],
+            emotional_effects=[
+                ee for ee in sfx_bundle.emotional_effects 
+                if ee.timing == timing or ee.timing == SFXTiming.CONTINUOUS
+            ]
+        )
+        
+        # If no effects for this timing, return original
+        if not filtered_bundle.has_effects:
+            return image
+        
+        # Apply effects using SFXRenderer
+        return self.sfx_renderer.composite_sfx_on_frame(
+            image,
+            filtered_bundle,
+            frame_index
+        )
 
 
 # Singleton instance

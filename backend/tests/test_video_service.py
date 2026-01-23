@@ -56,10 +56,12 @@ def test_crop_to_cover():
     draw.line([(0, 750), (1500, 750)], fill="red", width=5)
     draw.ellipse([(700, 700), (800, 800)], fill="yellow")
     
-    # Crop
-    result = service.crop_to_cover(test_img)
+    # Scale and crop using the internal methods
+    scaled = service._scale_to_cover(test_img)
+    result = service._crop_center(scaled)
     
     print(f"  Input: {test_img.size}")
+    print(f"  Scaled: {scaled.size}")
     print(f"  Output: {result.size}")
     print(f"  Expected: ({service.config.width}, {service.config.height})")
     
@@ -68,8 +70,6 @@ def test_crop_to_cover():
     output_path = os.path.join(os.path.dirname(__file__), "test_crop_output.png")
     result.save(output_path)
     print(f"✅ Crop successful, saved to: {output_path}")
-    
-    return result
 
 
 def test_generate_frame():
@@ -108,7 +108,7 @@ def test_generate_video():
     
     service = VideoService(VideoConfig(
         base_duration_ms=1000,  # Shorter for test
-        bubble_duration_ms=1000,
+        min_bubble_duration_ms=500,  # Updated: use min_bubble_duration_ms
         final_pause_ms=500,
     ))
     
@@ -151,6 +151,81 @@ def test_generate_video():
     return result_path
 
 
+def test_generate_video_with_sfx():
+    """Test video generation with SFX effects."""
+    print("\n=== Test: Generate Video with SFX ===")
+    
+    service = VideoService(VideoConfig(
+        base_duration_ms=500,
+        min_bubble_duration_ms=500,
+        final_pause_ms=300,
+    ))
+    
+    # Create test image
+    from PIL import Image, ImageDraw
+    test_dir = os.path.dirname(__file__)
+    
+    img = Image.new("RGBA", (1500, 1500), color=(100, 50, 150, 255))
+    draw = ImageDraw.Draw(img)
+    draw.text((750, 750), "SFX Test Panel", fill="white", anchor="mm")
+    
+    img_path = os.path.join(test_dir, "test_sfx_panel.png")
+    img.save(img_path)
+    
+    # Create SFX bundle with various effects
+    sfx_bundle_data = {
+        "panel_number": 1,
+        "impact_texts": [
+            {
+                "text": "CRASH!",
+                "style": "explosive",
+                "position": [0.7, 0.3],
+                "size": "large",
+                "color": "#FF0000",
+                "outline_color": "#000000",
+                "rotation": -15,
+                "animation": "pop",
+                "timing": "on_enter",
+                "duration_ms": 500
+            }
+        ],
+        "screen_effects": [
+            {
+                "type": "shake",
+                "intensity": "medium",
+                "duration_ms": 200,
+                "timing": "on_enter"
+            }
+        ],
+        "motion_effects": [],
+        "emotional_effects": []
+    }
+    
+    panel = VideoPanelData(
+        panel_number=1,
+        image_url=img_path,
+        bubbles=[
+            BubbleData(text="Impact effect test!", x=50.0, y=70.0)
+        ],
+        sfx_bundle=sfx_bundle_data
+    )
+    
+    # Generate video
+    output_path = os.path.join(test_dir, "test_video_sfx_output.mp4")
+    result_path = service.generate_video([panel], output_path)
+    
+    # Check file exists and has size
+    assert os.path.exists(result_path), "Video file not created!"
+    file_size = os.path.getsize(result_path)
+    print(f"✅ SFX Video generated: {result_path} ({file_size / 1024:.1f} KB)")
+    
+    # Cleanup test image
+    if os.path.exists(img_path):
+        os.remove(img_path)
+    
+    return result_path
+
+
 if __name__ == "__main__":
     print("=" * 50)
     print("VideoService Test Suite")
@@ -161,6 +236,7 @@ if __name__ == "__main__":
         test_render_bubble()
         test_generate_frame()
         test_generate_video()
+        test_generate_video_with_sfx()
         
         print("\n" + "=" * 50)
         print("✅ All tests passed!")
