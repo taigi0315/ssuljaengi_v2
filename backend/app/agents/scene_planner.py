@@ -32,4 +32,4 @@ async def run(state: ScenePlannerState) -> ScenePlannerState:
         "character_count": len(script.characters),
         "planned": True,
     }
-    return state.copy(update={"scene_plan": scene_plan})
+    return state.model_copy(update={"scene_plan": scene_plan})

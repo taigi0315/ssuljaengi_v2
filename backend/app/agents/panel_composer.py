@@ -20,7 +20,7 @@ async def run(state: PanelComposerState) -> PanelComposerState:
     panel content and emotional intensity.
     """
     if not state.panels:
-        return state.copy(update={
+        return state.model_copy(update={
             "error": "No panels provided",
             "page_groupings": None,
             "page_statistics": None
@@ -48,7 +48,7 @@ async def run(state: PanelComposerState) -> PanelComposerState:
             "reasoning": page.reasoning,
         })
 
-    return state.copy(update={
+    return state.model_copy(update={
         "page_groupings": page_data,
         "page_statistics": stats
     })

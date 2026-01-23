@@ -21,7 +21,7 @@ async def run(state: VisualPrompterState) -> VisualPrompterState:
     Uses the existing `get_legacy_style_with_mood` function.
     """
     if not state.panels:
-        return state.copy(update={"error": "No panels provided", "enhanced_prompts": None})
+        return state.model_copy(update={"error": "No panels provided", "enhanced_prompts": None})
 
     from app.services.style_composer import get_legacy_style_with_mood
 
@@ -50,4 +50,4 @@ async def run(state: VisualPrompterState) -> VisualPrompterState:
         enhanced = f"{base_prompt}\n\n[STYLE & MOOD]\n{composed_style}"
         enhanced_prompts.append(enhanced)
 
-    return state.copy(update={"enhanced_prompts": enhanced_prompts})
+    return state.model_copy(update={"enhanced_prompts": enhanced_prompts})

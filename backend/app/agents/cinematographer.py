@@ -20,7 +20,7 @@ async def run(state: CinematographerState) -> CinematographerState:
     from the existing panel data.
     """
     if not state.panels:
-        return state.copy(update={"error": "No panels provided", "shot_plan": None})
+        return state.model_copy(update={"error": "No panels provided", "shot_plan": None})
 
     # Analyze shot distribution (mirrors cinematographer_node logic)
     shot_types = [p.get("shot_type", "Medium shot") for p in state.panels]
@@ -43,4 +43,4 @@ async def run(state: CinematographerState) -> CinematographerState:
         "analyzed": True,
     }
 
-    return state.copy(update={"shot_plan": shot_plan})
+    return state.model_copy(update={"shot_plan": shot_plan})

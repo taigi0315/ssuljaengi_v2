@@ -20,7 +20,7 @@ async def run(state: SFXPlannerState) -> SFXPlannerState:
     in the panel data.
     """
     if not state.panels:
-        return state.copy(update={"error": "No panels provided", "sfx_plan": None})
+        return state.model_copy(update={"error": "No panels provided", "sfx_plan": None})
 
     panels_with_sfx = 0
     sfx_types: Dict[str, int] = {}
@@ -42,4 +42,4 @@ async def run(state: SFXPlannerState) -> SFXPlannerState:
         "planned": True,
     }
 
-    return state.copy(update={"sfx_plan": sfx_plan})
+    return state.model_copy(update={"sfx_plan": sfx_plan})

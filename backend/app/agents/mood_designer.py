@@ -19,10 +19,10 @@ async def run(state: MoodDesignerState) -> MoodDesignerState:
     For now we reuse the `mood_designer.assign_moods` function.
     """
     if not state.panels:
-        return state.copy(update={"error": "No panels provided", "mood_assignments": None})
+        return state.model_copy(update={"error": "No panels provided", "mood_assignments": None})
 
     from app.services.mood_designer import mood_designer
-    from app.models.webtoon import WebtoonPanel  # Assuming model location
+    from app.models.story import WebtoonPanel
 
     # Convert dict panels to model instances
     panel_objs = [WebtoonPanel(**p) for p in state.panels]
@@ -41,4 +41,4 @@ async def run(state: MoodDesignerState) -> MoodDesignerState:
             "reasoning": a.reasoning,
         })
 
-    return state.copy(update={"mood_assignments": mood_data})
+    return state.model_copy(update={"mood_assignments": mood_data})
