@@ -389,6 +389,15 @@ def setup_routes(app: FastAPI) -> None:
     
     # Mount static files for image assets
     assets_path = os.path.join(os.path.dirname(__file__), "assets")
+    
+    # 1. Mount cache directory specifically (important for generated images)
+    # This ensures /api/assets/cache works even if symlinks are finicky
+    cache_path = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), "cache"))
+    if os.path.exists(cache_path):
+        app.mount("/api/assets/cache", StaticFiles(directory=cache_path), name="cache")
+        logger.info(f"Cache mounted at /api/assets/cache from {cache_path}")
+    
+    # 2. Mount general assets
     if os.path.exists(assets_path):
         app.mount("/api/assets", StaticFiles(directory=assets_path), name="assets")
         logger.info(f"Static assets mounted at /api/assets from {assets_path}")

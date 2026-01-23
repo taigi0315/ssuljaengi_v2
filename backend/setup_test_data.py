@@ -129,38 +129,66 @@ def main():
         "characters": [
             {
                 "name": "TestChar",
+                "reference_tag": "TestChar(20s, female, brown hair)",
                 "role": "protagonist",
                 "age": "25",
                 "gender": "female",
                 "personality": "Cheerful and brave",
-                "visual_description": "A young woman with brown hair",
                 "face": "round face, bright eyes",
                 "hair": "long brown hair",
                 "body": "average height",
                 "outfit": "casual clothes",
-                "mood": "happy"
+                "mood": "happy",
+                "appearance_notes": "Round face, bright sparkling eyes. Long brown hair styled loosely. Average height with a friendly demeanor.",
+                "typical_outfit": "Casual jeans and a colorful t-shirt.",
+                "personality_brief": "Cheerful and brave, always looking for adventure.",
+                "visual_description": "A young woman in her mid-20s with a round friendly face, bright sparkling eyes, long brown hair styled loosely, average height, wearing casual jeans and a colorful t-shirt, cheerful and brave expression."
             }
         ],
         "panels": [
             {
                 "panel_number": 1,
+                "shot_type": "wide",
+                "active_character_names": ["TestChar"],
                 "scene_description": "A sunny park with trees",
+                "visual_prompt": "A sunny park scene with green trees and a walking path under clear blue sky.",
+                "negative_prompt": "text, words, blurry, low quality",
+                "composition_notes": "Wide establishing shot of the park",
+                "environment_focus": "Sunny park",
+                "environment_details": "Oak trees, green grass, stone path",
+                "atmospheric_conditions": "Bright daylight, sunny weather",
+                "story_beat": "The character arrives at the park.",
+                "emotional_intensity": 3,
+                "character_frame_percentage": 20,
+                "environment_frame_percentage": 80,
+                "character_placement_and_action": "TestChar stands near a large oak tree, looking around happily.",
                 "dialogue": [
                     {"character": "TestChar", "text": "What a beautiful day!"},
                     {"character": "TestChar", "text": "I love this park."}
                 ],
-                "mood": "happy",
-                "visual_prompt": "sunny park scene with green trees"
+                "mood": "happy"
             },
             {
                 "panel_number": 2,
+                "shot_type": "medium",
+                "active_character_names": ["TestChar"],
                 "scene_description": "A cozy cafe interior",
+                "visual_prompt": "Cozy cafe interior with warm lighting, wooden tables, and coffee equipment in the background.",
+                "negative_prompt": "text, words, blurry, low quality",
+                "composition_notes": "Medium shot of the character at a table",
+                "environment_focus": "Cafe interior",
+                "environment_details": "Wooden counter, espresso machine, warm hanging lights",
+                "atmospheric_conditions": "Warm indoor lighting",
+                "story_beat": "The character enjoys a cup of coffee.",
+                "emotional_intensity": 4,
+                "character_frame_percentage": 50,
+                "environment_frame_percentage": 50,
+                "character_placement_and_action": "TestChar sits at a small table, holding a coffee cup.",
                 "dialogue": [
                     {"character": "TestChar", "text": "This coffee is great!"},
                     {"character": "TestChar", "text": "I should come here more often."}
                 ],
-                "mood": "content",
-                "visual_prompt": "cozy cafe interior with warm lighting"
+                "mood": "content"
             }
         ],
         "character_images": {
@@ -184,7 +212,7 @@ def main():
                     "panel_number": 1,
                     "style": "MODERN_ROMANCE_DRAMA_MANHWA",
                     "image_url": scene1_url,
-                    "is_selected": True,
+                    "is_selected": False, # Changed to False so new images are easier to see
                     "created_at": datetime.now().isoformat(),
                 }
             ],
@@ -195,7 +223,7 @@ def main():
                     "panel_number": 2,
                     "style": "MODERN_ROMANCE_DRAMA_MANHWA",
                     "image_url": scene2_url,
-                    "is_selected": True,
+                    "is_selected": False, # Changed to False
                     "created_at": datetime.now().isoformat(),
                 }
             ]
@@ -227,7 +255,7 @@ def main():
                 "panel_number": 1,
                 "style": "MODERN_ROMANCE_DRAMA_MANHWA",
                 "image_url": scene1_url,
-                "is_selected": True,
+                "is_selected": False,
                 "created_at": datetime.now().isoformat(),
             }
         ],
@@ -238,7 +266,7 @@ def main():
                 "panel_number": 2,
                 "style": "MODERN_ROMANCE_DRAMA_MANHWA",
                 "image_url": scene2_url,
-                "is_selected": True,
+                "is_selected": False,
                 "created_at": datetime.now().isoformat(),
             }
         ]
