@@ -17,14 +17,23 @@ from typing import List, Dict
 # Prompt template (raw string) – keep placeholders for easy formatting
 # ---------------------------------------------------------------------------
 MULTI_PANEL_PROMPT_TEMPLATE = """
-A vertical webtoon‑style comic page with a 9:16 aspect ratio,
+A vertical webtoon-style comic page with a 9:16 aspect ratio,
 featuring {panel_count} distinct horizontal panels stacked vertically.
 The overall art style is {style_description}.
+
+CRITICAL INSTRUCTION - NO TEXT OR SPEECH BUBBLES:
+- DO NOT render any text, words, letters, or characters in any language
+- DO NOT create speech bubbles, thought bubbles, dialogue boxes, or chat bubbles
+- DO NOT add captions, subtitles, onomatopoeia, or any written content
+- Show character emotions through FACIAL EXPRESSIONS and BODY LANGUAGE only
+- The dialogue/text will be added as an overlay AFTER image generation
 
 {panel_descriptions}
 
 {style_modifiers}
 Thin panel borders. High resolution, clean line art.
+NO TEXT. NO SPEECH BUBBLES. NO DIALOGUE BOXES. EXPRESSIONS ONLY.
+
 """
 
 

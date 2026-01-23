@@ -5,17 +5,18 @@
  * scattered across multiple components.
  */
 
-import { StoryGenre } from '@/types';
+import { StoryGenre, ImageStyle } from '@/types';
 
 /**
- * Format a genre enum value for display.
- * Converts MODERN_ROMANCE_DRAMA_MANHWA -> "MODERN ROMANCE DRAMA"
+ * Format a genre or style enum value for display.
+ * Converts MODERN_ROMANCE_DRAMA -> "MODERN ROMANCE DRAMA"
  *
- * @param genre - The StoryGenre enum value
- * @returns Formatted genre string for display
+ * @param name - The StoryGenre or ImageStyle enum value
+ * @returns Formatted string for display
  */
-export function formatGenreName(genre: StoryGenre): string {
-  return genre.replace(/_/g, ' ').replace(/MANHWA/g, '').trim();
+export function formatGenreName(name: StoryGenre | ImageStyle | string): string {
+  if (!name) return '';
+  return name.replace(/_/g, ' ').replace(/MANHWA/g, '').replace(/WEBTOON/g, '').trim();
 }
 
 /**

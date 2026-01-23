@@ -75,7 +75,7 @@ class Settings(BaseSettings):
         description="Gemini model name"
     )
     model_image_gen: str = Field(
-        default="gemini-2.5-flash-image",
+        default="gemini-3-pro-image-preview",
         description="Gemini model for image generation"
     )
     gemini_temperature: float = Field(
@@ -172,7 +172,8 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore"
+        extra="ignore",
+        protected_namespaces=('settings_', ),
     )
     
     @field_validator("reddit_client_id", "reddit_client_secret", "google_api_key")

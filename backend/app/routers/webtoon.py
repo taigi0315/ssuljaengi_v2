@@ -11,7 +11,8 @@ This module provides REST API endpoints for webtoon script generation and charac
 
 import logging
 import uuid
-from typing import Dict, List
+from typing import Dict, List, Optional
+from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
@@ -29,16 +30,20 @@ from app.models.story import (
     WebtoonScriptResponse,
     CharacterImage,
     SceneImage,
+    PageImage,
     WebtoonScript,
     GenerateShortsRequest,
-    ImportCharacterImageRequest
+    ImportCharacterImageRequest,
+    WebtoonPanel
 )
 from app.services.webtoon_writer import webtoon_writer
 from app.services.image_generator import image_generator
 from app.services.shorts_generator import shorts_generator
 from app.models.shorts import ShortsScript
-from app.workflows.webtoon_workflow import run_webtoon_workflow
+from app. workflows.webtoon_workflow import run_webtoon_workflow
 from app.models.video_models import GenerateVideoRequest, VideoPanelData, BubbleData
+from app.services.multi_panel_generator import multi_panel_generator
+from app.services.panel_composer import group_panels_into_pages
 
 
 from app.config import get_settings
@@ -49,6 +54,7 @@ from app.services.style_composer import get_legacy_style_with_mood
 from app.services.mood_designer import detect_context_from_text, MoodAssignment, mood_designer
 from app.services.panel_composer import group_panels_into_pages, calculate_page_statistics, Page
 from app.prompt.multi_panel import format_panels_from_webtoon_panels, PanelData, format_multi_panel_prompt
+from app.utils.dialogue_formatter import format_dialogue_as_visual_context, get_dominant_scene_emotion
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +70,9 @@ character_images: JsonStore[List[dict]] = JsonStore(
 )
 scene_images: JsonStore[List[dict]] = JsonStore(
     os.path.join(settings.data_dir, "scene_images.json")
+)
+page_images: JsonStore[List[dict]] = JsonStore(
+    os.path.join(settings.data_dir, "page_images.json")
 )
 
 # Import stories from story router
@@ -129,7 +138,7 @@ async def get_image_styles():
             "id": key,
             "name": name,
             "description": description,
-            "preview_url": f"/api/assets/images/style/{key}.png"
+            "preview_url": f"/api/assets/images/image_style/{key}.png"
         })
 
     return styles
@@ -545,12 +554,34 @@ async def get_webtoon_script(script_id: str) -> WebtoonScriptResponse:
     
     script_data = webtoon_scripts[script_id]
     
+    # Populate scene_images
+    scene_images_dict = {}
+    for key, val in scene_images.items():
+         if key.startswith(f"{script_id}:"):
+             try:
+                 p_num = int(key.split(":")[-1])
+                 scene_images_dict[p_num] = val
+             except ValueError:
+                 pass
+    
+    # Populate page_images
+    page_images_dict = {}
+    for key, val in page_images.items():
+         if key.startswith(f"{script_id}:"):
+             try:
+                 p_num = int(key.split(":")[-1])
+                 page_images_dict[p_num] = val
+             except ValueError:
+                 pass
+
     return WebtoonScriptResponse(
         script_id=script_data["script_id"],
         story_id=script_data["story_id"],
         characters=[char for char in script_data["characters"]],
         panels=[panel for panel in script_data["panels"]],
-        character_images=script_data.get("character_images", {})
+        character_images=script_data.get("character_images", {}),
+        scene_images=scene_images_dict,
+        page_images=page_images_dict
     )
 
 
@@ -701,9 +732,27 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
             character_desc_text = "\n".join(character_descriptions)
         else:
             character_desc_text = "No specific character reference - generate generic scene"
-        
+
         logger.info(f"Character descriptions for prompt:\n{character_desc_text}")
-        
+
+        # Extract dialogue from the panel and convert to visual context
+        # This informs character expressions WITHOUT rendering text bubbles
+        dialogue_visual_context = ""
+        scene_emotion = ""
+        for panel in panels:
+            if panel["panel_number"] == request.panel_number:
+                dialogue_list = panel.get("dialogue", [])
+                if dialogue_list:
+                    # Convert dialogue to visual expression context
+                    dialogue_visual_context = format_dialogue_as_visual_context(dialogue_list)
+                    scene_emotion = get_dominant_scene_emotion(dialogue_list)
+                    logger.info(f"Dialogue visual context generated for panel {request.panel_number}")
+                    logger.info(f"Scene emotion: {scene_emotion}")
+                break
+
+        if not dialogue_visual_context:
+            dialogue_visual_context = "No specific expression guidance - use neutral/appropriate expressions based on scene context"
+
         # Build final prompt using the template
         final_prompt = SCENE_IMAGE_TEMPLATE.format(
             character_description=character_desc_text,
@@ -718,7 +767,8 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
             atmospheric_conditions=panel_metadata["atmospheric_conditions"],
             sfx_description=panel_metadata.get("sfx_description", "No special visual effects for this scene"),
             emotional_tone=panel_metadata["emotional_tone"],
-            character_placement_and_action=panel_metadata["character_placement_and_action"]
+            character_placement_and_action=panel_metadata["character_placement_and_action"],
+            dialogue_visual_context=dialogue_visual_context
         )
         
         logger.info(f"Final scene prompt (first 500 chars): {final_prompt[:500]}")
@@ -798,6 +848,141 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
         if image_key not in scene_images:
             scene_images[image_key] = []
         
+        scene_images[image_key].append(scene_image.model_dump())
+        await scene_images.save()
+        
+        logger.info(f"Scene image generated: {image_id}")
+        
+        return scene_image
+        
+    except Exception as e:
+        logger.error(f"Scene image generation failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Image generation failed: {str(e)}")
+
+
+@router.get("/{script_id}/layout")
+async def get_script_layout(script_id: str):
+    """
+    Get the recommended page layout for a script.
+    
+    Args:
+        script_id: Webtoon script ID
+        
+    Returns:
+        List of Page objects containing grouped panels
+    """
+    if script_id not in webtoon_scripts:
+        raise HTTPException(status_code=404, detail="Webtoon script not found")
+        
+    try:
+        script_data = webtoon_scripts[script_id]
+        panels = [WebtoonPanel(**p) for p in script_data["panels"]]
+        
+        # Use PanelComposer to group panels
+        pages = group_panels_into_pages(panels)
+        
+        return [page.to_dict() for page in pages]
+        
+    except Exception as e:
+        logger.error(f"Layout generation failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Layout generation failed: {str(e)}")
+
+
+class GeneratePageImageRequest(BaseModel):
+    script_id: str
+    page_number: int
+    panel_indices: List[int]
+    style_modifiers: Optional[List[str]] = None
+
+
+@router.post("/page/generate")
+async def generate_page_image(request: GeneratePageImageRequest):
+    """
+    Generate a multi-panel page image.
+    
+    Args:
+        request: Request with script_id, page panels, and style
+        
+    Returns:
+        Data URL of the generated image
+    """
+    if request.script_id not in webtoon_scripts:
+        raise HTTPException(status_code=404, detail="Webtoon script not found")
+        
+    try:
+        script_data = webtoon_scripts[request.script_id]
+        all_panels = [WebtoonPanel(**p) for p in script_data["panels"]]
+        
+        # Extract panels for this page
+        page_panels = []
+        for idx in request.panel_indices:
+            if 0 <= idx < len(all_panels):
+                page_panels.append(all_panels[idx])
+        
+        if not page_panels:
+            raise HTTPException(status_code=400, detail="No valid panels specified")
+            
+        # Get style from script or request?
+        # We can extract a common style description from the panels, or use request modifiers
+        style_desc = "Vertical Webtoon Style, " + (request.style_modifiers[0] if request.style_modifiers else "High Quality")
+        
+        # Collect reference images for characters in these panels
+        reference_images = []
+        character_images_in_script = script_data.get("character_images", {})
+        
+        processed_chars = set()
+        for p in page_panels:
+            if p.active_character_names:
+                for name in p.active_character_names:
+                    if name in character_images_in_script and name not in processed_chars:
+                        images_list = character_images_in_script[name]
+                        if images_list:
+                            # Find selected image or use the last one
+                            selected_img = next((img for img in images_list if img.get("is_selected")), images_list[-1])
+                            img_url = selected_img.get("image_url")
+                            
+                            if img_url:
+                                reference_images.append(img_url)
+                                processed_chars.add(name)
+                            
+        logger.info(f"Using {len(reference_images)} reference images for page generation")
+
+        # Generate image
+        image_url = await multi_panel_generator.generate_multi_panel_page(
+            panels=page_panels,
+            style_description=style_desc,
+            style_modifiers=request.style_modifiers,
+            reference_images=reference_images
+        )
+        
+        # Create PageImage record
+        image_id = str(uuid.uuid4())
+        page_image = PageImage(
+            id=image_id,
+            page_number=request.page_number,
+            panel_indices=request.panel_indices,
+            image_url=image_url,
+            is_selected=False # New images not selected by default, or should they be if it's the first?
+        )
+        
+        # Store in page_images
+        # Key: script_id:page_number
+        image_key = f"{request.script_id}:{request.page_number}"
+        if image_key not in page_images:
+            page_images[image_key] = []
+            
+        # Add to list
+        page_images[image_key].append(page_image.model_dump())
+        await page_images.save()
+        
+        logger.info(f"Page image generated and saved: {image_id}")
+        
+        return page_image
+        
+    except Exception as e:
+        logger.error(f"Page generation failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Page generation failed: {str(e)}")
+
         scene_images[image_key].append(scene_image.model_dump())
         await scene_images.save()
         
@@ -986,6 +1171,64 @@ def cleanup_video_file(file_path: str):
             os.remove(file_path)
     except Exception as e:
         logger.warning(f"Failed to cleanup video file: {e}")
+
+
+
+@router.post("/page/image/select")
+async def select_page_image(script_id: str, image_id: str):
+    """
+    Mark a page image as selected for the webtoon.
+    
+    Args:
+        script_id: Webtoon script ID
+        image_id: Image ID to select
+        
+    Returns:
+        Success message
+    """
+    logger.info(f"Selecting page image: {image_id} for script: {script_id}")
+    
+    # Check if script exists
+    if script_id not in webtoon_scripts:
+        raise HTTPException(status_code=404, detail="Webtoon script not found")
+        
+    try:
+        # Iterate over all page entries for this script
+        image_found = False
+        target_page_number = -1
+        
+        # Keys in page_images are "script_id:page_number"
+        # Since we don't know the page number from the request (only image_id),
+        # we have to search all keys for this script.
+        for key, images in page_images.items():
+            if key.startswith(f"{script_id}:"):
+                for img in images:
+                    if img["id"] == image_id:
+                        target_page_number = img["page_number"]
+                        image_found = True
+                        break
+            if image_found:
+                break
+        
+        if not image_found:
+             raise HTTPException(status_code=404, detail="Page image not found")
+             
+        # Now update the specific list
+        page_key = f"{script_id}:{target_page_number}"
+        if page_key in page_images:
+            images = page_images[page_key]
+            for img in images:
+                img["is_selected"] = (img["id"] == image_id)
+            
+            await page_images.save()
+            
+        return {"message": "Page image selected successfully", "image_id": image_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to select page image: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to select page image: {str(e)}")
 
 
 @router.post("/video/generate")

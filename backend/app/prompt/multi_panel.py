@@ -34,7 +34,15 @@ CRITICAL REQUIREMENTS:
 - Each panel must be clearly separated by thin black borders
 - Maintain consistent character appearance across all panels
 - 9:16 vertical aspect ratio for the entire page
-- No letterboxing or device frames"""
+- No letterboxing or device frames
+
+CRITICAL - NO TEXT OR SPEECH BUBBLES:
+- DO NOT render any text, words, letters, or characters in any language
+- DO NOT create speech bubbles, thought bubbles, dialogue boxes, or chat bubbles
+- DO NOT add captions, subtitles, onomatopoeia (like "BANG", "POW"), or any written content
+- Show character emotions through FACIAL EXPRESSIONS and BODY LANGUAGE only
+- The dialogue will be added as an overlay AFTER image generation by a separate system
+- NO TEXT. NO BUBBLES. EXPRESSIONS ONLY."""
 
 
 MULTI_PANEL_WITH_REFERENCES_TEMPLATE = """A vertical webtoon-style comic page with a 9:16 aspect ratio,
@@ -54,7 +62,15 @@ CRITICAL REQUIREMENTS:
 - Characters MUST match the provided reference images exactly
 - Maintain consistent character appearance across all panels
 - 9:16 vertical aspect ratio for the entire page
-- No letterboxing or device frames"""
+- No letterboxing or device frames
+
+CRITICAL - NO TEXT OR SPEECH BUBBLES:
+- DO NOT render any text, words, letters, or characters in any language
+- DO NOT create speech bubbles, thought bubbles, dialogue boxes, or chat bubbles
+- DO NOT add captions, subtitles, onomatopoeia (like "BANG", "POW"), or any written content
+- Show character emotions through FACIAL EXPRESSIONS and BODY LANGUAGE only
+- The dialogue will be added as an overlay AFTER image generation by a separate system
+- NO TEXT. NO BUBBLES. EXPRESSIONS ONLY."""
 
 
 # Panel description format for each panel

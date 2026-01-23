@@ -273,6 +273,15 @@ export interface DialogueBubble {
   height?: number;
 }
 
+export interface PageImage {
+  id: string;
+  page_number: number;
+  panel_indices: number[];
+  image_url: string;
+  created_at: string;
+  is_selected: boolean;
+}
+
 export interface WebtoonScript {
   script_id: string;
   story_id: string;
@@ -280,7 +289,9 @@ export interface WebtoonScript {
   panels: WebtoonPanel[];
   character_images: Record<string, CharacterImage[]>;
   scene_images: Record<number, SceneImage[]>;
+  page_images?: Record<number, PageImage[]>;
   dialogue_bubbles: Record<number, DialogueBubble[]>;
+  page_dialogue_bubbles?: Record<number, DialogueBubble[]>;
   created_at: string;
 }
 

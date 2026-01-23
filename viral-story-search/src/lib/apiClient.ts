@@ -710,3 +710,105 @@ export async function generateShortsScript(topic?: string): Promise<import('@/ty
   }
 }
 
+/**
+ * Get the recommended page layout for a script
+ * @param scriptId Script ID
+ * @returns List of page layout objects
+ */
+export async function getScriptLayout(scriptId: string): Promise<any[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/${scriptId}/layout`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('Failed to get script layout');
+  }
+}
+
+import { PageImage } from '@/types';
+
+/**
+ * Generate a multi-panel page image
+ * @param scriptId Script ID
+ * @param pageNumber Page number
+ * @param panelIndices List of panel indices included in this page
+ * @param styleModifiers Optional style modifiers
+ * @returns PageImage object
+ */
+export async function generatePageImage(scriptId: string, pageNumber: number, panelIndices: number[], styleModifiers?: string[]): Promise<PageImage> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/page/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        script_id: scriptId,
+        page_number: pageNumber,
+        panel_indices: panelIndices,
+        style_modifiers: styleModifiers
+      }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data;
+
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('Failed to generate page image');
+  }
+}
+
+/**
+ * Select a page image
+ * @param scriptId Script ID
+ * @param imageId Image ID to select
+ */
+export async function selectPageImage(scriptId: string, imageId: string): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webtoon/page/image/select`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      queryParams: { // Query params should be in URL for POST sometimes depending on framework, but FastAPI accepts them as query params if not in body
+        // Helper above adds query params? No. 
+        // FastAPI @router.post("/page/image/select") with args script_id, image_id expects query params usually?
+        // Let's check other select functions. 
+        // `selectSceneImage` uses `queryParams`.
+      }
+    } as any); // Cast to any because our fetch wrapper might be custom IF we were using one, but this is raw fetch. 
+    // Wait, the code uses raw `fetch`.
+    // FastAPI default: if arguments are not Pydantic models, they are query params.
+    
+    // So URL should be:
+    const url = new URL(`${API_BASE_URL}/webtoon/page/image/select`);
+    url.searchParams.append('script_id', scriptId);
+    url.searchParams.append('image_id', imageId);
+    
+    const response2 = await fetch(url.toString(), {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response2.ok) {
+      throw new Error(`HTTP ${response2.status}: ${response2.statusText}`);
+    }
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('Failed to select page image');
+  }
+}

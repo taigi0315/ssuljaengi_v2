@@ -581,6 +581,26 @@ class CharacterImage(BaseModel):
     prompt_used: str = Field(default="", description="The exact prompt used for generation")
 
 
+class PageImage(BaseModel):
+    """
+    Model for generated multi-panel page images.
+    
+    Attributes:
+        id: Unique identifier for the image
+        page_number: Page number this image belongs to
+        panel_indices: List of panel indices included in this page
+        image_url: URL or base64 encoded image data
+        created_at: Timestamp when the image was created
+        is_selected: Whether this is the selected final image
+    """
+    id: str = Field(..., description="Unique image ID")
+    page_number: int = Field(..., description="Page number")
+    panel_indices: List[int] = Field(..., description="Indices of panels in this page")
+    image_url: str = Field(..., description="Image URL or base64 data")
+    created_at: datetime = Field(default_factory=datetime.now, description="Creation timestamp")
+    is_selected: bool = Field(default=False, description="Is this the selected image")
+
+
 class WebtoonScriptResponse(BaseModel):
     """
     Response model for webtoon script with generated images.
@@ -591,6 +611,8 @@ class WebtoonScriptResponse(BaseModel):
         characters: List of characters with descriptions
         panels: List of scene panels
         character_images: Dictionary mapping character names to their generated images
+        scene_images: Dictionary mapping panel numbers to generated scene images
+        page_images: Dictionary mapping page numbers to generated page images
         created_at: Timestamp when the script was created
     """
     script_id: str = Field(..., description="Unique script ID")
@@ -598,6 +620,8 @@ class WebtoonScriptResponse(BaseModel):
     characters: List[Character] = Field(..., description="List of characters")
     panels: List[WebtoonPanel] = Field(..., description="List of scene panels")
     character_images: dict = Field(default_factory=dict, description="Character name to images mapping")
+    scene_images: dict = Field(default_factory=dict, description="Panel number to scene images mapping")
+    page_images: dict = Field(default_factory=dict, description="Page number to page images mapping")
     created_at: datetime = Field(default_factory=datetime.now, description="Creation timestamp")
 
 

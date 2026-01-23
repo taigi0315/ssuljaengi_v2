@@ -22,6 +22,8 @@ export { default as StoryBuilder } from './StoryBuilder';
 
 // Scene image generation components
 export { default as SceneImageGenerator } from './SceneImageGeneratorV2';
+export { default as WebtoonPageGenerator } from './WebtoonPageGenerator';
+export { default as WebtoonSceneEditor } from './WebtoonSceneEditor';
 export { default as SceneSidebar } from './SceneSidebar';
 export { default as ScenePromptEditor } from './ScenePromptEditor';
 export { default as SceneImageCanvas } from './SceneImageCanvas';

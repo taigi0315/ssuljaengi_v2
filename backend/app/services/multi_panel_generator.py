@@ -16,6 +16,7 @@ from app.config import get_settings
 from app.models.story import WebtoonPanel
 from app.prompt.multi_panel_generator import build_multi_panel_prompt
 from app.services.image_generator import image_generator, CACHE_DIR
+from app.utils.dialogue_formatter import format_dialogue_as_visual_context
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,8 @@ class MultiPanelGenerator:
         self,
         panels: List[WebtoonPanel],
         style_description: str,
-        style_modifiers: Optional[List[str]] = None
+        style_modifiers: Optional[List[str]] = None,
+        reference_images: Optional[List[str]] = None
     ) -> str:
         """
         Generate a single vertical image containing multiple panels.
@@ -43,6 +45,7 @@ class MultiPanelGenerator:
             panels: List of WebtoonPanel objects (content for the page).
             style_description: Description of the art style.
             style_modifiers: Optional list of style keywords.
+            reference_images: Optional list of base64 data URLs for reference.
 
         Returns:
             The data URL (base64) of the generated image.
@@ -59,6 +62,19 @@ class MultiPanelGenerator:
             # Extract subject: use characters or default to generic if none
             subject = ", ".join(p.active_character_names) if p.active_character_names else "scene characters"
             
+            # Extract dialogue and convert to VISUAL context (expressions, not text)
+            # This informs character expressions WITHOUT rendering speech bubbles
+            expression_context = ""
+            if hasattr(p, 'dialogue') and p.dialogue:
+                if isinstance(p.dialogue, list):
+                    # Convert dialogue to visual expression descriptions
+                    expression_context = format_dialogue_as_visual_context(p.dialogue, max_lines=3)
+                    # Extract just the expression part, not the header
+                    if "CHARACTER EXPRESSIONS" in expression_context:
+                        lines = expression_context.split("\n")
+                        expression_lines = [l.strip("- ") for l in lines if l.startswith("- ")]
+                        expression_context = ", ".join(expression_lines)
+
             # Construct spec dictionary
             # Note: We combine environment and atmospheric details
             details_parts = []
@@ -66,11 +82,17 @@ class MultiPanelGenerator:
                 details_parts.append(p.environment_details)
             if p.atmospheric_conditions:
                 details_parts.append(p.atmospheric_conditions)
-            
+
+            # Start action description with character placement
+            action_desc = p.character_placement_and_action
+            # Append expression context (NOT dialogue text) to guide facial expressions
+            if expression_context:
+                action_desc += f", {expression_context}"
+
             spec = {
                 "shot_type": p.shot_type,
                 "subject": subject,
-                "action": p.character_placement_and_action,
+                "action": action_desc,
                 "details": ", ".join(details_parts)
             }
             panel_specs.append(spec)
@@ -95,9 +117,33 @@ class MultiPanelGenerator:
             settings = get_settings()
             model_name = settings.model_image_gen
 
+            # Prepare contents (Prompt + Text + Images)
+            contents = []
+            
+            # Add reference images if provided
+            if reference_images:
+                for i, image_url in enumerate(reference_images):
+                    try:
+                        if image_url.startswith("data:"):
+                            header, data = image_url.split(",", 1)
+                            mime_type = header.split(";")[0].split(":")[1]
+                            image_bytes_decoded = base64.b64decode(data)
+                            
+                            image_part = types.Part.from_bytes(
+                                data=image_bytes_decoded,
+                                mime_type=mime_type
+                            )
+                            contents.append(image_part)
+                            logger.info(f"Added reference image {i+1} to multi-panel prompt")
+                    except Exception as e:
+                        logger.warning(f"Failed to process reference image {i+1}: {e}")
+
+            # Add the text prompt
+            contents.append(prompt)
+
             response = self.image_gen.client.models.generate_content(
                 model=model_name,
-                contents=[prompt],
+                contents=contents,
                 config=types.GenerateContentConfig(
                     image_config=types.ImageConfig(
                         aspect_ratio="9:16",  # Vertical strip format

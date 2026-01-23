@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SearchControls, ResultsList, ErrorMessage, GenreSelector, SceneImageGenerator, VideoGenerator, EyeCandyGenerator, WorkflowSelector, ShortsGenerator } from '@/components';
+import { SearchControls, ResultsList, ErrorMessage, GenreSelector, WebtoonSceneEditor, VideoGenerator, EyeCandyGenerator, WorkflowSelector, ShortsGenerator } from '@/components';
 import StoryTabs from '@/components/StoryTabs';
 import StoryBuilder from '@/components/StoryBuilder';
 import CharacterImageGenerator from '@/components/CharacterImageGenerator';
@@ -627,15 +627,24 @@ export default function Home() {
           </>
         ) : activeTab === 'scenes' ? (
           <>
-            {/* Scene Images Tab */}
+            {/* Page/Scene Images Tab - Updated to WebtoonSceneEditor for V2 */}
             {webtoonScript && selectedImageStyle && (
-              <div className="max-w-7xl mx-auto">
-                <SceneImageGenerator
+              <div className="max-w-[1600px] mx-auto px-4">
+                <WebtoonSceneEditor
                   webtoonScript={webtoonScript}
                   imageStyle={selectedImageStyle}
                   onUpdateScript={handleScriptUpdate}
-                  onProceedToVideo={handleProceedToVideo}
                 />
+                
+                <div className="mt-8 flex justify-end">
+                   <button
+                    onClick={handleProceedToVideo}
+                    className="px-8 py-3 bg-gray-900 text-white font-bold rounded-lg hover:bg-black transition shadow-lg flex items-center gap-2"
+                  >
+                    <span>🎬 Proceed to Video</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                  </button>
+                </div>
               </div>
             )}
           </>

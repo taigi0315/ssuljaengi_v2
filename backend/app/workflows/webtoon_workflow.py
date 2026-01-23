@@ -14,6 +14,8 @@ from langgraph.graph import StateGraph, END
 from app.services.webtoon_writer import webtoon_writer
 from app.services.webtoon_evaluator import webtoon_evaluator, WebtoonEvaluation
 from app.services.webtoon_rewriter import webtoon_rewriter
+from app.services.sfx_planner import plan_sfx_for_panels
+from app.models.sfx import SFXBundle
 from app.models.story import WebtoonScript
 from app.config import get_settings
 
@@ -196,6 +198,110 @@ async def webtoon_rewriter_node(state: WebtoonWorkflowState) -> WebtoonWorkflowS
             "current_step": "failed"
         }
 
+async def sfx_enhancer_node(state: WebtoonWorkflowState) -> WebtoonWorkflowState:
+    """
+    SFX Enhancer node: Add SFX plans to panels.
+    
+    Args:
+        state: Current workflow state
+        
+    Returns:
+        Updated state with SFX-enriched script
+    """
+    try:
+        script_dict = state.get("webtoon_script")
+        if not script_dict:
+            return {
+                **state,
+                "error": "No script to enhance with SFX",
+                "current_step": "failed"
+            }
+        
+        # Reconstruct WebtoonScript from dict
+        script = WebtoonScript(**script_dict)
+        
+        logger.info(f"Planning SFX for {len(script.panels)} panels")
+        
+        # Generate SFX plans
+        sfx_bundles = plan_sfx_for_panels(script.panels)
+        
+        # Apply SFX to panels
+        for i, panel in enumerate(script.panels):
+            # Find matching bundle (should be 1-to-1 matching by index/panel_number)
+            bundle = next((b for b in sfx_bundles if b.panel_number == panel.panel_number), None)
+            
+            if bundle and bundle.has_effects:
+                # Convert bundle effects to simple dict list for generic compatibility
+                effects = []
+                
+                # Impact Texts
+                for it in bundle.impact_texts:
+                    effects.append({
+                        "type": "impact_text",
+                        "description": it.text,  # Use text as description for prompt
+                        "intensity": "high" if it.size in ["large", "massive"] else "medium",
+                        "position": "overlay",
+                        "details": f"Style: {it.style.value}, Text: {it.text}"
+                    })
+                
+                # Motion Effects
+                for me in bundle.motion_effects:
+                    effects.append({
+                        "type": me.type.value,
+                        "description": f"{me.type.value} moving {me.direction.value}",
+                        "intensity": me.intensity.value,
+                        "position": "background"
+                    })
+                
+                # Screen Effects
+                for se in bundle.screen_effects:
+                    effects.append({
+                        "type": "screen_effect",
+                        "description": f"{se.type.value} effect",
+                        "intensity": se.intensity.value,
+                        "position": "screen"
+                    })
+                
+                # Emotional Effects
+                for ee in bundle.emotional_effects:
+                    effects.append({
+                        "type": "emotional_effect",
+                        "description": f"{ee.type.value}",
+                        "intensity": ee.intensity.value,
+                        "position": ee.position.value
+                    })
+                
+                panel.sfx_effects = effects
+                
+                # APPEND SFX TO VISUAL PROMPT FOR VISIBILITY
+                # This ensures the user sees it in the text interactions and the image generator definitely gets it.
+                sfx_summary = "; ".join([f"{e['type']}: {e['description']}" for e in effects])
+                if sfx_summary:
+                    panel.visual_prompt += f"\n[SFX: {sfx_summary}]"
+
+                logger.info(f"Added {len(effects)} SFX to panel {panel.panel_number}")
+        
+        # Serialize back to dict
+        script_dict = {
+            "characters": [c.model_dump() for c in script.characters],
+            "panels": [p.model_dump() for p in script.panels],
+            "script_id": getattr(script, 'script_id', None),
+        }
+        
+        return {
+            **state,
+            "webtoon_script": script_dict,
+            "current_step": "sfx_planned",
+        }
+    except Exception as e:
+        logger.error(f"SFX node failed: {str(e)}", exc_info=True)
+        # Don't fail the whole workflow just for SFX
+        logger.warning("Continuing without SFX due to error")
+        return {
+            **state,
+            "current_step": "sfx_failed" # Mark as failed but keep script
+        }
+
 
 def should_rewrite(state: WebtoonWorkflowState) -> Literal["rewrite", "end"]:
     """
@@ -259,6 +365,7 @@ def create_webtoon_workflow() -> StateGraph:
     workflow.add_node("writer", webtoon_writer_node)
     workflow.add_node("evaluator", webtoon_evaluator_node)
     workflow.add_node("rewriter", webtoon_rewriter_node)
+    workflow.add_node("sfx_enhancer", sfx_enhancer_node)
     
     # Set entry point
     workflow.set_entry_point("writer")
@@ -272,9 +379,12 @@ def create_webtoon_workflow() -> StateGraph:
         should_rewrite,
         {
             "rewrite": "rewriter",
-            "end": END
+            "end": "sfx_enhancer"
         }
     )
+    
+    # After SFX, go to END
+    workflow.add_edge("sfx_enhancer", END)
     
     # After rewrite, go back to evaluator (creates the loop)
     workflow.add_edge("rewriter", "evaluator")
