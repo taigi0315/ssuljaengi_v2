@@ -26,14 +26,17 @@ const VIDEO_CONFIG = {
   FINAL_PAUSE_MS: 450,             // Pause after last bubble before next panel
   TRANSITION_DURATION_MS: 400,    // Duration of scroll transition between panels
 
-  // Bubble styling
+  // Bubble styling - WEBTOON STYLE (matching frontend EXACTLY)
   BUBBLE_FONT_SIZE: 45,            // Font size for dialogue text
-  BUBBLE_PADDING: 20,              // Padding inside bubble
-  BUBBLE_BORDER_RADIUS: 20,        // Rounded corner radius
-  BUBBLE_BORDER_WIDTH: 4,          // Border thickness
-  BUBBLE_BG_OPACITY: 0.25,          // Background opacity (0-1)
-  BUBBLE_BORDER_COLOR: '#4a4a4a',  // Border color
-  BUBBLE_TEXT_COLOR: '#1a1a1a',    // Text color
+  BUBBLE_PADDING: 12,              // Reduced padding for tighter bubbles
+  BUBBLE_BORDER_RADIUS: 20,        // Matches frontend rounded-[20px]
+  BUBBLE_BORDER_WIDTH: 2.5,        // Matches frontend border-[2.5px]
+  BUBBLE_BG_COLOR: '#FFFFFF',      // Pure white background
+  BUBBLE_BG_OPACITY: 1.0,          // Solid white (not transparent)
+  BUBBLE_BORDER_COLOR: '#000000',  // Black border (webtoon style)
+  BUBBLE_TEXT_COLOR: '#000000',    // Black text
+  BUBBLE_SHADOW_OFFSET: 3,         // Matches frontend shadow-[3px_3px...]
+  BUBBLE_SHADOW_COLOR: 'rgba(0,0,0,0.15)', // Matches frontend
 
   // Video quality - MAXIMUM QUALITY SETTINGS
   VIDEO_BITRATE: 16000000,         // 16 Mbps for maximum quality
@@ -102,6 +105,12 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
     };
     
     mediaRecorder.start();
+    
+    // Give the recorder a moment to initialize
+    await new Promise(r => setTimeout(r, 300));
+
+    console.log('Starting video generation for script:', webtoonScript.script_id);
+    console.log('Total panels:', webtoonScript.panels.length);
 
     // Track the image area for bubble positioning
     let imageRect = { x: 0, y: 0, width: canvas.width, height: canvas.height };
@@ -161,71 +170,49 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
 
     // Helper to draw bubble with auto-sizing based on text
     // xPercent and yPercent are relative to the IMAGE area
+    // WEBTOON STYLE: No character name, rounded bubble with shadow
     const drawBubble = (
       text: string, 
       xPercent: number, 
       yPercent: number, 
       wPercent?: number, 
       hPercent?: number,
-      characterName?: string
+      characterName?: string // Keep for narrator detection only
     ) => {
       const { 
-        BUBBLE_FONT_SIZE, BUBBLE_PADDING, BUBBLE_BORDER_RADIUS, 
-        BUBBLE_BORDER_WIDTH, BUBBLE_BG_OPACITY, BUBBLE_BORDER_COLOR, BUBBLE_TEXT_COLOR 
+        BUBBLE_PADDING, BUBBLE_BORDER_RADIUS, 
+        BUBBLE_BORDER_WIDTH, BUBBLE_BG_OPACITY, BUBBLE_BORDER_COLOR, BUBBLE_TEXT_COLOR,
+        BUBBLE_SHADOW_OFFSET, BUBBLE_SHADOW_COLOR
       } = VIDEO_CONFIG;
       
-      ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`;
+      // 1. Calculate base scaling for resolution independence
+      const editorWidth = 400; 
+      const scaleRef = canvas.width / editorWidth;
       
-      // Calculate max width for wrapping
-      // Logic A: User defined width
-      let targetWidth: number;
-      if (wPercent) {
-        targetWidth = canvas.width * (wPercent / 100);
-      } else {
-        // Logic B: Auto width (max 85%)
-        targetWidth = canvas.width * 0.85;
-      }
+      // 2. Calculate dynamic font size matching editor logic
+      const calcBaseFontSize = Math.min(wPercent || 35, (hPercent || 12) * 2);
+      const calcEditorFontSize = Math.max(8, Math.min(24, calcBaseFontSize * 0.4));
+      const finalFontSize = Math.floor(calcEditorFontSize * scaleRef);
       
-      // Wrap text
-      // We need to wrap it to fit within targetWidth (minus padding)
-      const wrappedLines = wrapText(ctx, text, targetWidth - (BUBBLE_PADDING * 2));
+      // Use Comic-style font like frontend
+      ctx.font = `600 ${finalFontSize}px Arial, sans-serif`;
       
-      // Measure actual dimensions
-      let textWidth = 0;
-      wrappedLines.forEach(line => {
-          textWidth = Math.max(textWidth, ctx.measureText(line).width);
-      });
+      // 3. Dimensions - width from percent, but height auto-fits text
+      const bw = (wPercent || 35) / 100 * canvas.width;
+      // Use tighter padding like frontend: vertical = fontSize * 0.5, horizontal = fontSize * 0.8
+      const paddingV = Math.max(6 * scaleRef, finalFontSize * 0.5);
+      const paddingH = Math.max(10 * scaleRef, finalFontSize * 0.8);
       
-      let textHeight = wrappedLines.length * BUBBLE_FONT_SIZE * 1.2; // 1.2 line height
+      // 4. Wrap text and height - AUTO-FIT to text content
+      const wrappedLines = wrapText(ctx, text, bw - (paddingH * 2));
+      const textHeight = wrappedLines.length * finalFontSize * 1.2;
+
+      // Height based on text only (no minimum from hPercent) for tight fit
+      const bh = textHeight + (paddingV * 2);
       
-      // Add name height if present
-      if (characterName) {
-         textHeight += BUBBLE_FONT_SIZE * 1.5; // Name + Gap
-      }
-      
-      // Final Dimensions
-      let bw: number, bh: number;
-      
-      if (wPercent) {
-          bw = targetWidth; // Force width
-      } else {
-          bw = textWidth + (BUBBLE_PADDING * 2);
-      }
-      
-      if (hPercent) {
-          // Suggested height, but ensure it fits text
-          const targetHeight = canvas.height * (hPercent / 100);
-          bh = Math.max(targetHeight, textHeight + (BUBBLE_PADDING * 2));
-      } else {
-          bh = textHeight + (BUBBLE_PADDING * 2);
-      }
-      
-      // Position relative to CANVAS area (matching backend logic which now renders on cropped 9:16 frame)
-      // xPercent and yPercent are 0-100 relative to the visible video frame
+      // 5. Centered Position
       const absoluteX = (xPercent / 100) * canvas.width;
       const absoluteY = (yPercent / 100) * canvas.height;
-      
-      // Center bubble on the point
       let bx = absoluteX - bw / 2;
       let by = absoluteY - bh / 2;
       
@@ -235,33 +222,48 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       by = Math.max(20, Math.min(canvas.height - bh - 20, by));
       
       const isNarrator = characterName?.toLowerCase() === 'narrator';
+      const scaledBorderRadius = BUBBLE_BORDER_RADIUS * (scaleRef * 0.5);
+      const scaledShadowOffset = BUBBLE_SHADOW_OFFSET * scaleRef;
 
       // Draw Bubble Background (Skip for Narrator)
       if (!isNarrator) {
+        // Draw shadow first (offset to bottom-right)
+        ctx.fillStyle = BUBBLE_SHADOW_COLOR;
+        ctx.beginPath();
+        ctx.moveTo(bx + scaledShadowOffset + scaledBorderRadius, by + scaledShadowOffset);
+        ctx.lineTo(bx + scaledShadowOffset + bw - scaledBorderRadius, by + scaledShadowOffset);
+        ctx.quadraticCurveTo(bx + scaledShadowOffset + bw, by + scaledShadowOffset, bx + scaledShadowOffset + bw, by + scaledShadowOffset + scaledBorderRadius);
+        ctx.lineTo(bx + scaledShadowOffset + bw, by + scaledShadowOffset + bh - scaledBorderRadius);
+        ctx.quadraticCurveTo(bx + scaledShadowOffset + bw, by + scaledShadowOffset + bh, bx + scaledShadowOffset + bw - scaledBorderRadius, by + scaledShadowOffset + bh);
+        ctx.lineTo(bx + scaledShadowOffset + scaledBorderRadius, by + scaledShadowOffset + bh);
+        ctx.quadraticCurveTo(bx + scaledShadowOffset, by + scaledShadowOffset + bh, bx + scaledShadowOffset, by + scaledShadowOffset + bh - scaledBorderRadius);
+        ctx.lineTo(bx + scaledShadowOffset, by + scaledShadowOffset + scaledBorderRadius);
+        ctx.quadraticCurveTo(bx + scaledShadowOffset, by + scaledShadowOffset, bx + scaledShadowOffset + scaledBorderRadius, by + scaledShadowOffset);
+        ctx.closePath();
+        ctx.fill();
+
+        // Draw main bubble (white background with black border)
         ctx.fillStyle = `rgba(255, 255, 255, ${BUBBLE_BG_OPACITY})`; 
         ctx.strokeStyle = BUBBLE_BORDER_COLOR;
-        ctx.lineWidth = BUBBLE_BORDER_WIDTH;
+        ctx.lineWidth = BUBBLE_BORDER_WIDTH * scaleRef;
         
-        // Rounded rect
-        const radius = BUBBLE_BORDER_RADIUS;
+        // Rounded rect - webtoon style
         ctx.beginPath();
-        // ctx.roundRect is standard now but check support, otherwise fallback or polyfill
-        // Using manual path for safety as before
-        ctx.moveTo(bx + radius, by);
-        ctx.lineTo(bx + bw - radius, by);
-        ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + radius);
-        ctx.lineTo(bx + bw, by + bh - radius);
-        ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - radius, by + bh);
-        ctx.lineTo(bx + radius, by + bh);
-        ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - radius);
-        ctx.lineTo(bx, by + radius);
-        ctx.quadraticCurveTo(bx, by, bx + radius, by);
+        ctx.moveTo(bx + scaledBorderRadius, by);
+        ctx.lineTo(bx + bw - scaledBorderRadius, by);
+        ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + scaledBorderRadius);
+        ctx.lineTo(bx + bw, by + bh - scaledBorderRadius);
+        ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - scaledBorderRadius, by + bh);
+        ctx.lineTo(bx + scaledBorderRadius, by + bh);
+        ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - scaledBorderRadius);
+        ctx.lineTo(bx, by + scaledBorderRadius);
+        ctx.quadraticCurveTo(bx, by, bx + scaledBorderRadius, by);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
       }
       
-      // Draw Text
+      // Draw Text - CENTERED, NO CHARACTER NAME (webtoon style)
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       
@@ -270,67 +272,146 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
         // Narrator: White text with heavy black stroke
         ctx.fillStyle = '#FFFFFF';
         ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 3 * scaleRef;
       } else {
-        // Standard: Config text color, no stroke
+        // Webtoon style: Black text, no stroke
         ctx.fillStyle = BUBBLE_TEXT_COLOR;
-        ctx.strokeStyle = 'transparent'; // No stroke
+        ctx.strokeStyle = 'transparent';
         ctx.lineWidth = 0;
       }
       
       const centerX = bx + bw / 2;
-      let currentY = by + BUBBLE_PADDING + (BUBBLE_FONT_SIZE * 0.6); // Start Y
+      // Vertically center the text block
+      const totalTextHeight = wrappedLines.length * finalFontSize * 1.2;
+      let currentY = by + (bh - totalTextHeight) / 2 + (finalFontSize * 0.6);
       
-      if (characterName) {
-        // Draw Name 
-        ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`;
-        
-        // Name colors
-        if (isNarrator) {
-           ctx.fillStyle = '#000000ff'; // Gray name
-           // Stroke already set (black, width 3) - kept for visibility against complex backgrounds
-           ctx.strokeText(`${characterName}:`, centerX, currentY);
-           ctx.fillText(`${characterName}:`, centerX, currentY);
-        } else {
-           ctx.fillStyle = '#6b21a8'; // Purple
-           // No stroke
-           ctx.fillText(`${characterName}:`, centerX, currentY);
-        }
-        
-        currentY += BUBBLE_FONT_SIZE * 1.5; // Gap
-      } 
-      
-      // Draw Message Lines
-      ctx.font = `bold ${BUBBLE_FONT_SIZE}px Arial`; // Keep bold for readability
-      
-      if (isNarrator) {
-          ctx.fillStyle = '#FFFFFF'; 
-      } else {
-          ctx.fillStyle = BUBBLE_TEXT_COLOR;
-      }
+      // Draw Message Lines (NO character name for webtoon style)
+      ctx.font = `600 ${finalFontSize}px Arial, sans-serif`; 
       
       wrappedLines.forEach((line) => {
           if (isNarrator) {
               ctx.strokeText(line, centerX, currentY);
           }
           ctx.fillText(line, centerX, currentY);
-          currentY += BUBBLE_FONT_SIZE * 1.2;
+          currentY += finalFontSize * 1.2;
       });
     };
 
     try {
-      // Iterate scenes
+      // Iterate scenes - GROUP BY PAGES to avoid repeating same image
       const panels = webtoonScript.panels;
       const totalPanels = panels.length;
-      
+      const processedPages = new Set<string>(); // Track processed page keys
+
+      console.log(`Starting loop for ${totalPanels} panels`);
+
+      // Count unique pages for accurate progress
+      const uniquePageKeys = new Set<string>();
+      panels.forEach(panel => {
+        if (webtoonScript.page_images) {
+          for (const pageKey in webtoonScript.page_images) {
+            const pageImgs = webtoonScript.page_images[pageKey];
+            const pageImg = pageImgs[0];
+            if (pageImg?.panel_indices?.includes(panel.panel_number - 1)) {
+              uniquePageKeys.add(pageKey);
+              break;
+            }
+          }
+        }
+      });
+      const totalUniquePages = uniquePageKeys.size || totalPanels;
+      let processedCount = 0;
+
       for (let i = 0; i < totalPanels; i++) {
         const panel = panels[i];
-        setStatusText(`Processing Panel ${panel.panel_number}/${totalPanels}...`);
-        setProgress(((i) / totalPanels) * 100);
+
+        // Find which page this panel belongs to
+        let pageKey: string | null = null;
+        if (webtoonScript.page_images) {
+          for (const pKey in webtoonScript.page_images) {
+            const pageImgs = webtoonScript.page_images[pKey];
+            const pageImg = pageImgs[0];
+            if (pageImg?.panel_indices?.includes(panel.panel_number - 1)) {
+              pageKey = pKey;
+              break;
+            }
+          }
+        }
+
+        // Skip if this page was already processed (multi-panel page)
+        if (pageKey && processedPages.has(pageKey)) {
+          console.log(`Skipping Panel ${panel.panel_number} - page ${pageKey} already processed`);
+          continue;
+        }
+        if (pageKey) {
+          processedPages.add(pageKey);
+        }
+
+        processedCount++;
+        console.log(`--- Processing Panel ${panel.panel_number} (Page: ${pageKey || 'single'}) ---`);
+        setStatusText(`Processing Page ${processedCount}/${totalUniquePages}...`);
+        setProgress(((processedCount) / totalUniquePages) * 100);
         
-        // Get Scene Image
-        const sceneImages = webtoonScript.scene_images?.[panel.panel_number] || [];
-        const selectedImage = sceneImages.find(img => img.is_selected) || sceneImages[0];
+        // Get Scene Image - Prioritize selected Page Image, then selected Scene Image, then fallback
+        let selectedImage = null;
+        
+        // 1. Check for selected Page Image (multi-panel)
+        if (webtoonScript.page_images) {
+          console.log('Checking page_images for panel', panel.panel_number);
+          for (const pageKey in webtoonScript.page_images) {
+            const pageImgs = webtoonScript.page_images[pageKey];
+            
+            // Selection strategy for Page Image:
+            // a) User selected
+            let targetPage = pageImgs.find((img: import('@/types').PageImage) => img.is_selected);
+            
+            // b) Fallback to any non-mockup page image if none selected
+            if (!targetPage) {
+              targetPage = pageImgs.find((img: import('@/types').PageImage) => 
+                !img.image_url.includes('/page1_') && !img.image_url.includes('/page2_')
+              );
+            }
+            
+            // c) Final fallback to first
+            if (!targetPage) targetPage = pageImgs[0];
+            
+            // Check if this page includes our current panel (indices are 0-based)
+            if (targetPage && targetPage.panel_indices.includes(panel.panel_number - 1)) {
+              selectedImage = targetPage;
+              console.log(`Panel ${panel.panel_number} using Page Image:`, targetPage.id);
+              break;
+            }
+          }
+        }
+        
+        // 2. If no selected Page Image, check Scene Images
+        if (!selectedImage) {
+          console.log('No Page Image found, checking scene_images for panel', panel.panel_number);
+          const sceneImages = webtoonScript.scene_images?.[panel.panel_number] || [];
+          
+          // Selection strategy:
+          // a) User selected
+          selectedImage = sceneImages.find(img => img.is_selected);
+          
+          if (!selectedImage) {
+             // b) Any image that looks like a real generated image (data URL or not a mockup path)
+             selectedImage = sceneImages.find(img => 
+               img.image_url.startsWith('data:') || 
+               (!img.image_url.includes('/api/assets/cache/images/char_') && 
+                !img.image_url.includes('/api/assets/cache/images/scene_') &&
+                !img.image_url.includes('/api/assets/cache/images/panel'))
+             );
+          }
+          
+          // c) First available
+          if (!selectedImage) {
+             selectedImage = sceneImages[0];
+          }
+          
+          if (selectedImage) {
+             console.log(`Panel ${panel.panel_number} using Scene Image:`, selectedImage.id, selectedImage.image_url.substring(0, 50));
+          }
+        }
         
         if (!selectedImage) {
           // Draw placeholder text if no image
@@ -345,8 +426,59 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
           await drawImageCover(selectedImage.image_url);
         }
         
-        // Get Bubbles for this panel
-        const bubbles = webtoonScript.dialogue_bubbles?.[panel.panel_number] || [];
+        // Get Bubbles for this page/panel
+        // First try page_dialogue_bubbles (new format from WebtoonSceneEditor)
+        // Then fallback to dialogue_bubbles, then to panel.dialogue
+        let bubbles: any[] = [];
+
+        // Extract page number from pageKey (format: "scriptId:pageNum" or just "pageNum")
+        const pageNumberForPanel = pageKey ? parseInt(pageKey.split(':').pop() || pageKey) : null;
+
+        // Try page_dialogue_bubbles first (keyed by page number)
+        if (pageNumberForPanel && webtoonScript.page_dialogue_bubbles?.[pageNumberForPanel]) {
+          bubbles = webtoonScript.page_dialogue_bubbles[pageNumberForPanel];
+          console.log(`Page ${pageNumberForPanel} using page_dialogue_bubbles:`, bubbles.length, 'bubbles');
+        }
+        // Fallback to old dialogue_bubbles (keyed by panel number)
+        else if (webtoonScript.dialogue_bubbles?.[panel.panel_number]) {
+          bubbles = webtoonScript.dialogue_bubbles[panel.panel_number];
+          console.log(`Panel ${panel.panel_number} using dialogue_bubbles:`, bubbles.length, 'bubbles');
+        }
+        // Final fallback to panel.dialogue - if multi-panel page, collect all panel dialogues
+        else if (selectedImage && 'panel_indices' in selectedImage && Array.isArray((selectedImage as any).panel_indices)) {
+          // Multi-panel page - collect dialogues from all panels in this page
+          const pageImg = selectedImage as any;
+          console.log(`Collecting dialogues from panels:`, pageImg.panel_indices);
+          pageImg.panel_indices.forEach((panelIdx: number) => {
+            const p = webtoonScript.panels[panelIdx];
+            if (p?.dialogue && Array.isArray(p.dialogue)) {
+              p.dialogue.forEach((d: any, idx: number) => {
+                bubbles.push({
+                  text: d.text,
+                  characterName: d.character,
+                  x: 50,
+                  y: 20 + (bubbles.length * 12), // Stack vertically
+                  width: 35,
+                  height: 10
+                });
+              });
+            }
+          });
+          console.log(`Collected ${bubbles.length} dialogues from multi-panel page`);
+        }
+        else if (panel.dialogue && Array.isArray(panel.dialogue) && panel.dialogue.length > 0) {
+          console.log(`Using fallback dialogue from panel ${panel.panel_number}`);
+          bubbles = panel.dialogue.map((d: any, idx: number) => ({
+            text: d.text,
+            characterName: d.character,
+            x: 50,
+            y: 20 + (idx * 12),
+            width: 35,
+            height: 10
+          }));
+        }
+        
+        console.log(`Panel ${panel.panel_number} has ${bubbles.length} bubbles`);
         
         // Sequential bubble appearance
         // First show image for BASE_DURATION (no bubbles)
@@ -385,14 +517,47 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
         }
         await new Promise(r => setTimeout(r, VIDEO_CONFIG.FINAL_PAUSE_MS));
 
-        // Scroll transition to next panel (except for last panel)
-        if (i < totalPanels - 1) {
-          const nextPanel = panels[i + 1];
-          const nextSceneImages = webtoonScript.scene_images?.[nextPanel.panel_number] || [];
-          const nextSelectedImage = nextSceneImages.find(img => img.is_selected) || nextSceneImages[0];
+        // Scroll transition to next page (not panel)
+        // Find the NEXT unprocessed page
+        let nextSelectedImage = null;
+        let nextPageKey: string | null = null;
 
-          if (nextSelectedImage && selectedImage) {
-            setStatusText(`Transitioning to Panel ${nextPanel.panel_number}...`);
+        for (let j = i + 1; j < totalPanels; j++) {
+          const nextPanel = panels[j];
+
+          // Find page key for next panel
+          if (webtoonScript.page_images) {
+            for (const pKey in webtoonScript.page_images) {
+              const pageImgs = webtoonScript.page_images[pKey];
+              const pageImg = pageImgs[0];
+              if (pageImg?.panel_indices?.includes(nextPanel.panel_number - 1)) {
+                // Check if this page hasn't been processed yet
+                if (!processedPages.has(pKey)) {
+                  nextPageKey = pKey;
+                  const selectedPage = pageImgs.find((img: import('@/types').PageImage) => img.is_selected) || pageImgs[0];
+                  nextSelectedImage = selectedPage;
+                }
+                break;
+              }
+            }
+          }
+
+          if (nextSelectedImage) break;
+
+          // Fallback to scene images
+          if (!nextSelectedImage) {
+            const nextSceneImages = webtoonScript.scene_images?.[nextPanel.panel_number] || [];
+            nextSelectedImage = nextSceneImages.find(img => img.is_selected) ||
+                               nextSceneImages.find(img => !img.image_url.includes('/api/assets/images/')) ||
+                               nextSceneImages[0];
+            if (nextSelectedImage) break;
+          }
+        }
+
+        // ONLY transition if we found a different next image
+        if (nextSelectedImage && selectedImage && nextSelectedImage.image_url !== selectedImage.image_url) {
+            const nextPageDisplay = nextPageKey?.split(':').pop() || 'next';
+            setStatusText(`Transitioning to Page ${nextPageDisplay}...`);
 
             try {
               // Load current and next images
@@ -443,7 +608,10 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
             }
           }
         }
-      }
+
+      // Add a final pause at the end of the entire video
+      await new Promise(r => setTimeout(r, 1000));
+      setStatusText('Finishing video recording...');
 
     } catch (err) {
       console.error(err);
@@ -482,22 +650,73 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
                   
                   try {
                     // Prepare panel data with bubbles
-                    const panelsData = webtoonScript.panels.map(panel => {
-                      const sceneImages = webtoonScript.scene_images?.[panel.panel_number] || [];
-                      const selectedImage = sceneImages.find(img => img.is_selected) || sceneImages[0];
-                      const bubbles = webtoonScript.dialogue_bubbles?.[panel.panel_number] || [];
-                      
-                      return {
-                        panel_number: panel.panel_number,
-                        image_url: selectedImage?.image_url || '',
-                        bubbles: bubbles.map(b => ({
+                    // Group by PAGES (not panels) since page_images contain multi-panel images
+                    const panelsData: any[] = [];
+                    const processedPages = new Set<number>();
+
+                    webtoonScript.panels.forEach(panel => {
+                      // Find which page this panel belongs to
+                      let pageNumber: number | null = null;
+                      let selectedImage = null;
+
+                      if (webtoonScript.page_images) {
+                        for (const pageKey in webtoonScript.page_images) {
+                          const pageImgs = webtoonScript.page_images[pageKey];
+                          const pageImg = pageImgs[0];
+                          if (pageImg?.panel_indices?.includes(panel.panel_number - 1)) {
+                            pageNumber = parseInt(pageKey);
+                            // Get selected image or first one
+                            selectedImage = pageImgs.find((img: import('@/types').PageImage) => img.is_selected) || pageImgs[0];
+                            break;
+                          }
+                        }
+                      }
+
+                      // Fallback to Scene Image if no page image
+                      if (!selectedImage) {
+                        const sceneImages = webtoonScript.scene_images?.[panel.panel_number] || [];
+                        selectedImage = sceneImages.find(img => img.is_selected) || sceneImages[0];
+                      }
+
+                      // Skip if we've already processed this page (for multi-panel pages)
+                      if (pageNumber && processedPages.has(pageNumber)) {
+                        return;
+                      }
+                      if (pageNumber) {
+                        processedPages.add(pageNumber);
+                      }
+
+                      // Get bubbles - prioritize page_dialogue_bubbles (new format)
+                      let bubbles: any[] = [];
+                      if (pageNumber && webtoonScript.page_dialogue_bubbles?.[pageNumber]) {
+                        bubbles = webtoonScript.page_dialogue_bubbles[pageNumber];
+                        console.log(`[Video] Page ${pageNumber} using page_dialogue_bubbles:`, bubbles.length, 'bubbles');
+                      } else if (webtoonScript.dialogue_bubbles?.[panel.panel_number]) {
+                        bubbles = webtoonScript.dialogue_bubbles[panel.panel_number];
+                        console.log(`[Video] Panel ${panel.panel_number} using dialogue_bubbles:`, bubbles.length, 'bubbles');
+                      } else {
+                        console.log(`[Video] No bubbles found for page ${pageNumber} / panel ${panel.panel_number}`);
+                      }
+
+                      if (selectedImage?.image_url) {
+                        const mappedBubbles = bubbles.map(b => ({
                           text: b.text,
                           x: b.x,
                           y: b.y,
+                          width: b.width,
+                          height: b.height,
                           character_name: b.characterName
-                        }))
-                      };
-                    }).filter(p => p.image_url);
+                        }));
+
+                        console.log(`[Video] Panel ${pageNumber || panel.panel_number} bubbles:`, mappedBubbles);
+
+                        panelsData.push({
+                          panel_number: pageNumber || panel.panel_number,
+                          image_url: selectedImage.image_url,
+                          bubbles: mappedBubbles
+                        });
+                      }
+                    });
                     
                     const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
                     

@@ -319,10 +319,11 @@ Is this an IMPACT moment?
 
 **MANDATORY REQUIREMENTS:**
 
-**SCENE COUNT: 8-12 scenes**
-- You MUST create 8-12 scenes
+**SCENE COUNT: 12-17 scenes**
+- You MUST create 12-17 scenes for a complete story
 - Each scene can be: 1 single panel OR 1 multi-panel sequence (max 5 panels)
-- Total visual moments across all scenes: 8-20 panels
+- Total visual moments across all scenes: 12-25 panels
+- With multi-panel pages, this results in ~10-15 generated images
 
 **DIALOGUE REQUIREMENTS:**
 - ALL dialogue must be SPOKEN words only
@@ -332,13 +333,31 @@ Is this an IMPACT moment?
 - Story panels: 5-8 lines of spoken dialogue
 - Impact panels: 6-12 lines of spoken dialogue (emotional exchanges)
 - Acceptable non-dialogue text: *sound effects*, *emotional indicators* (max 1-2 per scene)
-- Total across all scenes: 50-80+ spoken dialogue lines minimum
+- Total across all scenes: 60-100+ spoken dialogue lines minimum
+
+**HERO SHOT (THUMBNAIL SCENE) - MANDATORY:**
+You MUST designate exactly ONE scene as the `hero_shot`. This is the most visually stunning, emotionally powerful moment that will be used as:
+- Video thumbnail
+- Opening scene of the webtoon video
+- Potential for video generation (pan/zoom animation)
+
+**Criteria for Hero Shot Selection:**
+- The single most DRAMATIC, ROMANTIC, or EMOTIONAL peak of the story
+- Usually an impact panel with maximum visual appeal
+- Examples: The kiss, the confession, the reunion, the dramatic confrontation, the power moment
+- MUST be visually striking even as a still thumbnail
+- Should convey the genre and emotion at a glance
+
+**Hero Shot Requirements:**
+- Set `is_hero_shot: true` on the chosen scene
+- Provide `hero_video_prompt`: A detailed prompt for video generation (pan/zoom/motion)
+- The visual_prompt should be extra detailed (200-300 words) for maximum quality
 
 **PROPER ENDING:**
-- Scene 11-12 must show resolution
+- Scene 15-17 must show resolution (last 2-3 scenes)
 - Final scene shows outcome (together, apart, changed, hopeful)
-- Emotional arc completes
-- Visual shows result
+- Emotional arc completes with proper build-up through 12-17 scenes
+- Visual shows result - don't rush the ending
 
 ---
 
@@ -417,7 +436,11 @@ Is this an IMPACT moment?
           "order": integer
         }}
       ],
-      "style_variation": "string or null"
+      "style_variation": "string or null",
+
+      // HERO SHOT FIELDS (only for ONE scene marked as hero):
+      "is_hero_shot": boolean (true for exactly ONE scene - the thumbnail/video moment),
+      "hero_video_prompt": "string (video generation prompt with motion: 'Slow zoom into faces, soft particle effects, warm light rays, romantic atmosphere')"
     }}
   ],
   "episode_summary": "string"
@@ -428,17 +451,19 @@ Is this an IMPACT moment?
 
 **QUALITY VALIDATION CHECKLIST:**
 
-- ✅ Total scenes = 8-12
-- ✅ 3-5 scenes marked as "impact" with appropriate visual treatment
+- ✅ Total scenes = 12-17 (more detailed story)
+- ✅ 4-6 scenes marked as "impact" with appropriate visual treatment
 - ✅ Impact moments use either single dramatic panel OR multi-panel sequence
 - ✅ Multi-panel sequences have clear purpose (build tension, show progression, etc.)
 - ✅ Shot types match emotional weight (close-ups for intimacy, low angles for power, etc.)
 - ✅ At least 2-3 scenes use style variations
-- ✅ Total dialogue = 50-80+ lines of SPOKEN words only
+- ✅ Total dialogue = 60-100+ lines of SPOKEN words only
 - ✅ ZERO internal monologue or narration in dialogue
 - ✅ Emotions shown through visuals, body language, and composition
 - ✅ Story has complete ending
 - ✅ Visual hierarchy is clear (not all medium shots!)
+- ✅ EXACTLY ONE scene has is_hero_shot: true with hero_video_prompt
+- ✅ Hero shot is the most visually stunning/emotionally powerful moment
 
 ---
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { WebtoonScript, ImageStyle, PageImage, DialogueBubble } from '@/types';
+import { WebtoonScript, ImageStyle, PageImage, DialogueBubble, SfxEffect } from '@/types';
 import { formatGenreName } from '@/utils/formatters';
 import { getScriptLayout, generatePageImage, selectPageImage } from '@/lib/apiClient';
 
@@ -105,17 +105,37 @@ export default function WebtoonSceneEditor({
   }, [webtoonScript.script_id]);
 
   // Load existing images and bubbles
+
+  // Sync state from props - carefully
   useEffect(() => {
     if (webtoonScript.page_images) {
-      setGeneratedPages(webtoonScript.page_images);
-
-      const initialIndices: Record<number, number> = {};
-      Object.entries(webtoonScript.page_images).forEach(([pageNumStr, images]) => {
-        const pageNum = parseInt(pageNumStr);
-        const selectedIdx = images.findIndex(img => img.is_selected);
-        initialIndices[pageNum] = selectedIdx >= 0 ? selectedIdx : images.length - 1;
+      setGeneratedPages(prev => {
+        // Only update if prop has more images or if local state is empty
+        // This prevents "losing" newly generated images during re-render cycles
+        const newPages = webtoonScript.page_images || {};
+        const merged = { ...prev };
+        
+        Object.entries(newPages).forEach(([pageNumStr, images]) => {
+          const pageNum = parseInt(pageNumStr);
+          if (!merged[pageNum] || images.length >= merged[pageNum].length) {
+            merged[pageNum] = images;
+          }
+        });
+        return merged;
       });
-      setCurrentImageIndices(initialIndices);
+      
+      // Update indices only if they aren't set yet or if specifically needed
+      setCurrentImageIndices(prev => {
+        const newIndices = { ...prev };
+        Object.entries(webtoonScript.page_images || {}).forEach(([pageNumStr, images]) => {
+          const pageNum = parseInt(pageNumStr);
+          if (newIndices[pageNum] === undefined) {
+             const selectedIdx = images.findIndex(img => img.is_selected);
+             newIndices[pageNum] = selectedIdx >= 0 ? selectedIdx : images.length - 1;
+          }
+        });
+        return newIndices;
+      });
     }
 
     if (webtoonScript.page_dialogue_bubbles) {
@@ -152,10 +172,11 @@ export default function WebtoonSceneEditor({
       const updatedBubbles = { ...(webtoonScript.page_dialogue_bubbles || {}), [pageNum]: bubbles };
       onUpdateScript({
         ...webtoonScript,
+        page_images: generatedPages, // CRITICAL: Use current local images so they aren't reverted to old script prop
         page_dialogue_bubbles: updatedBubbles
       });
     }
-  }, [onUpdateScript, webtoonScript]);
+  }, [onUpdateScript, webtoonScript, generatedPages]);
 
   // Generate single page
   const handleGeneratePage = async (page: PageLayout) => {
@@ -171,18 +192,29 @@ export default function WebtoonSceneEditor({
         [imageStyle]
       );
 
-      setGeneratedPages(prev => {
-        const currentList = prev[page.page_number] || [];
-        return {
-          ...prev,
-          [page.page_number]: [...currentList, newImage]
-        };
-      });
+      const currentList = generatedPages[page.page_number] || [];
+      const newList = [...currentList, newImage];
+
+      setGeneratedPages(prev => ({
+        ...prev,
+        [page.page_number]: newList
+      }));
 
       setCurrentImageIndices(prev => ({
         ...prev,
-        [page.page_number]: (generatedPages[page.page_number]?.length || 0)
+        [page.page_number]: newList.length - 1
       }));
+
+      // Sync to global script state AFTER updating local state
+      if (onUpdateScript) {
+        onUpdateScript({
+          ...webtoonScript,
+          page_images: {
+            ...(webtoonScript.page_images || {}),
+            [page.page_number]: newList
+          }
+        });
+      }
 
     } catch (err) {
       console.error(`Failed to generate page ${page.page_number}:`, err);
@@ -210,28 +242,26 @@ export default function WebtoonSceneEditor({
     try {
       await selectPageImage(webtoonScript.script_id, imageId);
 
-      setGeneratedPages(prev => {
-        const images = prev[pageNumber] || [];
-        const updatedImages = images.map(img => ({
-          ...img,
-          is_selected: img.id === imageId
-        }));
+      const images = generatedPages[pageNumber] || [];
+      const updatedImages = images.map(img => ({
+        ...img,
+        is_selected: img.id === imageId
+      }));
 
-        if (onUpdateScript) {
-          onUpdateScript({
-            ...webtoonScript,
-            page_images: {
-              ...(webtoonScript.page_images || {}),
-              [pageNumber]: updatedImages
-            }
-          });
-        }
+      setGeneratedPages(prev => ({
+        ...prev,
+        [pageNumber]: updatedImages
+      }));
 
-        return {
-          ...prev,
-          [pageNumber]: updatedImages
-        };
-      });
+      if (onUpdateScript) {
+        onUpdateScript({
+          ...webtoonScript,
+          page_images: {
+            ...(webtoonScript.page_images || {}),
+            [pageNumber]: updatedImages
+          }
+        });
+      }
     } catch (err) {
       console.error("Failed to select image:", err);
     }
@@ -268,6 +298,26 @@ export default function WebtoonSceneEditor({
     setEditableDialogues(prev => prev.filter(d => d.id !== dialogueId || d.panelIndex !== -1));
   };
 
+  // Move dialogue up in the list
+  const handleMoveDialogueUp = (index: number) => {
+    if (index <= 0) return;
+    setEditableDialogues(prev => {
+      const newList = [...prev];
+      [newList[index - 1], newList[index]] = [newList[index], newList[index - 1]];
+      return newList;
+    });
+  };
+
+  // Move dialogue down in the list
+  const handleMoveDialogueDown = (index: number) => {
+    setEditableDialogues(prev => {
+      if (index >= prev.length - 1) return prev;
+      const newList = [...prev];
+      [newList[index], newList[index + 1]] = [newList[index + 1], newList[index]];
+      return newList;
+    });
+  };
+
   // Drag start from dialogue list
   const handleDragStart = (e: React.DragEvent, dialogue: EditableDialogue) => {
     setDraggedDialogue(dialogue);
@@ -283,6 +333,18 @@ export default function WebtoonSceneEditor({
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
 
+    console.log('[SceneEditor] Drop position:', {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      rectLeft: rect.left,
+      rectTop: rect.top,
+      rectWidth: rect.width,
+      rectHeight: rect.height,
+      aspectRatio: (rect.height / rect.width).toFixed(2),
+      calculatedX: x.toFixed(2),
+      calculatedY: y.toFixed(2)
+    });
+
     const newBubble: DialogueBubble = {
       id: `bubble-${Date.now()}`,
       text: draggedDialogue.text,
@@ -292,6 +354,8 @@ export default function WebtoonSceneEditor({
       width: 35,
       height: 12
     };
+
+    console.log('[SceneEditor] Created bubble:', newBubble);
 
     const newPageBubbles = [...currentBubbles, newBubble];
     setPageBubbles(prev => ({
@@ -413,8 +477,8 @@ export default function WebtoonSceneEditor({
       {/* Main 3-Column Layout */}
       <div className="flex-1 flex overflow-hidden">
 
-        {/* LEFT: Scene List */}
-        <div className="w-48 bg-white border-r border-gray-200 flex flex-col shrink-0">
+        {/* LEFT: Scene List - Compact */}
+        <div className="w-32 bg-white border-r border-gray-200 flex flex-col shrink-0">
           <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
             <h3 className="font-semibold text-gray-700 text-sm">Scenes</h3>
           </div>
@@ -428,27 +492,26 @@ export default function WebtoonSceneEditor({
                 <button
                   key={page.page_number}
                   onClick={() => setSelectedSceneIndex(index)}
-                  className={`w-full px-4 py-3 text-left border-b border-gray-100 transition-all ${
+                  className={`w-full px-2 py-2 text-left border-b border-gray-100 transition-all ${
                     isSelected
                       ? 'bg-purple-50 border-l-4 border-l-purple-600'
                       : 'hover:bg-gray-50'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className={`font-medium ${isSelected ? 'text-purple-700' : 'text-gray-700'}`}>
-                      Scene {page.page_number}
+                    <span className={`text-sm font-medium ${isSelected ? 'text-purple-700' : 'text-gray-700'}`}>
+                      #{page.page_number}
                     </span>
                     {isPageGenerating ? (
-                      <span className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></span>
+                      <span className="w-3 h-3 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></span>
                     ) : hasImage ? (
                       <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                     ) : (
                       <span className="w-2 h-2 bg-gray-300 rounded-full"></span>
                     )}
                   </div>
-                  <div className="mt-1 text-xs text-gray-500">
-                    {page.panel_indices.length} panel{page.panel_indices.length > 1 ? 's' : ''}
-                    <span className="ml-2 text-purple-600">{page.layout_type.replace('_', ' ')}</span>
+                  <div className="text-[10px] text-gray-400 truncate">
+                    {page.panel_indices.length}p · {page.layout_type.replace('_', ' ')}
                   </div>
                 </button>
               );
@@ -506,7 +569,7 @@ export default function WebtoonSceneEditor({
           </div>
 
           {/* Image Canvas Area */}
-          <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
+          <div className="flex-1 flex items-center justify-center p-2 overflow-hidden">
             {currentImage ? (
               <div
                 ref={canvasRef}
@@ -519,7 +582,7 @@ export default function WebtoonSceneEditor({
                 <img
                   src={currentImage.image_url}
                   alt={`Scene ${currentPageNumber}`}
-                  className="h-full w-full object-contain rounded-lg shadow-2xl"
+                  className="h-full w-full object-cover rounded-lg shadow-2xl"
                   draggable={false}
                 />
 
@@ -633,7 +696,7 @@ export default function WebtoonSceneEditor({
         </div>
 
         {/* RIGHT: Dialogue Panel */}
-        <div className="w-80 bg-white border-l border-gray-200 flex flex-col shrink-0">
+        <div className="w-72 bg-white border-l border-gray-200 flex flex-col shrink-0">
           <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-gray-700 text-sm">Dialogue</h3>
@@ -657,13 +720,13 @@ export default function WebtoonSceneEditor({
                   placeholder="Character name (optional)"
                   value={newDialogueCharacter}
                   onChange={(e) => setNewDialogueCharacter(e.target.value)}
-                  className="w-full text-sm px-3 py-2 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="w-full text-sm px-3 py-2 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white text-gray-900 placeholder:text-gray-400"
                 />
                 <textarea
                   placeholder='Enter dialogue text (e.g., "...", "!", "What?!")'
                   value={newDialogueText}
                   onChange={(e) => setNewDialogueText(e.target.value)}
-                  className="w-full text-sm px-3 py-2 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
+                  className="w-full text-sm px-3 py-2 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none bg-white text-gray-900 placeholder:text-gray-400"
                   rows={2}
                 />
                 <div className="flex gap-2">
@@ -720,17 +783,38 @@ export default function WebtoonSceneEditor({
                         : 'bg-white border-gray-200 hover:border-purple-400 hover:shadow-lg'
                     }`}
                   >
-                    {/* Character Badge */}
+                    {/* Character Badge + Order Controls */}
                     <div className="flex items-center gap-2 mb-2">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${charColor.bg} ${charColor.text}`}>
                         {dialogue.characterName}
                       </span>
                       <span className="text-xs text-gray-400">#{index + 1}</span>
+
+                      {/* Order controls */}
+                      <div className="flex items-center gap-0.5 ml-auto">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleMoveDialogueUp(index); }}
+                          disabled={index === 0}
+                          className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move up"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleMoveDialogueDown(index); }}
+                          disabled={index === editableDialogues.length - 1}
+                          className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move down"
+                        >
+                          ▼
+                        </button>
+                      </div>
+
                       {isPlaced && (
-                        <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full ml-auto">✓ Placed</span>
+                        <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">✓</span>
                       )}
                       {isCustom && !isPlaced && (
-                        <span className="text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full ml-auto">Custom</span>
+                        <span className="text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full">+</span>
                       )}
                     </div>
 
@@ -778,6 +862,72 @@ export default function WebtoonSceneEditor({
               </div>
             )}
           </div>
+
+          {/* SFX Effects Display */}
+          {currentScene && (() => {
+            // Collect SFX from all panels in this scene
+            const sceneSfx: { type: string; description: string; intensity: string; position: string }[] = [];
+            currentScene.panel_indices.forEach((panelIdx: number) => {
+              const panel = webtoonScript.panels[panelIdx];
+              if (panel?.sfx_effects && Array.isArray(panel.sfx_effects)) {
+                panel.sfx_effects.forEach((sfx: any) => {
+                  sceneSfx.push({
+                    type: sfx.type || 'effect',
+                    description: sfx.description || '',
+                    intensity: sfx.intensity || 'medium',
+                    position: sfx.position || 'screen'
+                  });
+                });
+              }
+            });
+
+            if (sceneSfx.length === 0) return null;
+
+            const getSfxIcon = (type: string) => {
+              switch (type) {
+                case 'screen_effect': return '📺';
+                case 'emotional_effect': return '💧';
+                case 'wind_lines': return '💨';
+                case 'impact_text': return '💥';
+                case 'motion_blur': return '🌀';
+                case 'speed_lines': return '⚡';
+                default: return '✨';
+              }
+            };
+
+            const getIntensityColor = (intensity: string) => {
+              switch (intensity) {
+                case 'high': return 'bg-red-100 text-red-700 border-red-200';
+                case 'medium': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                case 'low': return 'bg-green-100 text-green-700 border-green-200';
+                default: return 'bg-gray-100 text-gray-700 border-gray-200';
+              }
+            };
+
+            return (
+              <div className="border-t border-gray-200 p-3 bg-gradient-to-b from-purple-50 to-white">
+                <h4 className="font-semibold text-gray-700 text-xs mb-2 flex items-center gap-2">
+                  <span>✨</span>
+                  SFX Effects ({sceneSfx.length})
+                </h4>
+                <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                  {sceneSfx.map((sfx, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex items-center gap-2 text-xs p-2 rounded-lg border ${getIntensityColor(sfx.intensity)}`}
+                    >
+                      <span className="text-base">{getSfxIcon(sfx.type)}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium capitalize">{sfx.type.replace('_', ' ')}</span>
+                        <span className="text-gray-500 ml-1 truncate">- {sfx.description}</span>
+                      </div>
+                      <span className="text-[10px] uppercase font-bold opacity-70">{sfx.intensity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Placed Bubbles Summary */}
           {currentBubbles.length > 0 && (

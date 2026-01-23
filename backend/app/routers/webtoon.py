@@ -835,22 +835,37 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
         
         # Create image record
         image_id = str(uuid.uuid4())
+        image_key = f"{request.script_id}:{request.panel_number}"
+        is_first_image = image_key not in scene_images or not scene_images[image_key]
+        
         scene_image = SceneImage(
             id=image_id,
             panel_number=request.panel_number,
             image_url=image_url,
             prompt_used=final_prompt,
-            is_selected=False
+            is_selected=is_first_image
         )
         
-        # Store image
-        image_key = f"{request.script_id}:{request.panel_number}"
-        if image_key not in scene_images:
+        if image_key in scene_images:
+            for img in scene_images[image_key]:
+                img["is_selected"] = False
+        else:
             scene_images[image_key] = []
         
         scene_images[image_key].append(scene_image.model_dump())
         await scene_images.save()
         
+        # Sync to webtoon_scripts for persistence
+        if request.script_id in webtoon_scripts:
+            script_data = webtoon_scripts[request.script_id]
+            if "scene_images" not in script_data:
+                script_data["scene_images"] = {}
+            
+            # Update the scene_images in the script object
+            script_data["scene_images"][str(request.panel_number)] = scene_images[image_key]
+            await webtoon_scripts.save()
+            logger.info(f"Synced scene image to webtoon script {request.script_id}")
+
         logger.info(f"Scene image generated: {image_id}")
         
         return scene_image
@@ -955,6 +970,15 @@ async def generate_page_image(request: GeneratePageImageRequest):
             reference_images=reference_images
         )
         
+        # Store in page_images
+        # Key: script_id:page_number
+        image_key = f"{request.script_id}:{request.page_number}"
+        if image_key in page_images:
+            for img in page_images[image_key]:
+                img["is_selected"] = False
+        else:
+            page_images[image_key] = []
+            
         # Create PageImage record
         image_id = str(uuid.uuid4())
         page_image = PageImage(
@@ -962,18 +986,23 @@ async def generate_page_image(request: GeneratePageImageRequest):
             page_number=request.page_number,
             panel_indices=request.panel_indices,
             image_url=image_url,
-            is_selected=False # New images not selected by default, or should they be if it's the first?
+            is_selected=True # New generated image is selected by default
         )
-        
-        # Store in page_images
-        # Key: script_id:page_number
-        image_key = f"{request.script_id}:{request.page_number}"
-        if image_key not in page_images:
-            page_images[image_key] = []
             
         # Add to list
         page_images[image_key].append(page_image.model_dump())
         await page_images.save()
+
+        # Sync to webtoon_scripts for persistence
+        if request.script_id in webtoon_scripts:
+            script_data = webtoon_scripts[request.script_id]
+            if "page_images" not in script_data:
+                script_data["page_images"] = {}
+            
+            # Update the page_images in the script object
+            script_data["page_images"][str(request.page_number)] = page_images[image_key]
+            await webtoon_scripts.save()
+            logger.info(f"Synced page image to webtoon script {request.script_id}")
         
         logger.info(f"Page image generated and saved: {image_id}")
         
@@ -1221,6 +1250,15 @@ async def select_page_image(script_id: str, image_id: str):
                 img["is_selected"] = (img["id"] == image_id)
             
             await page_images.save()
+            
+            # Sync to webtoon_scripts for persistence
+            if script_id in webtoon_scripts:
+                script_data = webtoon_scripts[script_id]
+                if "page_images" not in script_data:
+                    script_data["page_images"] = {}
+                script_data["page_images"][str(target_page_number)] = images
+                await webtoon_scripts.save()
+                logger.info(f"Synced page image selection to webtoon script {script_id}")
             
         return {"message": "Page image selected successfully", "image_id": image_id}
 

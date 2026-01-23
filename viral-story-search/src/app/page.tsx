@@ -72,40 +72,47 @@ export default function Home() {
 
   const router = useRouter();
 
-  // Check for stale data on startup - if backend is fresh but frontend has old data
+  // Sync with backend on startup - provides "Cache Mode" persistence
   useEffect(() => {
-    const checkAndClearStaleData = async () => {
-      // Only run on client
+    const syncWithBackend = async () => {
       if (typeof window === 'undefined') return;
 
-      // Check if we have any stored data
-      const hasStoredStoryId = sessionStorage.getItem('gossiptoon_generatedStoryId');
-      const hasStoredScript = sessionStorage.getItem('gossiptoon_webtoonScript');
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const response = await fetch(`${apiUrl}/webtoon/latest`, { method: 'GET' });
 
-      // If we have stored data, verify it exists on the backend
-      if (hasStoredStoryId || hasStoredScript) {
-        try {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-          const response = await fetch(`${apiUrl}/webtoon/latest`, { method: 'GET' });
-
-          // If backend returns 404 (no data), clear stale frontend cache
-          if (response.status === 404 || !response.ok) {
-            console.log('Backend data cleared, clearing stale frontend cache...');
-            // Clear all gossiptoon session storage keys
-            const keysToRemove = Object.keys(sessionStorage).filter(key => key.startsWith('gossiptoon_'));
-            keysToRemove.forEach(key => sessionStorage.removeItem(key));
-            sessionStorage.removeItem('gossiptoon_manualStoryContent');
-
-            // Reload to get fresh state
-            window.location.reload();
+        if (response.ok) {
+          const latestScript = await response.json();
+          console.log('Syncing with latest backend data:', latestScript.script_id);
+          
+          // Only update if we don't have this script or if it's more recent
+          // (Simplified logic: always trust backend as source of truth for persistence)
+          setWebtoonScript(latestScript);
+          setGeneratedStoryId(latestScript.story_id);
+          setSelectedGenre(latestScript.genre || null);
+          setCustomStorySeed(latestScript.title || ''); // Use title as seed fallback
+          
+          // Optionally set active tab to images or scenes if progress exists
+          if (latestScript.page_images && Object.keys(latestScript.page_images).length > 0) {
+             // If we have images, let user continue from scenes
+             if (activeTab === 'search') setActiveTab('scenes');
           }
-        } catch {
-          // Backend not available, don't clear (might just be starting up)
+        } else if (response.status === 404) {
+          // Backend is empty/reset, clear stale session data to match
+          const hasStoredScript = sessionStorage.getItem('gossiptoon_webtoonScript');
+          if (hasStoredScript) {
+             console.log('Backend data cleared, clearing stale frontend cache...');
+             handleFreshStart();
+          }
         }
+      } catch (err) {
+        console.warn('Backend sync failed (normal if backend not yet running):', err);
       }
     };
 
-    checkAndClearStaleData();
+    syncWithBackend();
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Clear all session data for fresh start

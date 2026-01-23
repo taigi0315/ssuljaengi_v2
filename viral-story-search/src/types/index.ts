@@ -241,6 +241,15 @@ export interface RedditPostDisplayProps {
 }
 
 // Webtoon Types (Phase 3)
+// SFX Effect types for panel effects
+export interface SfxEffect {
+  type: 'screen_effect' | 'emotional_effect' | 'wind_lines' | 'impact_text' | 'motion_blur' | 'speed_lines';
+  description: string;
+  intensity: 'low' | 'medium' | 'high';
+  position: 'screen' | 'background' | 'around_character' | 'overlay';
+  details?: string;
+}
+
 export interface Character {
   name: string;
   gender: string;
@@ -261,6 +270,7 @@ export interface WebtoonPanel {
   active_character_names: string[];
   visual_prompt: string;
   dialogue?: string;
+  sfx_effects?: SfxEffect[];
 }
 
 export interface DialogueBubble {
