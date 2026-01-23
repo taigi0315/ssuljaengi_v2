@@ -197,11 +197,29 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       // Use Comic-style font like frontend
       ctx.font = `600 ${finalFontSize}px Arial, sans-serif`;
       
-      // 3. Dimensions - width from percent, but height auto-fits text
-      const bw = (wPercent || 35) / 100 * canvas.width;
-      // Use tighter padding like frontend: vertical = fontSize * 0.5, horizontal = fontSize * 0.8
-      const paddingV = Math.max(6 * scaleRef, finalFontSize * 0.5);
-      const paddingH = Math.max(10 * scaleRef, finalFontSize * 0.8);
+      // 3. Dynamic width based on text length (matching frontend)
+      const textLength = text.length;
+      let dynamicWidthPercent: number;
+      
+      if (textLength <= 5) {
+        // Very short text: compact bubble (estimate ~15% or measure)
+        dynamicWidthPercent = Math.min(wPercent || 15, 20);
+      } else if (textLength <= 15) {
+        // Short text: max 25%
+        dynamicWidthPercent = Math.min(wPercent || 25, 25);
+      } else if (textLength <= 30) {
+        // Medium text: max 35%
+        dynamicWidthPercent = Math.min(wPercent || 35, 35);
+      } else {
+        // Long text: use stored width or 50%, max 60%
+        dynamicWidthPercent = Math.min(wPercent || 50, 60);
+      }
+      
+      const bw = dynamicWidthPercent / 100 * canvas.width;
+      
+      // Use tighter padding like frontend: vertical = fontSize * 0.6, horizontal = fontSize * 1.2
+      const paddingV = Math.max(8 * scaleRef, finalFontSize * 0.6);
+      const paddingH = Math.max(16 * scaleRef, finalFontSize * 1.2);
       
       // 4. Wrap text and height - AUTO-FIT to text content
       const wrappedLines = wrapText(ctx, text, bw - (paddingH * 2));

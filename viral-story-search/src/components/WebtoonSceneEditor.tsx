@@ -587,21 +587,39 @@ export default function WebtoonSceneEditor({
                 />
 
                 {/* Dialogue Bubbles Overlay - Webtoon Style */}
-                {currentBubbles.map(bubble => {
+                {currentBubbles.map((bubble, idx) => {
                   // Calculate dynamic font size based on bubble dimensions
                   // Base size scales with the smaller dimension for readability
                   const baseFontSize = Math.min(bubble.width ?? 35, (bubble.height ?? 12) * 2);
                   const fontSize = Math.max(8, Math.min(24, baseFontSize * 0.4));
 
+                  // Calculate dynamic width based on text length
+                  // Short text (< 10 chars) = compact bubble
+                  // Medium text (10-30 chars) = medium bubble  
+                  // Long text (> 30 chars) = use stored width or max
+                  const textLength = bubble.text.length;
+                  let dynamicWidth: string;
+                  
+                  if (textLength <= 5) {
+                    dynamicWidth = 'auto'; // Very short: fit to content
+                  } else if (textLength <= 15) {
+                    dynamicWidth = `${Math.min(bubble.width ?? 25, 25)}%`; // Short: max 25%
+                  } else if (textLength <= 30) {
+                    dynamicWidth = `${Math.min(bubble.width ?? 35, 35)}%`; // Medium: max 35%
+                  } else {
+                    dynamicWidth = `${bubble.width ?? 50}%`; // Long: use stored or 50%
+                  }
+
                   return (
                     <div
-                      key={bubble.id}
+                      key={`bubble-overlay-${bubble.id || idx}`}
                       className="absolute group"
                       style={{
                         left: `${bubble.x}%`,
                         top: `${bubble.y}%`,
-                        width: `${bubble.width}%`,
-                        minHeight: `${bubble.height}%`,
+                        width: dynamicWidth,
+                        maxWidth: '60%', // Never exceed 60% of image width
+                        minWidth: textLength <= 5 ? 'fit-content' : undefined,
                         transform: 'translate(-50%, -50%)',
                       }}
                     >
@@ -609,8 +627,9 @@ export default function WebtoonSceneEditor({
                       <div
                         className="bg-white border-[2.5px] border-black rounded-[20px] shadow-[3px_3px_0px_0px_rgba(0,0,0,0.15)] cursor-move flex items-center justify-center text-center"
                         style={{
-                          padding: `${Math.max(6, fontSize * 0.5)}px ${Math.max(10, fontSize * 0.8)}px`,
+                          padding: `${Math.max(8, fontSize * 0.6)}px ${Math.max(16, fontSize * 1.2)}px`,
                           minHeight: '100%',
+                          whiteSpace: textLength <= 15 ? 'nowrap' : 'normal',
                         }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
@@ -950,7 +969,7 @@ export default function WebtoonSceneEditor({
                   const charColor = charColors[colorIndex];
 
                   return (
-                    <div key={bubble.id} className="flex items-center gap-2 text-xs bg-white p-2 rounded-lg border border-gray-200">
+                    <div key={`${bubble.id || 'bubble'}-${idx}`} className="flex items-center gap-2 text-xs bg-white p-2 rounded-lg border border-gray-200">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${charColor.bg} ${charColor.text} shrink-0`}>
                         {bubble.characterName.substring(0, 8)}
                       </span>
