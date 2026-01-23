@@ -45,6 +45,8 @@ from app.config import get_settings
 from app.utils.persistence import JsonStore
 from app.prompt.story_genre import STORY_GENRE_PROMPTS
 from app.prompt.image_style import VISUAL_STYLE_PROMPTS
+from app.services.style_composer import get_legacy_style_with_mood
+from app.services.mood_designer import detect_context_from_text, MoodAssignment, mood_designer
 
 logger = logging.getLogger(__name__)
 
@@ -646,7 +648,12 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
                 panel_metadata["character_placement_and_action"] = panel.get("character_placement_and_action", "Characters in scene")
                 panel_metadata["emotional_tone"] = panel.get("emotional_tone", "neutral")
                 panel_metadata["negative_prompt"] = panel.get("negative_prompt", "worst quality, low quality")
-                
+
+                # Extract emotional intensity for mood-aware styling (Phase 2.4 Integration)
+                panel_metadata["emotional_intensity"] = panel.get("emotional_intensity", 5)
+                panel_metadata["visual_prompt"] = panel.get("visual_prompt", "")
+                panel_metadata["story_beat"] = panel.get("story_beat", "")
+
                 # Extract SFX effects
                 sfx_effects = panel.get("sfx_effects", [])
                 if sfx_effects:
@@ -713,15 +720,55 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
         )
         
         logger.info(f"Final scene prompt (first 500 chars): {final_prompt[:500]}")
-        
+
+        # Phase 2.4 Integration: Mood-Aware Style Composition
+        # Detect scene context from panel content for mood assignment
+        combined_text_for_mood = " ".join(filter(None, [
+            panel_metadata.get("visual_prompt", ""),
+            panel_metadata.get("story_beat", ""),
+            character_desc_text
+        ]))
+
+        # Add dialogue text to context detection
+        for panel in panels:
+            if panel["panel_number"] == request.panel_number:
+                dialogue_list = panel.get("dialogue", [])
+                if dialogue_list:
+                    for d in dialogue_list:
+                        if isinstance(d, dict):
+                            combined_text_for_mood += " " + d.get("text", "")
+                break
+
+        # Detect emotional context and compose style with mood
+        detected_context, context_confidence = detect_context_from_text(combined_text_for_mood)
+        emotional_intensity = panel_metadata.get("emotional_intensity", 5)
+
+        logger.info(f"Mood detection - context: {detected_context} (confidence: {context_confidence:.2f}), intensity: {emotional_intensity}")
+
+        # Compose style with mood modifiers (enhances base style with per-scene mood)
+        composed_style = get_legacy_style_with_mood(
+            legacy_style_key=request.genre,
+            emotional_intensity=emotional_intensity,
+            scene_context=detected_context
+        )
+
+        logger.info(f"Composed style with mood (first 200 chars): {composed_style[:200]}...")
+
+        # Append composed style to the final prompt for image generation
+        # This incorporates mood-specific color temperature, lighting, and special effects
+        final_prompt = f"{final_prompt}\n\n[VISUAL STYLE & MOOD]\n{composed_style}"
+
+        logger.info(f"Final prompt with mood-enhanced style (last 300 chars): ...{final_prompt[-300:]}")
+
         # Generate image using the appropriate method
+        # Note: Style is now embedded in final_prompt, image_style param is for logging/reference only
         if reference_images:
             # Use multimodal generation with reference images
             logger.info(f"Using multimodal generation with {len(reference_images)} reference images")
             image_url = await image_generator.generate_scene_image_with_references(
                 prompt=final_prompt,
                 reference_images=reference_images,
-                image_style=request.genre
+                image_style=request.genre  # For logging - actual style is in prompt
             )
         else:
             # Fallback to text-only generation
@@ -731,7 +778,7 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
                 description=final_prompt,
                 character_name=f"scene_{request.panel_number}",
                 gender="neutral",
-                image_style=request.genre
+                image_style=request.genre  # For logging - actual style is in prompt
             )
         
         # Create image record
@@ -1010,5 +1057,90 @@ async def generate_video_backend(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.get("/{script_id}/mood-preview")
+async def preview_mood_assignments(script_id: str):
+    """
+    Preview mood assignments for all panels in a webtoon script.
+
+    This endpoint analyzes panels and returns the mood that would be
+    applied during image generation. Useful for debugging and testing
+    the mood system.
+
+    Args:
+        script_id: Webtoon script ID
+
+    Returns:
+        List of mood assignments for each panel with:
+        - panel_number
+        - emotional_intensity
+        - detected_context
+        - mood_settings (color_temperature, saturation, lighting, effects)
+        - composed_style_preview (first 200 chars of composed style)
+    """
+    from app.models.story import WebtoonPanel
+
+    if script_id not in webtoon_scripts:
+        raise HTTPException(status_code=404, detail="Webtoon script not found")
+
+    script_data = webtoon_scripts[script_id]
+    panels = script_data.get("panels", [])
+
+    mood_previews = []
+
+    for panel_data in panels:
+        # Build combined text for context detection
+        combined_text = " ".join(filter(None, [
+            panel_data.get("visual_prompt", ""),
+            panel_data.get("story_beat", ""),
+        ]))
+
+        # Add dialogue text
+        dialogue_list = panel_data.get("dialogue", [])
+        if dialogue_list:
+            for d in dialogue_list:
+                if isinstance(d, dict):
+                    combined_text += " " + d.get("text", "")
+
+        # Detect context
+        detected_context, confidence = detect_context_from_text(combined_text)
+        emotional_intensity = panel_data.get("emotional_intensity", 5)
+
+        # Create WebtoonPanel for mood assignment
+        panel = WebtoonPanel(**panel_data)
+
+        # Get mood assignment using the mood designer
+        assignment = mood_designer.assign_moods([panel])[0] if mood_designer else None
+
+        # Preview the composed style (first 200 chars)
+        composed_style = get_legacy_style_with_mood(
+            legacy_style_key="SOFT_ROMANTIC_WEBTOON",  # Default style for preview
+            emotional_intensity=emotional_intensity,
+            scene_context=detected_context
+        )
+
+        mood_preview = {
+            "panel_number": panel_data.get("panel_number"),
+            "emotional_intensity": emotional_intensity,
+            "detected_context": detected_context,
+            "context_confidence": round(confidence, 2),
+            "mood_name": assignment.mood.name if assignment else "unknown",
+            "mood_settings": {
+                "color_temperature": assignment.mood.color_temperature.value if assignment else "neutral",
+                "saturation": assignment.mood.saturation.value if assignment else "normal",
+                "lighting_mood": assignment.mood.lighting_mood.value if assignment else "balanced",
+                "special_effects": [e.value for e in assignment.mood.special_effects] if assignment else [],
+            } if assignment else None,
+            "reasoning": assignment.reasoning if assignment else "",
+            "composed_style_preview": composed_style[:200] + "..." if len(composed_style) > 200 else composed_style,
+        }
+
+        mood_previews.append(mood_preview)
+
+    return {
+        "script_id": script_id,
+        "total_panels": len(panels),
+        "mood_assignments": mood_previews
+    }
 
 

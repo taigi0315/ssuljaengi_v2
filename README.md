@@ -44,6 +44,7 @@ Gossiptoon V2 is a monorepo containing:
 - 📅 **Time Range Filtering** - Filter by 1h, 1d, 10d, or 100d
 - 🎨 **Webtoon Generation** - Transform stories into webtoon-style scripts
 - 🖼️ **AI Image Generation** - Generate character and scene images using Gemini
+- 🎞️ **Multi-Panel Generation** - Create consistent vertical webtoon pages with multiple panels using structured prompts
 - 🎬 **Video Assembly** - Create video content from generated assets
 - ⚡ **Response Caching** - Optimized performance with intelligent caching
 - 🔐 **CORS-enabled API** - Secure frontend-backend communication
@@ -98,11 +99,11 @@ gossiptoon_v2_2/
 
 ### Prerequisites
 
-| Requirement | Version | Notes |
-| ----------- | ------- | ----- |
-| Python      | 3.10+   | Required |
-| Node.js     | 18+     | Required |
-| npm         | 9+      | Required |
+| Requirement | Version | Notes                                                                       |
+| ----------- | ------- | --------------------------------------------------------------------------- |
+| Python      | 3.10+   | Required                                                                    |
+| Node.js     | 18+     | Required                                                                    |
+| npm         | 9+      | Required                                                                    |
 | **FFmpeg**  | Latest  | **Required for video generation** - [Installation Guide](INSTALL_FFMPEG.md) |
 
 ⚠️ **Important:** FFmpeg must be installed and added to your system PATH for video generation to work. Run `INSTALL_FFMPEG.bat` for automatic setup.
@@ -179,12 +180,14 @@ npm run dev
 ### Option 1: Batch File Launcher ⚡ (Quickest)
 
 **Just double-click: `START_APP.bat`**
+
 - ✅ Works immediately, no setup required
 - ✅ Automatically starts both backend and frontend
 - ✅ Opens your browser to the app
 - ✅ Shows helpful status messages
 
 **How to use:**
+
 1. Find the `START_APP.bat` file in the project root
 2. Double-click it
 3. Two console windows will open (keep them running!)
@@ -194,12 +197,14 @@ npm run dev
 ### Option 2: GUI Launcher 🎨 (Best User Experience)
 
 **Double-click: `launcher_gui.py`** (requires Python)
+
 - ✅ Beautiful graphical interface
 - ✅ Progress bar showing launch status
 - ✅ Detailed status log
 - ✅ User-friendly buttons and error messages
 
 **How to use:**
+
 1. Double-click `launcher_gui.py`
 2. Click the "🚀 Launch App" button
 3. Watch the progress bar
@@ -216,6 +221,7 @@ npm run dev
 5. Distribute this file to users – no Python needed on their machine!
 
 **Benefits:**
+
 - ✅ No Python installation required for end users
 - ✅ Single-file distribution
 - ✅ Professional appearance
@@ -232,6 +238,7 @@ For detailed instructions, troubleshooting, and more:
 ### What the Launchers Do Automatically
 
 All launcher options perform these steps for you:
+
 1. Clean up any existing processes on ports 8000 and 3000
 2. Start the FastAPI backend server
 3. Wait for backend to initialize
