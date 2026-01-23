@@ -370,3 +370,5 @@ backend/app/
 
 - Started Phase 4 tasks. See ticket [TASK-030-phase4](../tickets/todo/TASK-030-phase4.md) for details.
 - Updated checkpoint table in this document.
+| 2026-01-22 | 1.5.8, Phase 3 Checkpoint                           | SFX Video Integration complete. All Phase 3 checkpoint tasks verified. Ready for Phase 4.                                                                                                         |
+| 2026-01-22 | 4.1.1-4.1.7 (Agent Separation)                      | Phase 4 kick-off. Created 7 agent modules (story_analyst, scene_planner, cinematographer, mood_designer, visual_prompter, sfx_planner, panel_composer). 6 unit tests + 3 integration tests passing. |
