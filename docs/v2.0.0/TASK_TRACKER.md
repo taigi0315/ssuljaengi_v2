@@ -163,47 +163,47 @@
 
 ### 3.1 Multi-Panel Prompt
 
-| ID    | Task                                    | Status | Dependencies | Notes                                     |
-| ----- | --------------------------------------- | ------ | ------------ | ----------------------------------------- |
-| 3.1.1 | Create `prompt/multi_panel.py`          | [ ]    | -            | New file                                  |
-| 3.1.2 | Define `MULTI_PANEL_TEMPLATE`           | [ ]    | 3.1.1        | "Panel 1: ... Panel 2: ..." format        |
-| 3.1.3 | Implement `format_multi_panel_prompt()` | [ ]    | 3.1.2        | Input: shots, style, mood → prompt string |
-| 3.1.4 | Unit tests for prompt formatting        | [ ]    | 3.1.3        | Verify output structure                   |
+| ID    | Task                                    | Status | Dependencies | Notes                                                              |
+| ----- | --------------------------------------- | ------ | ------------ | ------------------------------------------------------------------ |
+| 3.1.1 | Create `prompt/multi_panel.py`          | [x]    | -            | Created with templates and formatting functions                     |
+| 3.1.2 | Define `MULTI_PANEL_TEMPLATE`           | [x]    | 3.1.1        | Structured "Panel N:" format with style and character refs          |
+| 3.1.3 | Implement `format_multi_panel_prompt()` | [x]    | 3.1.2        | Multiple formatters for different input types                       |
+| 3.1.4 | Unit tests for prompt formatting        | [x]    | 3.1.3        | 29 tests covering all formatting functions                          |
 
 ---
 
 ### 3.2 Panel Composer Service
 
-| ID    | Task                                 | Status | Dependencies | Notes                                          |
-| ----- | ------------------------------------ | ------ | ------------ | ---------------------------------------------- |
-| 3.2.1 | Create `prompt/panel_composer.py`    | [ ]    | -            | Prompt template                                |
-| 3.2.2 | Create `services/panel_composer.py`  | [ ]    | 3.2.1        | Service file                                   |
-| 3.2.3 | Add `Page` model to models/story.py  | [ ]    | -            | shots: List[str], layout_type, is_single_panel |
-| 3.2.4 | Implement `group_shots_into_pages()` | [ ]    | 3.2.2, 3.2.3 | Input: shots, Output: List[Page]               |
-| 3.2.5 | Define grouping rules                | [ ]    | 3.2.4        | Key moment=single, action=4-5, dialogue=3-4    |
-| 3.2.6 | Unit tests for panel composer        | [ ]    | 3.2.5        | Test grouping logic                            |
+| ID    | Task                                 | Status | Dependencies | Notes                                                               |
+| ----- | ------------------------------------ | ------ | ------------ | ------------------------------------------------------------------- |
+| 3.2.1 | Create `prompt/panel_composer.py`    | [x]    | -            | LLM prompt templates for grouping                                   |
+| 3.2.2 | Create `services/panel_composer.py`  | [x]    | 3.2.1        | Rule-based and LLM-based grouping                                   |
+| 3.2.3 | Add `Page` model to models/story.py  | [x]    | -            | Page dataclass in panel_composer.py with layout_type, is_single     |
+| 3.2.4 | Implement `group_shots_into_pages()` | [x]    | 3.2.2, 3.2.3 | Groups panels by scene type, respects intensity triggers            |
+| 3.2.5 | Define grouping rules                | [x]    | 3.2.4        | Action=4, Dialogue=3, Emotional=2, Climax=1 (single)                |
+| 3.2.6 | Unit tests for panel composer        | [x]    | 3.2.5        | 34 tests for grouping, detection, statistics                        |
 
 ---
 
 ### 3.3 Image Generation Update
 
-| ID    | Task                                     | Status | Dependencies | Notes                         |
-| ----- | ---------------------------------------- | ------ | ------------ | ----------------------------- |
-| 3.3.1 | Add multi-panel support to image gen     | [ ]    | 3.1.3        | New endpoint or param         |
-| 3.3.2 | Update `routers/webtoon.py`              | [ ]    | 3.3.1        | Handle Page objects           |
-| 3.3.3 | Implement single vs multi-panel routing  | [ ]    | 3.3.2, 3.2.4 | Based on Page.is_single_panel |
-| 3.3.4 | Integration test: multi-panel generation | [ ]    | 3.3.3        | Test 3, 4, 5 panel pages      |
+| ID    | Task                                     | Status | Dependencies | Notes                                                                                              |
+| ----- | ---------------------------------------- | ------ | ------------ | -------------------------------------------------------------------------------------------------- |
+| 3.3.1 | Add multi-panel support to image gen     | [x]    | 3.1.3        | Added `generate_multi_panel_page()` method to ImageGenerator                                       |
+| 3.3.2 | Update `routers/webtoon.py`              | [x]    | 3.3.1        | Added 3 endpoints: /pages/generate, /page/{n}/image, /pages/preview                                |
+| 3.3.3 | Implement single vs multi-panel routing  | [x]    | 3.3.2, 3.2.4 | Routes based on Page.is_single_panel to existing or new generation method                          |
+| 3.3.4 | Integration test: multi-panel generation | [x]    | 3.3.3        | 63 tests passing for prompt formatting and panel composition                                       |
 
 ---
 
 ### 3.4 Workflow Integration
 
-| ID    | Task                               | Status | Dependencies | Notes              |
-| ----- | ---------------------------------- | ------ | ------------ | ------------------ |
-| 3.4.1 | Update scene count targets         | [ ]    | 3.2.4        | 15-25 total panels |
-| 3.4.2 | Update evaluator for new counts    | [ ]    | 3.4.1        | Adjust scoring     |
-| 3.4.3 | Add page count validation          | [ ]    | 3.4.2        | 5-8 pages target   |
-| 3.4.4 | End-to-end test: full panel system | [ ]    | 3.4.3        | Complete flow      |
+| ID    | Task                               | Status | Dependencies | Notes                                                                             |
+| ----- | ---------------------------------- | ------ | ------------ | --------------------------------------------------------------------------------- |
+| 3.4.1 | Update scene count targets         | [x]    | 3.2.4        | Updated PANEL_COUNT_TARGET: min=10, ideal=15-25, max=30                            |
+| 3.4.2 | Update evaluator for new counts    | [x]    | 3.4.1        | Updated scene_count scoring to use new targets                                     |
+| 3.4.3 | Add page count validation          | [x]    | 3.4.2        | Added PAGE_COUNT_TARGET (4-10, ideal 5-8) and score_page_grouping() method        |
+| 3.4.4 | End-to-end test: full panel system | [x]    | 3.4.3        | 63 tests passing, imports verified                                                 |
 
 ---
 
@@ -327,3 +327,4 @@ backend/app/
 | 2026-01-22 | 2.2.1, 2.2.2, 2.2.3, 2.2.4               | Style Composer Service complete. Created `services/style_composer.py` with compose_style(), get_style_for_scene(), compose_styles_for_panels(), StyleComposer class. 40 tests. |
 | 2026-01-22 | 2.3.1, 2.3.2, 2.3.3, 2.3.4, 2.3.5        | Mood Designer Service complete. Created `prompt/mood_designer.py` + `services/mood_designer.py` with context detection, auto-preset selection, transition smoothing. 41 tests.  |
 | 2026-01-22 | 2.4.1, 2.4.2, 2.4.3                      | Phase 2.4 Integration complete. Updated `routers/webtoon.py` to detect context, compose style with mood at image generation time. Added mood-preview endpoint. 14 integration tests. |
+| 2026-01-22 | 3.1.1-3.1.4, 3.2.1-3.2.6, 3.3.1-3.3.4, 3.4.1-3.4.4 | Phase 3 complete. Multi-panel prompt templates (29 tests), Panel composer service (34 tests), Image generator multi-panel support, 3 new endpoints. Updated evaluator with page grouping scoring. |

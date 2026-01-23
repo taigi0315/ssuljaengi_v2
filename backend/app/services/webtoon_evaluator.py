@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from typing import List, Dict, Tuple, Optional
 from app.models.story import WebtoonScript, ShotType
 from app.config import get_settings
+from app.services.panel_composer import group_panels_into_pages, calculate_page_statistics, Page
 
 
 logger = logging.getLogger(__name__)
@@ -26,14 +27,33 @@ logger = logging.getLogger(__name__)
 
 # Evaluation weights (v2.0.0)
 # Rebalanced to include shot variety and visual dynamism
+# v2.0.0 Phase 3.4: Added page_grouping for multi-panel support
 EVALUATION_WEIGHTS = {
-    "scene_count": 0.20,           # Was 0.30 - still important but less dominant
-    "dialogue_coverage": 0.20,     # Was 0.25 - dialogue is key for webtoons
-    "visual_prompt": 0.15,         # Was 0.20 - prompt quality matters
-    "character_consistency": 0.10, # Was 0.15 - basic requirement
-    "story_structure": 0.05,       # Was 0.10 - basic structure check
-    "shot_variety": 0.20,          # NEW - critical for visual interest
-    "visual_dynamism": 0.10,       # NEW - prevents static compositions
+    "scene_count": 0.15,           # Reduced for multi-panel (15-25 panels target)
+    "dialogue_coverage": 0.20,     # Dialogue is key for webtoons
+    "visual_prompt": 0.15,         # Prompt quality matters
+    "character_consistency": 0.10, # Basic requirement
+    "story_structure": 0.05,       # Basic structure check
+    "shot_variety": 0.20,          # Critical for visual interest
+    "visual_dynamism": 0.10,       # Prevents static compositions
+    "page_grouping": 0.05,         # NEW v2.0.0: Multi-panel page efficiency
+}
+
+# Panel count targets for multi-panel system (Phase 3.4)
+# These replace the old 8-12 scene targets
+PANEL_COUNT_TARGET = {
+    "min": 10,   # Minimum panels for a complete story
+    "ideal_min": 15,  # Ideal range start
+    "ideal_max": 25,  # Ideal range end
+    "max": 30,   # Maximum before it's too long
+}
+
+# Page count targets (panels grouped into multi-panel pages)
+PAGE_COUNT_TARGET = {
+    "min": 4,    # Minimum pages
+    "ideal_min": 5,   # Ideal range start
+    "ideal_max": 8,   # Ideal range end
+    "max": 10,   # Maximum pages
 }
 
 
@@ -316,6 +336,114 @@ class WebtoonEvaluator:
         final_score = max(0.0, min(10.0, base_score))
         return final_score, issues, feedback
 
+    def score_page_grouping(
+        self,
+        script: WebtoonScript
+    ) -> Tuple[float, List[str], List[str]]:
+        """
+        Score how well panels group into multi-panel pages.
+
+        v2.0.0 Phase 3.4: Added for multi-panel system evaluation.
+
+        Criteria:
+        - Check if page count is in ideal range (5-8)
+        - Check ratio of single vs multi-panel pages
+        - Bonus for having key moments as single panels
+        - Bonus for efficient grouping (3-4 panels per multi-panel page average)
+
+        Args:
+            script: WebtoonScript to evaluate
+
+        Returns:
+            Tuple of (score 0-10, issues list, feedback list)
+        """
+        panels = script.panels
+        if not panels or len(panels) < 2:
+            return 5.0, [], []  # Neutral score for very short scripts
+
+        issues = []
+        feedback = []
+
+        # Group panels into pages
+        pages = group_panels_into_pages(panels)
+        stats = calculate_page_statistics(pages)
+
+        base_score = 10.0
+
+        # Check page count
+        total_pages = stats["total_pages"]
+        min_pages = PAGE_COUNT_TARGET["min"]
+        max_pages = PAGE_COUNT_TARGET["max"]
+        ideal_min = PAGE_COUNT_TARGET["ideal_min"]
+        ideal_max = PAGE_COUNT_TARGET["ideal_max"]
+
+        if total_pages < min_pages:
+            base_score -= 3.0
+            issues.append(f"Only {total_pages} pages. Need at least {min_pages}.")
+            feedback.append(
+                f"ADD MORE CONTENT: Script groups into only {total_pages} pages. "
+                f"Target is {ideal_min}-{ideal_max} pages for good pacing."
+            )
+        elif total_pages > max_pages:
+            base_score -= 2.0
+            issues.append(f"Too many pages: {total_pages}. Ideal max is {ideal_max}.")
+            feedback.append(
+                f"CONDENSE CONTENT: Script groups into {total_pages} pages. "
+                f"Consider combining some panels for {ideal_max} pages max."
+            )
+        elif ideal_min <= total_pages <= ideal_max:
+            base_score += 1.0  # Bonus for ideal range
+
+        # Check single vs multi-panel ratio
+        single_pages = stats["single_panel_pages"]
+        multi_pages = stats["multi_panel_pages"]
+
+        if total_pages > 0:
+            single_ratio = single_pages / total_pages
+
+            # Too many single panels = inefficient
+            if single_ratio > 0.5:
+                base_score -= 2.0
+                issues.append(f"Too many single-panel pages ({single_pages}/{total_pages})")
+                feedback.append(
+                    "IMPROVE GROUPING: Too many single-panel pages. "
+                    "Only key emotional moments should be single panels. "
+                    "Group action/dialogue into 3-4 panel pages."
+                )
+            elif single_ratio < 0.1 and len(panels) > 8:
+                # No single panels but script is long enough to have key moments
+                issues.append("No single-panel pages for key moments")
+                feedback.append(
+                    "ADD KEY MOMENTS: Consider making emotional peaks into "
+                    "single full-page panels for impact."
+                )
+
+        # Check average panels per multi-panel page
+        if multi_pages > 0:
+            multi_panel_total = stats["total_panels"] - single_pages
+            avg_per_page = multi_panel_total / multi_pages
+
+            if avg_per_page < 2.5:
+                base_score -= 1.0
+                issues.append(f"Low panel density per page ({avg_per_page:.1f})")
+            elif avg_per_page > 4.5:
+                base_score -= 0.5
+                issues.append(f"High panel density ({avg_per_page:.1f} per page)")
+            elif 3.0 <= avg_per_page <= 4.0:
+                base_score += 0.5  # Bonus for ideal density
+
+        # Calculate API efficiency (panels / pages)
+        if total_pages > 0:
+            efficiency = len(panels) / total_pages
+            if efficiency < 2.0:
+                feedback.append(
+                    f"API EFFICIENCY: {len(panels)} panels / {total_pages} pages = "
+                    f"{efficiency:.1f} panels/page. Target 3-4 for cost efficiency."
+                )
+
+        final_score = max(0.0, min(10.0, base_score))
+        return final_score, issues, feedback
+
     def evaluate_script(self, script: WebtoonScript) -> WebtoonEvaluation:
         """
         Evaluate a webtoon script against quality criteria.
@@ -339,30 +467,37 @@ class WebtoonEvaluator:
             "story_structure": 0.0,
             "shot_variety": 0.0,      # v2.0.0
             "visual_dynamism": 0.0,   # v2.0.0
+            "page_grouping": 0.0,     # v2.0.0 Phase 3.4
         }
-        
+
         panels = script.panels
         characters = script.characters
-        
-        # ===== 1. Scene Count Evaluation (Weight: 30%) =====
+
+        # ===== 1. Scene/Panel Count Evaluation (Weight: 15%) =====
+        # v2.0.0 Phase 3.4: Updated targets for multi-panel system
         num_panels = len(panels)
-        min_scenes = settings.webtoon_min_scenes
-        max_scenes = 12
-        
-        if num_panels < min_scenes:
-            scores["scene_count"] = max(0, (num_panels / min_scenes) * 10)
-            issues.append(f"Only {num_panels} scenes. Need {min_scenes}-{max_scenes}.")
+        min_panels = PANEL_COUNT_TARGET["min"]
+        max_panels = PANEL_COUNT_TARGET["max"]
+        ideal_min = PANEL_COUNT_TARGET["ideal_min"]
+        ideal_max = PANEL_COUNT_TARGET["ideal_max"]
+
+        if num_panels < min_panels:
+            scores["scene_count"] = max(0, (num_panels / min_panels) * 10)
+            issues.append(f"Only {num_panels} panels. Need {min_panels}-{max_panels}.")
             feedback_parts.append(
-                f"ADD {min_scenes - num_panels} MORE SCENES. "
-                f"Current: {num_panels}, Required: {min_scenes}-{max_scenes}. "
-                "Add development and resolution scenes."
+                f"ADD {min_panels - num_panels} MORE PANELS. "
+                f"Current: {num_panels}, Required: {ideal_min}-{ideal_max}. "
+                "Multi-panel pages need sufficient content."
             )
-        elif num_panels > max_scenes:
-            scores["scene_count"] = max(0, 10 - ((num_panels - max_scenes) * 2))
-            issues.append(f"Too many scenes: {num_panels}. Max is {max_scenes}.")
-            feedback_parts.append(f"REDUCE scenes to {max_scenes}. Combine similar beats.")
+        elif num_panels > max_panels:
+            scores["scene_count"] = max(0, 10 - ((num_panels - max_panels) * 0.5))
+            issues.append(f"Too many panels: {num_panels}. Ideal is {ideal_max}.")
+            feedback_parts.append(f"REDUCE panels to {ideal_max}. Combine similar beats.")
+        elif ideal_min <= num_panels <= ideal_max:
+            scores["scene_count"] = 10.0  # Perfect range
         else:
-            scores["scene_count"] = 10.0
+            # Between min and ideal_min, or ideal_max and max
+            scores["scene_count"] = 8.0  # Acceptable but not ideal
         
         # ===== 2. Dialogue Coverage Evaluation (Weight: 25%) =====
         panels_with_dialogue = sum(
@@ -458,6 +593,12 @@ class WebtoonEvaluator:
         scores["visual_dynamism"] = dynamism_score
         issues.extend(dynamism_issues)
         feedback_parts.extend(dynamism_feedback)
+
+        # ===== 8. Page Grouping (Weight: 5%) - v2.0.0 Phase 3.4 =====
+        page_score, page_issues, page_feedback = self.score_page_grouping(script)
+        scores["page_grouping"] = page_score
+        issues.extend(page_issues)
+        feedback_parts.extend(page_feedback)
 
         # ===== Calculate Final Score =====
         # v2.0.0 weights from EVALUATION_WEIGHTS constant

@@ -438,7 +438,137 @@ class ImageGenerator:
         except Exception as e:
             logger.error(f"Gemini image generation failed: {str(e)}")
             raise
-    
+
+    async def generate_multi_panel_page(
+        self,
+        prompt: str,
+        reference_images: Optional[List[str]] = None,
+        panel_count: int = 3
+    ) -> str:
+        """
+        Generate a multi-panel webtoon page in a single API call.
+
+        This method generates a complete webtoon page with multiple panels
+        stacked vertically, using a structured prompt format.
+
+        Args:
+            prompt: Formatted multi-panel prompt (from format_multi_panel_prompt)
+            reference_images: Optional list of base64 data URLs for character references
+            panel_count: Number of panels in the page (2-5)
+
+        Returns:
+            Base64 encoded image data URL
+
+        Raises:
+            Exception: If image generation fails
+        """
+        try:
+            logger.info(f"Generating {panel_count}-panel page")
+            logger.info(f"Prompt (first 300 chars): {prompt[:300]}...")
+
+            if not self.use_real_generation:
+                raise Exception("Gemini API not initialized, cannot generate image.")
+
+            settings = get_settings()
+            model_name = settings.model_image_gen
+
+            logger.info(f"Using model: {model_name} for multi-panel generation")
+
+            # Build multimodal contents
+            contents = []
+
+            # Add reference images if provided
+            if reference_images:
+                for i, image_url in enumerate(reference_images):
+                    try:
+                        if image_url.startswith("data:"):
+                            header, data = image_url.split(",", 1)
+                            mime_type = header.split(";")[0].split(":")[1]
+                            image_bytes = base64.b64decode(data)
+
+                            from google.genai import types
+                            image_part = types.Part.from_bytes(
+                                data=image_bytes,
+                                mime_type=mime_type
+                            )
+                            contents.append(image_part)
+                            logger.info(f"Added reference image {i+1} for multi-panel")
+                    except Exception as e:
+                        logger.warning(f"Failed to process reference image {i+1}: {str(e)}")
+
+            # Add the prompt
+            contents.append(prompt)
+
+            logger.info(f"Total content parts for multi-panel: {len(contents)}")
+
+            # Generate with 9:16 aspect ratio
+            from google.genai import types
+            response = self.client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    image_config=types.ImageConfig(
+                        aspect_ratio="9:16",
+                    ),
+                    safety_settings=[
+                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                    ],
+                )
+            )
+
+            # Extract image from response
+            image_bytes = None
+            if response.candidates and response.candidates[0].content.parts:
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        image_bytes = part.inline_data.data
+                        break
+
+            if not image_bytes:
+                logger.error(f"No image in multi-panel response")
+                if response.prompt_feedback:
+                    logger.error(f"Prompt feedback: {response.prompt_feedback}")
+                raise Exception("No image data in multi-panel response")
+
+            # Get MIME type
+            mime_type = 'image/png'
+            if response.candidates and response.candidates[0].content.parts:
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        if hasattr(part.inline_data, 'mime_type'):
+                            mime_type = part.inline_data.mime_type
+                        break
+
+            # Process bytes to base64
+            if isinstance(image_bytes, bytes):
+                prefix = image_bytes[:20]
+                is_raw_image = prefix.startswith(b'\x89PNG') or prefix.startswith(b'\xff\xd8')
+
+                if is_raw_image:
+                    image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                else:
+                    try:
+                        image_base64 = image_bytes.decode('utf-8')
+                    except UnicodeDecodeError:
+                        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+            elif isinstance(image_bytes, str):
+                image_base64 = image_bytes
+            else:
+                raise Exception(f"Unexpected image data type: {type(image_bytes)}")
+
+            # Save to cache
+            self._save_image_to_cache(image_base64, f"multi_panel_{panel_count}", mime_type)
+
+            logger.info(f"Multi-panel page ({panel_count} panels) generated successfully")
+            return f"data:{mime_type};base64,{image_base64}"
+
+        except Exception as e:
+            logger.error(f"Multi-panel generation failed: {str(e)}", exc_info=True)
+            raise Exception(f"Multi-panel generation failed: {str(e)}")
+
     def _save_image_to_cache(self, image_base64: str, character_name: str, mime_type: str) -> str:
         """
         Save a generated image to the cache folder.

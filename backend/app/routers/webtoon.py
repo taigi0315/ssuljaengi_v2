@@ -47,6 +47,8 @@ from app.prompt.story_genre import STORY_GENRE_PROMPTS
 from app.prompt.image_style import VISUAL_STYLE_PROMPTS
 from app.services.style_composer import get_legacy_style_with_mood
 from app.services.mood_designer import detect_context_from_text, MoodAssignment, mood_designer
+from app.services.panel_composer import group_panels_into_pages, calculate_page_statistics, Page
+from app.prompt.multi_panel import format_panels_from_webtoon_panels, PanelData, format_multi_panel_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -1143,4 +1145,294 @@ async def preview_mood_assignments(script_id: str):
         "mood_assignments": mood_previews
     }
 
+
+# ============================================================================
+# Phase 3.3: Multi-Panel Page Generation
+# ============================================================================
+
+@router.post("/{script_id}/pages/generate")
+async def generate_pages_for_script(script_id: str, image_style: str = "SOFT_ROMANTIC_WEBTOON"):
+    """
+    Generate multi-panel pages for a webtoon script.
+
+    This endpoint groups panels into pages and returns page layout information.
+    Use this to plan the multi-panel generation before generating images.
+
+    Args:
+        script_id: Webtoon script ID
+        image_style: Image style to use for generation
+
+    Returns:
+        Page groupings with layout information and statistics
+    """
+    if script_id not in webtoon_scripts:
+        raise HTTPException(status_code=404, detail="Webtoon script not found")
+
+    script_data = webtoon_scripts[script_id]
+    panels_data = script_data.get("panels", [])
+
+    if not panels_data:
+        raise HTTPException(status_code=400, detail="Script has no panels")
+
+    # Convert to WebtoonPanel objects
+    from app.models.story import WebtoonPanel
+    panels = [WebtoonPanel(**p) for p in panels_data]
+
+    # Group panels into pages
+    pages = group_panels_into_pages(panels)
+    stats = calculate_page_statistics(pages)
+
+    # Build response
+    page_data = []
+    for page in pages:
+        page_info = page.to_dict()
+        page_info["panels"] = [
+            {
+                "panel_number": p.panel_number,
+                "shot_type": p.shot_type,
+                "emotional_intensity": p.emotional_intensity,
+                "story_beat": p.story_beat,
+            }
+            for p in page.panels
+        ]
+        page_data.append(page_info)
+
+    return {
+        "script_id": script_id,
+        "pages": page_data,
+        "statistics": stats
+    }
+
+
+@router.post("/{script_id}/page/{page_number}/image")
+async def generate_page_image(
+    script_id: str,
+    page_number: int,
+    image_style: str = "SOFT_ROMANTIC_WEBTOON"
+):
+    """
+    Generate a multi-panel page image.
+
+    This endpoint generates an image for a specific page (which may contain
+    multiple panels) in a single API call.
+
+    Args:
+        script_id: Webtoon script ID
+        page_number: Page number to generate (1-indexed)
+        image_style: Image style to use
+
+    Returns:
+        Generated page image with metadata
+    """
+    from app.models.story import WebtoonPanel, SceneImage
+
+    if script_id not in webtoon_scripts:
+        raise HTTPException(status_code=404, detail="Webtoon script not found")
+
+    script_data = webtoon_scripts[script_id]
+    panels_data = script_data.get("panels", [])
+    characters = script_data.get("characters", [])
+    character_images_in_script = script_data.get("character_images", {})
+
+    if not panels_data:
+        raise HTTPException(status_code=400, detail="Script has no panels")
+
+    # Convert to WebtoonPanel objects and group
+    panels = [WebtoonPanel(**p) for p in panels_data]
+    pages = group_panels_into_pages(panels)
+
+    # Find the requested page
+    target_page = None
+    for page in pages:
+        if page.page_number == page_number:
+            target_page = page
+            break
+
+    if target_page is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Page {page_number} not found. Total pages: {len(pages)}"
+        )
+
+    logger.info(f"Generating page {page_number} with {target_page.panel_count} panels")
+    logger.info(f"Layout type: {target_page.layout_type.value}")
+
+    # Collect character references for panels on this page
+    reference_images = []
+    active_chars = set()
+    for panel in target_page.panels:
+        for char_name in panel.active_character_names:
+            active_chars.add(char_name)
+
+    for char_name in active_chars:
+        images_for_char = character_images_in_script.get(char_name, [])
+        for img in images_for_char:
+            if img.get("is_selected", False):
+                image_url = img.get("image_url", "")
+                if image_url and image_url.startswith("data:"):
+                    reference_images.append(image_url)
+                    logger.info(f"Added reference image for {char_name}")
+                break
+
+    # Build character reference descriptions
+    char_refs = {}
+    for char in characters:
+        if char["name"] in active_chars:
+            char_refs[char["name"]] = f"{char.get('gender', 'character')} (reference image provided)"
+
+    # Get style description from legacy style
+    style_prompt = VISUAL_STYLE_PROMPTS.get(image_style, "")
+    style_description = "soft romantic manhwa style" if not style_prompt else style_prompt[:200]
+
+    # Build panel data with mood context
+    panel_data_list = []
+    for panel in target_page.panels:
+        # Detect context for mood
+        combined_text = f"{panel.visual_prompt} {panel.story_beat}"
+        for d in (panel.dialogue or []):
+            if isinstance(d, dict):
+                combined_text += f" {d.get('text', '')}"
+
+        detected_context, _ = detect_context_from_text(combined_text)
+
+        panel_data_list.append(PanelData(
+            panel_number=panel.panel_number,
+            shot_type=panel.shot_type,
+            subject=", ".join(panel.active_character_names) or "scene",
+            description=panel.visual_prompt,
+            characters=panel.active_character_names,
+            emotional_intensity=panel.emotional_intensity,
+            mood_context=detected_context
+        ))
+
+    # Format the multi-panel prompt
+    prompt = format_multi_panel_prompt(
+        panels=panel_data_list,
+        style_description=style_description,
+        style_keywords="High resolution, clean line art, professional webtoon quality, consistent character appearance",
+        character_references=char_refs if char_refs else None
+    )
+
+    # Add mood-enhanced style to prompt
+    avg_intensity = sum(p.emotional_intensity for p in panel_data_list) // len(panel_data_list)
+    dominant_context = panel_data_list[0].mood_context if panel_data_list else "neutral"
+    composed_style = get_legacy_style_with_mood(
+        legacy_style_key=image_style,
+        emotional_intensity=avg_intensity,
+        scene_context=dominant_context
+    )
+    prompt = f"{prompt}\n\n[VISUAL STYLE & MOOD]\n{composed_style}"
+
+    logger.info(f"Multi-panel prompt (first 500 chars): {prompt[:500]}...")
+
+    # Generate the image
+    try:
+        if target_page.is_single_panel:
+            # Single panel - use existing scene generation
+            if reference_images:
+                image_url = await image_generator.generate_scene_image_with_references(
+                    prompt=prompt,
+                    reference_images=reference_images,
+                    image_style=image_style
+                )
+            else:
+                image_url, _ = await image_generator.generate_character_image(
+                    description=prompt,
+                    character_name=f"page_{page_number}",
+                    gender="neutral",
+                    image_style=image_style
+                )
+        else:
+            # Multi-panel - use new multi-panel generation
+            image_url = await image_generator.generate_multi_panel_page(
+                prompt=prompt,
+                reference_images=reference_images if reference_images else None,
+                panel_count=target_page.panel_count
+            )
+
+        # Create response
+        image_id = str(uuid.uuid4())
+
+        return {
+            "id": image_id,
+            "page_number": page_number,
+            "panel_count": target_page.panel_count,
+            "layout_type": target_page.layout_type.value,
+            "is_single_panel": target_page.is_single_panel,
+            "panel_numbers": [p.panel_number for p in target_page.panels],
+            "image_url": image_url,
+            "prompt_used": prompt[:1000],  # Truncate for response
+        }
+
+    except Exception as e:
+        logger.error(f"Page image generation failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Page generation failed: {str(e)}")
+
+
+@router.get("/{script_id}/pages/preview")
+async def preview_page_groupings(script_id: str):
+    """
+    Preview how panels will be grouped into pages.
+
+    This is a read-only endpoint that shows the planned page groupings
+    without generating any images.
+
+    Args:
+        script_id: Webtoon script ID
+
+    Returns:
+        Page groupings with panel details and statistics
+    """
+    if script_id not in webtoon_scripts:
+        raise HTTPException(status_code=404, detail="Webtoon script not found")
+
+    script_data = webtoon_scripts[script_id]
+    panels_data = script_data.get("panels", [])
+
+    if not panels_data:
+        return {
+            "script_id": script_id,
+            "pages": [],
+            "statistics": {
+                "total_pages": 0,
+                "total_panels": 0,
+                "single_panel_pages": 0,
+                "multi_panel_pages": 0,
+            }
+        }
+
+    # Convert and group
+    from app.models.story import WebtoonPanel
+    panels = [WebtoonPanel(**p) for p in panels_data]
+    pages = group_panels_into_pages(panels)
+    stats = calculate_page_statistics(pages)
+
+    # Build detailed preview
+    page_previews = []
+    for page in pages:
+        panels_preview = []
+        for panel in page.panels:
+            panels_preview.append({
+                "panel_number": panel.panel_number,
+                "shot_type": panel.shot_type,
+                "emotional_intensity": panel.emotional_intensity,
+                "story_beat": panel.story_beat[:100] if panel.story_beat else "",
+                "characters": panel.active_character_names,
+            })
+
+        page_previews.append({
+            "page_number": page.page_number,
+            "layout_type": page.layout_type.value,
+            "is_single_panel": page.is_single_panel,
+            "panel_count": page.panel_count,
+            "reasoning": page.reasoning,
+            "panels": panels_preview
+        })
+
+    return {
+        "script_id": script_id,
+        "pages": page_previews,
+        "statistics": stats,
+        "api_calls_saved": stats["total_panels"] - stats["total_pages"]
+    }
 
