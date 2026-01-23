@@ -172,6 +172,108 @@ The image MUST be vertical 9:16 portrait orientation.
 
 
 # ============================================================
+# SFX TO PROMPT ENHANCEMENT FUNCTION
+# ============================================================
+
+def sfx_to_prompt_enhancement(sfx_effects: list) -> str:
+    """
+    Convert SFX effects to natural language prompt enhancement.
+    
+    This function transforms structured SFX data into descriptive text
+    that can be understood by image generation AI to render visual effects
+    directly in the generated image.
+    
+    Args:
+        sfx_effects: List of SFX effect dictionaries with keys:
+            - type: str (wind_lines, speed_lines, impact_text, emotional_effect, screen_effect)
+            - description: str (details about the effect)
+            - intensity: str (low, medium, high)
+            - position: str (optional - screen, background, around_character)
+    
+    Returns:
+        str: Natural language description of visual effects to include in prompt
+    """
+    if not sfx_effects or not isinstance(sfx_effects, list):
+        return "None"
+    
+    enhancements = []
+    
+    for sfx in sfx_effects:
+        sfx_type = sfx.get("type", "")
+        description = (sfx.get("description", "") or "").lower()
+        intensity = sfx.get("intensity", "medium")
+        
+        # Map intensity to descriptive words
+        intensity_word = {
+            "low": "subtle",
+            "medium": "",
+            "high": "dramatic"
+        }.get(intensity, "")
+        
+        if sfx_type == "wind_lines":
+            if "left" in description:
+                enhancements.append(f"{intensity_word} motion blur lines streaking from left side, manga-style speed effect showing movement".strip())
+            elif "right" in description:
+                enhancements.append(f"{intensity_word} motion blur lines streaking from right side, manga-style speed effect showing movement".strip())
+            else:
+                enhancements.append(f"{intensity_word} speed lines radiating from center, dynamic manga action effect, sense of fast movement".strip())
+                
+        elif sfx_type == "speed_lines":
+            enhancements.append(f"{intensity_word} radial speed lines emanating outward from focal point, high-energy action manga effect".strip())
+            
+        elif sfx_type == "impact_text":
+            # Extract text from details if available
+            details = sfx.get("details", "")
+            if isinstance(details, str) and "Text:" in details:
+                import re
+                match = re.search(r'Text:\s*(.+)', details, re.IGNORECASE)
+                text = match.group(1).strip() if match else "!"
+            else:
+                text = description.replace("impact_text", "").strip() or "!"
+            
+            if text:
+                enhancements.append(f"bold stylized impact text '{text}' rendered in manga style, dramatic typography effect".strip())
+                
+        elif sfx_type == "emotional_effect":
+            if "sweat" in description:
+                enhancements.append(f"{intensity_word} small anime-style sweat drops near character's head indicating nervousness or anxiety".strip())
+            elif "sparkle" in description or "shine" in description:
+                enhancements.append(f"{intensity_word} sparkle/shine effects around character in bishojo/bishounen manga style, glittering highlights".strip())
+            elif "blush" in description:
+                enhancements.append(f"{intensity_word} pink blush effect on character's cheeks, romantic manga style emotional indicator".strip())
+            elif "anger" in description or "vein" in description:
+                enhancements.append(f"{intensity_word} anime-style anger vein mark on character's forehead or temple".strip())
+            elif "heart" in description:
+                enhancements.append(f"{intensity_word} floating heart symbols near character, romantic manga emotion indicator".strip())
+            elif "shock" in description or "surprise" in description:
+                enhancements.append(f"{intensity_word} shock lines or surprise effects around character, manga-style startle indicator".strip())
+            elif "tear" in description:
+                enhancements.append(f"{intensity_word} glistening tear drops in character's eyes or on cheeks, emotional manga effect".strip())
+            else:
+                # Generic emotional effect
+                enhancements.append(f"{intensity_word} manga-style emotional indicator effect around character".strip())
+                
+        elif sfx_type == "screen_effect":
+            if "darken" in description:
+                enhancements.append(f"{intensity_word} darkened atmospheric mood, shadows creeping in, moody dramatic lighting".strip())
+            elif "vignette" in description:
+                enhancements.append(f"{intensity_word} vignette effect with darkened corners drawing focus to center, cinematic drama".strip())
+            elif "blur" in description:
+                enhancements.append(f"{intensity_word} soft focus blur effect on background, dreamlike atmosphere".strip())
+            elif "shake" in description:
+                enhancements.append(f"motion blur suggesting camera shake, intense action moment, dynamic energy".strip())
+            else:
+                enhancements.append(f"{intensity_word} atmospheric screen effect adding dramatic tension".strip())
+                
+        elif sfx_type == "motion_blur":
+            enhancements.append(f"{intensity_word} motion blur trailing behind moving elements, sense of rapid movement and energy".strip())
+    
+    if enhancements:
+        return "Visual Effects to include: " + ", ".join(enhancements)
+    return "None"
+
+
+# ============================================================
 # EXAMPLE USAGE WITH POPULATED DATA
 # ============================================================
 

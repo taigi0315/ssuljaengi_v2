@@ -626,7 +626,7 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
         HTTPException: If script not found or image generation fails
     """
     from app.models.story import GenerateSceneImageRequest, SceneImage
-    from app.prompt.scene_image import SCENE_IMAGE_TEMPLATE
+    from app.prompt.scene_image import SCENE_IMAGE_TEMPLATE, sfx_to_prompt_enhancement
     
     logger.info(f"Generating scene image for panel: {request.panel_number}")
     logger.info(f"Script ID: {request.script_id}")
@@ -687,20 +687,14 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
                 panel_metadata["visual_prompt"] = panel.get("visual_prompt", "")
                 panel_metadata["story_beat"] = panel.get("story_beat", "")
 
-                # Extract SFX effects
+                # Extract SFX effects and convert to AI-readable descriptions
                 sfx_effects = panel.get("sfx_effects", [])
                 if sfx_effects:
-                    sfx_parts = []
-                    for sfx in sfx_effects:
-                        sfx_type = sfx.get("type", "")
-                        intensity = sfx.get("intensity", "medium")
-                        desc = sfx.get("description", "")
-                        position = sfx.get("position", "background")
-                        sfx_parts.append(f"- {sfx_type.upper()} effect ({intensity} intensity): {desc} [Position: {position}]")
-                    panel_metadata["sfx_description"] = "\n".join(sfx_parts)
-                    logger.info(f"SFX effects found: {len(sfx_effects)}")
+                    # Use the new sfx_to_prompt_enhancement function for better AI understanding
+                    panel_metadata["sfx_description"] = sfx_to_prompt_enhancement(sfx_effects)
+                    logger.info(f"SFX effects found: {len(sfx_effects)} - Enhanced for image gen")
                 else:
-                    panel_metadata["sfx_description"] = "No special visual effects for this scene"
+                    panel_metadata["sfx_description"] = "None"
                 
                 logger.info(f"Active characters in panel {request.panel_number}: {active_char_names}")
                 
