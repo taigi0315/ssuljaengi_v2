@@ -23,6 +23,8 @@ class ShotType(str, Enum):
 
     Used by the Cinematographer agent to plan visual variety
     and by the evaluator to score shot distribution.
+    
+    v2.1.0 E1-T03: Added romance-specific shot types (macro_*, silhouette, etc.)
     """
     EXTREME_CLOSE_UP = "extreme_close_up"  # Eyes, lips, small details - 85-100% frame
     CLOSE_UP = "close_up"                   # Face/head - 70-85% frame
@@ -34,6 +36,14 @@ class ShotType(str, Enum):
     DETAIL = "detail"                       # Objects, hands, symbolic elements
     OVER_SHOULDER = "over_shoulder"         # Conversation shot - 40-60% frame
     POV = "pov"                             # Point of view shot
+    # v2.1.0 E1-T03: Romance-specific shot types
+    MACRO_EYES = "macro_eyes"               # Glistening eyes, tears - 90-100% frame
+    MACRO_HANDS = "macro_hands"             # Hand touches, rings - 80-95% frame
+    MACRO_LIPS = "macro_lips"               # Kiss scenes, whispered words - 85-100% frame
+    FULL_BODY = "full_body"                 # Complete figure, posture - 15-35% frame
+    SILHOUETTE = "silhouette"               # Dramatic backlit moments - 10-40% frame
+    TWO_SHOT = "two_shot"                   # Both characters in frame - 30-60% frame
+    SPLIT_SCREEN = "split_screen"           # Parallel moments - 50/50
 
     @classmethod
     def get_frame_percentage_range(cls, shot_type: "ShotType") -> tuple[int, int]:
@@ -49,8 +59,35 @@ class ShotType(str, Enum):
             cls.DETAIL: (10, 90),  # Varies based on subject
             cls.OVER_SHOULDER: (40, 60),
             cls.POV: (0, 100),  # Varies
+            # v2.1.0 additions
+            cls.MACRO_EYES: (90, 100),
+            cls.MACRO_HANDS: (80, 95),
+            cls.MACRO_LIPS: (85, 100),
+            cls.FULL_BODY: (15, 35),
+            cls.SILHOUETTE: (10, 40),
+            cls.TWO_SHOT: (30, 60),
+            cls.SPLIT_SCREEN: (50, 50),
         }
         return ranges.get(shot_type, (30, 50))
+    
+    @classmethod
+    def get_style_mode_for_shot(cls, shot_type: "ShotType") -> str | None:
+        """
+        v2.1.0 E1-T03: Get recommended style_mode for a shot type.
+        
+        Returns the default style mode that works best with this shot type.
+        """
+        romantic_detail_shots = {
+            cls.EXTREME_CLOSE_UP, cls.MACRO_EYES, cls.MACRO_HANDS,
+            cls.MACRO_LIPS, cls.CLOSE_UP, cls.SILHOUETTE, cls.DETAIL
+        }
+        action_shots = {cls.SPLIT_SCREEN}
+        
+        if shot_type in romantic_detail_shots:
+            return "romantic_detail"
+        elif shot_type in action_shots:
+            return "action_dynamic"
+        return None
 
 
 class StoryRequest(BaseModel):
@@ -153,12 +190,117 @@ class EvaluationResult(BaseModel):
 
 
 
+class TextType(str, Enum):
+    """
+    v2.1.0 E2-T01: Text type classification for webtoon dialogue.
+    
+    Determines how text should be rendered:
+    - DIALOGUE: Standard speech bubble (round)
+    - MONOLOGUE: Internal thought (square box)  
+    - SFX: Atmospheric/sound effect (free-floating artistic text)
+    - NARRATION: Story narration (box at top/bottom)
+    """
+    DIALOGUE = "dialogue"           # "Hello!" → Round speech bubble
+    MONOLOGUE = "monologue"         # *I can't believe this...* → Square thought box
+    SFX = "sfx"                     # *THUMP* *Silence* → Artistic floating text
+    NARRATION = "narration"         # "The next day..." → Narrator box
+
+
+# Keywords for automatic text type classification
+SFX_KEYWORDS = [
+    "silence", "thump", "thud", "bang", "crash", "whoosh", "sigh",
+    "gasp", "nervousness", "tension", "heartbeat", "thunder", "rain",
+    "wind", "footsteps", "door", "click", "ring", "buzz", "beep"
+]
+
+MONOLOGUE_PATTERNS = [
+    r"^\*[^*]+\*$",           # *text enclosed in asterisks*
+    r"^[（(].+[)）]$",         # (text in parentheses) or （Japanese parentheses）
+    r"^『.+』$",               # Japanese thought quotes
+    r"^\[.+\]$",              # [bracketed text]
+]
+
+
 class DialogueLine(BaseModel):
     """
-    Single line of dialogue in a webtoon panel.
+    Single line of dialogue/text in a webtoon panel.
+    
+    v2.1.0 E2-T02: Extended with text_type for rendering classification.
     """
     character: str = Field(..., description="Name of the character speaking.")
     text: str = Field(..., description="The dialogue text.")
+    # v2.1.0 E2-T02: Text type classification
+    text_type: TextType = Field(
+        default=TextType.DIALOGUE,
+        description="Type of text: dialogue (speech bubble), monologue (thought box), sfx (artistic), narration (narrator box)"
+    )
+    order: int = Field(
+        default=1,
+        description="Order of this dialogue within the panel (for multiple speakers)",
+        ge=1
+    )
+    
+    @classmethod
+    def auto_classify(cls, character: str, text: str, order: int = 1) -> "DialogueLine":
+        """
+        v2.1.0 E2-T01: Automatically classify text type based on content.
+        
+        Classification rules:
+        1. Text wrapped in * or () → MONOLOGUE
+        2. Text matching SFX keywords → SFX
+        3. Narrator/System as character → NARRATION
+        4. Everything else → DIALOGUE
+        
+        Args:
+            character: Character name
+            text: The text content
+            order: Order within panel
+            
+        Returns:
+            DialogueLine with auto-detected text_type
+        """
+        import re
+        
+        text_lower = text.lower().strip()
+        text_stripped = text.strip()
+        
+        # Check for monologue patterns
+        for pattern in MONOLOGUE_PATTERNS:
+            if re.match(pattern, text_stripped):
+                return cls(
+                    character=character,
+                    text=text,
+                    text_type=TextType.MONOLOGUE,
+                    order=order
+                )
+        
+        # Check for SFX keywords (often marked with * or standalone)
+        if text_stripped.startswith("*") and text_stripped.endswith("*"):
+            inner_text = text_stripped[1:-1].lower()
+            if any(kw in inner_text for kw in SFX_KEYWORDS):
+                return cls(
+                    character=character,
+                    text=text,
+                    text_type=TextType.SFX,
+                    order=order
+                )
+        
+        # Check for narration (usually by Narrator or system)
+        if character.lower() in ["narrator", "나레이터", "system", "narration"]:
+            return cls(
+                character=character,
+                text=text,
+                text_type=TextType.NARRATION,
+                order=order
+            )
+        
+        # Default to dialogue
+        return cls(
+            character=character,
+            text=text,
+            text_type=TextType.DIALOGUE,
+            order=order
+        )
 
 
 class Character(BaseModel):
@@ -498,6 +640,46 @@ class WebtoonPanel(BaseModel):
         default=None, 
         description="List of dialogue objects: [{'character': 'Name', 'text': 'Speech'}]",
     )
+    # v2.1.0 E5-T01: Panel-level style mode for dynamic style switching
+    style_mode: Optional[str] = Field(
+        default=None,
+        description="Panel-level style override: 'romantic_detail' (high detail for serious/romantic), 'comedy_chibi' (SD/chibi for humor), 'action_dynamic' (dynamic lines for action), or null for default"
+    )
+    scene_number: int = Field(
+        default=1,
+        description="Scene number this panel belongs to",
+        ge=1
+    )
+    
+    @classmethod
+    def get_style_mode_keywords(cls, style_mode: Optional[str]) -> str:
+        """
+        v2.1.0 E5-T01: Get style keywords based on style_mode.
+        
+        Returns style modifier keywords to append to visual prompts
+        based on the panel's style mode setting.
+        """
+        if not style_mode:
+            return ""
+        
+        style_keywords = {
+            "romantic_detail": (
+                "highly detailed illustration, soft lighting, delicate linework, "
+                "subtle color gradients, romantic atmosphere, professional webtoon quality, "
+                "expressive eyes, soft focus on background"
+            ),
+            "comedy_chibi": (
+                "chibi style, super-deformed proportions, exaggerated expressions, "
+                "simplified features, cute aesthetic, comedic effect, big head small body, "
+                "expressive oversized reactions"
+            ),
+            "action_dynamic": (
+                "dynamic action pose, speed lines, motion blur effects, "
+                "high contrast, dramatic angles, powerful composition, "
+                "intense energy, bold linework"
+            ),
+        }
+        return style_keywords.get(style_mode, "")
     
     class Config:
         json_schema_extra = {
@@ -506,7 +688,8 @@ class WebtoonPanel(BaseModel):
                 "shot_type": "Medium Shot",
                 "active_character_names": ["Ji-hoon", "Hana"],
                 "visual_prompt": "Medium shot of a tall man with sharp jawline... (Ji-hoon) ...",
-                "dialogue": [{"character": "Ji-hoon", "text": "We need to talk about what happened."}]
+                "dialogue": [{"character": "Ji-hoon", "text": "We need to talk about what happened."}],
+                "style_mode": "romantic_detail"
             }
         }
 

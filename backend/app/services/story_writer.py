@@ -73,6 +73,17 @@ class StoryWriter:
                 "title": reddit_post.title,
                 "content": reddit_post.content or reddit_post.title
             })
+            
+            # Log successful generation
+            from app.utils.llm_logger import llm_logger
+            await llm_logger.log_request(
+                service_name="story_writer",
+                model_name=str(self.llm), # simplified model name logging
+                prompt=f"Title: {reddit_post.title}\nContent: {reddit_post.content}\nMood: {reddit_post.mood}",
+                output=story,
+                metadata={"post_id": reddit_post.id, "mood": reddit_post.mood}
+            )
+            
             return story
         except Exception as e:
             raise Exception(f"Story generation failed: {str(e)}")
