@@ -56,6 +56,8 @@ class Page:
         layout_type: Type of layout (single, two_panel, etc.)
         is_single_panel: Whether this is a full-page single panel
         reasoning: Explanation for this grouping
+        panel_weights: v2.1.0 E1-T02 - Percentage weight for each panel
+        composition: v2.1.0 E1-T02 - Detailed composition analysis
     """
     page_number: int
     panel_indices: List[int]
@@ -63,6 +65,10 @@ class Page:
     layout_type: PageLayoutType = PageLayoutType.THREE_PANEL
     is_single_panel: bool = False
     reasoning: str = ""
+    # v2.1.0 E1-T02: Panel importance weights (percentage of page per panel)
+    panel_weights: Dict[int, float] = field(default_factory=dict)
+    # v2.1.0 E1-T02: Detailed composition analysis
+    composition: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         """Update is_single_panel based on layout."""
@@ -72,6 +78,23 @@ class Page:
     def panel_count(self) -> int:
         """Number of panels on this page."""
         return len(self.panel_indices)
+    
+    def get_panel_weight(self, panel_index: int) -> float:
+        """
+        Get the weight (% of page) for a specific panel.
+        
+        v2.1.0 E1-T02: Returns the compositional weight for sizing.
+        
+        Args:
+            panel_index: Index within this page's panels (0-indexed)
+            
+        Returns:
+            Percentage weight (0-100). Default 100/panel_count if not set.
+        """
+        if self.panel_weights and panel_index in self.panel_weights:
+            return self.panel_weights[panel_index]
+        # Default to equal distribution
+        return 100.0 / self.panel_count if self.panel_count > 0 else 100.0
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -82,6 +105,9 @@ class Page:
             "layout_type": self.layout_type.value,
             "is_single_panel": self.is_single_panel,
             "reasoning": self.reasoning,
+            # v2.1.0 E1-T02
+            "panel_weights": self.panel_weights,
+            "composition": self.composition,
         }
 
 
@@ -177,20 +203,200 @@ def get_panel_count_for_scene_type(scene_type: str) -> int:
     """
     Get recommended panel count for a scene type.
 
+    v2.1.0 E1-T01: Extended to support 1-5 panel range dynamically.
+    
     Args:
         scene_type: Type of scene
 
     Returns:
-        Recommended number of panels per page
+        Recommended number of panels per page (1-5)
     """
     recommendations = {
-        "action": 4,
-        "dialogue": 3,
-        "emotional": 2,
-        "establishing": 2,
-        "transition": 3,
+        "action": 4,       # Fast pacing, more panels
+        "dialogue": 3,     # Standard conversation flow
+        "emotional": 2,    # Give space for emotional beats
+        "establishing": 2, # Wide shots need room
+        "transition": 3,   # Standard pacing
+        "dense": 5,        # v2.1.0: Dense storytelling sequences
+        "climax": 1,       # v2.1.0: Single panel for key moments
     }
     return recommendations.get(scene_type, 3)
+
+
+# ============================================================================
+# Panel Importance Weighting System (v2.1.0 E1-T02)
+# ============================================================================
+
+class PanelImportance(str, Enum):
+    """
+    Panel importance levels for compositional weighting.
+    
+    v2.1.0 E1-T02: Defines how much visual space a panel should occupy
+    relative to other panels on the same page.
+    """
+    HERO = "hero"           # 60-70% of page - key emotional/story moments
+    PRIMARY = "primary"     # 40-50% of page - main action/dialogue
+    SECONDARY = "secondary" # 25-35% of page - supporting context
+    TERTIARY = "tertiary"   # 15-20% of page - transitions/reactions
+
+
+# Importance weight mapping (percentage of page)
+IMPORTANCE_WEIGHTS = {
+    PanelImportance.HERO: (60, 70),      # Hero panels dominate the page
+    PanelImportance.PRIMARY: (40, 50),   # Primary panels are substantial
+    PanelImportance.SECONDARY: (25, 35), # Secondary panels support
+    PanelImportance.TERTIARY: (15, 20),  # Tertiary panels are compact
+}
+
+
+def calculate_panel_importance(panel: WebtoonPanel) -> PanelImportance:
+    """
+    Calculate the importance level of a panel based on content analysis.
+    
+    v2.1.0 E1-T02: Determines how much visual weight a panel should have.
+    
+    Args:
+        panel: The WebtoonPanel to analyze
+        
+    Returns:
+        PanelImportance level
+    """
+    intensity = getattr(panel, "emotional_intensity", 5)
+    story_beat = getattr(panel, "story_beat", "").lower()
+    visual_prompt = getattr(panel, "visual_prompt", "").lower()
+    shot_type = getattr(panel, "shot_type", "").lower()
+    dialogue = getattr(panel, "dialogue", [])
+    
+    combined = f"{story_beat} {visual_prompt}"
+    
+    # HERO: Key emotional/story moments (intensity 8-10)
+    hero_keywords = ["climax", "confession", "reveal", "kiss", "death", "breakthrough"]
+    if intensity >= 9 or any(kw in combined for kw in hero_keywords):
+        return PanelImportance.HERO
+    
+    # HERO: Extreme close-ups at high intensity
+    if "extreme" in shot_type and intensity >= 7:
+        return PanelImportance.HERO
+    
+    # PRIMARY: Important scenes with dialogue or mid-high intensity
+    if intensity >= 7 or (dialogue and len(dialogue) >= 2):
+        return PanelImportance.PRIMARY
+    
+    # PRIMARY: Close-up shots typically carry emotional weight
+    if "close" in shot_type and intensity >= 5:
+        return PanelImportance.PRIMARY
+    
+    # TERTIARY: Low intensity transitions and wide establishing shots
+    transition_keywords = ["meanwhile", "later", "walks", "approaches", "enters"]
+    if intensity <= 3 or any(kw in combined for kw in transition_keywords):
+        return PanelImportance.TERTIARY
+    
+    # SECONDARY: Everything else
+    return PanelImportance.SECONDARY
+
+
+def get_recommended_layout_for_importance_mix(
+    importance_levels: List[PanelImportance]
+) -> Tuple[PageLayoutType, Dict[int, float]]:
+    """
+    Get recommended layout and size distribution for a mix of panel importances.
+    
+    v2.1.0 E1-T02: Dynamically calculates panel sizes based on importance.
+    
+    Args:
+        importance_levels: List of importance levels for panels on the page
+        
+    Returns:
+        Tuple of (layout_type, size_distribution dict mapping panel index to % of page)
+    """
+    count = len(importance_levels)
+    
+    # Determine layout type
+    layout_map = {
+        1: PageLayoutType.SINGLE,
+        2: PageLayoutType.TWO_PANEL,
+        3: PageLayoutType.THREE_PANEL,
+        4: PageLayoutType.FOUR_PANEL,
+        5: PageLayoutType.FIVE_PANEL,
+    }
+    layout_type = layout_map.get(count, PageLayoutType.FIVE_PANEL)
+    
+    # If single panel, it gets 100%
+    if count == 1:
+        return layout_type, {0: 100.0}
+    
+    # Calculate weights based on importance
+    raw_weights = []
+    for imp in importance_levels:
+        min_pct, max_pct = IMPORTANCE_WEIGHTS[imp]
+        avg = (min_pct + max_pct) / 2
+        raw_weights.append(avg)
+    
+    # Normalize to 100%
+    total = sum(raw_weights)
+    size_distribution = {
+        i: round((w / total) * 100, 1)
+        for i, w in enumerate(raw_weights)
+    }
+    
+    return layout_type, size_distribution
+
+
+def analyze_page_composition(panels: List[WebtoonPanel]) -> Dict[str, Any]:
+    """
+    Analyze a page's composition based on panel importance.
+    
+    v2.1.0 E1-T02: Provides detailed composition analysis for rendering.
+    
+    Args:
+        panels: List of WebtoonPanel objects on the page
+        
+    Returns:
+        Composition analysis with layout recommendations
+    """
+    if not panels:
+        return {"error": "No panels provided"}
+    
+    importance_levels = [calculate_panel_importance(p) for p in panels]
+    layout_type, size_distribution = get_recommended_layout_for_importance_mix(importance_levels)
+    
+    # Count importance distribution
+    importance_counts = {}
+    for imp in importance_levels:
+        importance_counts[imp.value] = importance_counts.get(imp.value, 0) + 1
+    
+    return {
+        "panel_count": len(panels),
+        "layout_type": layout_type.value,
+        "importance_distribution": importance_counts,
+        "panel_details": [
+            {
+                "index": i,
+                "importance": importance_levels[i].value,
+                "weight_percentage": size_distribution[i],
+            }
+            for i in range(len(panels))
+        ],
+        "has_hero_panel": PanelImportance.HERO in importance_levels,
+        "composition_notes": _generate_composition_notes(importance_levels, layout_type),
+    }
+
+
+def _generate_composition_notes(
+    importance_levels: List[PanelImportance],
+    layout_type: PageLayoutType
+) -> str:
+    """Generate human-readable composition notes."""
+    count = len(importance_levels)
+    hero_count = importance_levels.count(PanelImportance.HERO)
+    primary_count = importance_levels.count(PanelImportance.PRIMARY)
+    
+    if hero_count > 0:
+        return f"Hero-focused layout with {count} panels. Primary focus on panel(s) with highest emotional weight."
+    elif primary_count >= count // 2:
+        return f"Balanced {layout_type.value} layout. Multiple important moments require careful visual hierarchy."
+    else:
+        return f"Supporting sequence with {count} panels. Quick pacing for transitional content."
 
 
 # ============================================================================
@@ -328,7 +534,11 @@ class PanelComposer:
         panels: List[WebtoonPanel],
         reasoning: str = ""
     ) -> Page:
-        """Create a Page object with the appropriate layout type."""
+        """
+        Create a Page object with the appropriate layout type.
+        
+        v2.1.0 E1-T02: Now includes panel importance weights and composition analysis.
+        """
         count = len(panel_indices)
         layout_map = {
             1: PageLayoutType.SINGLE,
@@ -340,13 +550,24 @@ class PanelComposer:
         layout_type = layout_map.get(count, PageLayoutType.FIVE_PANEL)
 
         page_panels = [panels[i] for i in panel_indices]
+        
+        # v2.1.0 E1-T02: Calculate panel importance and weights
+        composition = analyze_page_composition(page_panels)
+        
+        # Extract weights from composition (map local index to weight)
+        panel_weights = {}
+        if "panel_details" in composition:
+            for detail in composition["panel_details"]:
+                panel_weights[detail["index"]] = detail["weight_percentage"]
 
         return Page(
             page_number=page_number,
             panel_indices=panel_indices,
             panels=page_panels,
             layout_type=layout_type,
-            reasoning=reasoning
+            reasoning=reasoning,
+            panel_weights=panel_weights,
+            composition=composition
         )
 
     def _group_with_llm(

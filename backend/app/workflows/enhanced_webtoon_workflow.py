@@ -272,7 +272,16 @@ async def scene_planner_node(state: EnhancedWebtoonState) -> EnhancedWebtoonStat
         # Use agent result for scene_plan
         scene_plan = result_state.scene_plan
 
+        # v2.1.0 E2-T01: Auto-classify dialogue types (dialogue, monologue, sfx)
+        from app.agents.text_classifier import classify_dialogue_in_script
+        panels = classify_dialogue_in_script(panels)
+        
+        # v2.1.0 E5-T02 & E1-T04: Analyze emotional pacing and auto-detect style mode
+        from app.prompt.emotional_pacing import analyze_panels_batch
+        panels = analyze_panels_batch(panels)
+
         logger.info(f"Scene planning complete: {len(panels)} panels, {len(characters)} characters")
+        logger.info(f"Emotional pacing and text classification applied.")
 
         return {
             **state,
@@ -326,11 +335,19 @@ async def cinematographer_node(state: EnhancedWebtoonState) -> EnhancedWebtoonSt
         # Run agent
         result_state = await cinematographer.run(agent_state)
         
+        # v2.1.0 E3-T02: Run Scene-to-Scene Consistency Validator
+        from app.agents import consistency_validator
+        consistency_state = consistency_validator.ConsistencyState(panels=panels)
+        consistency_result = await consistency_validator.run(consistency_state)
+        
         logger.info(f"Cinematography analysis complete: {result_state.shot_plan}")
+        if not consistency_result.is_consistent:
+            logger.warning(f"Consistency issues found: {len(consistency_result.issues)}")
 
         return {
             **state,
             "shot_plan": result_state.shot_plan,
+            "consistency_issues": [issue.model_dump() for issue in consistency_result.issues],
             "current_step": "shots_analyzed"
         }
 
@@ -387,16 +404,20 @@ async def mood_designer_node(state: EnhancedWebtoonState) -> EnhancedWebtoonStat
 
 async def visual_prompter_node(state: EnhancedWebtoonState) -> EnhancedWebtoonState:
     """
-    Visual Prompter: Enhance visual prompts with mood and style information.
+    Visual Prompter: Enhance visual prompts with mood, style, AND character references.
 
-    Combines base style with mood modifiers for each panel.
+    v2.1.0 Enhancement (E3-T01):
+    - Now passes global character definitions to ensure consistency
+    - Character style sheet is placed at TOP of every prompt
     """
-    logger.info("Visual Prompter: Enhancing prompts...")
+    logger.info("Visual Prompter: Enhancing prompts with character style sheet...")
 
     try:
         panels = state.get("panels", [])
         mood_assignments = state.get("mood_assignments", [])
         image_style = state.get("image_style", "SOFT_ROMANTIC_WEBTOON")
+        # v2.1.0: Get characters for global style sheet
+        characters = state.get("characters", [])
 
         if not panels:
             return {
@@ -405,20 +426,31 @@ async def visual_prompter_node(state: EnhancedWebtoonState) -> EnhancedWebtoonSt
                 "current_step": "failed"
             }
         
-        # Create agent state
+        # Create agent state with characters for consistency (v2.1.0)
         agent_state = visual_prompter.VisualPrompterState(
             panels=panels,
             mood_assignments=mood_assignments,
-            image_style=image_style
+            image_style=image_style,
+            characters=characters  # v2.1.0: Global character style sheet
         )
         
         # Run agent
         result_state = await visual_prompter.run(agent_state)
 
-        logger.info(f"Enhanced {len(result_state.enhanced_prompts)} visual prompts")
+        logger.info(f"Enhanced {len(result_state.enhanced_prompts)} visual prompts with character references")
+
+        # v2.1.0 Fix: Save enhanced prompts back to panels so they are used in generation
+        enhanced_prompts = result_state.enhanced_prompts
+        if enhanced_prompts and len(enhanced_prompts) == len(panels):
+             for i, panel in enumerate(panels):
+                 panel["visual_prompt"] = enhanced_prompts[i]
+             logger.info("Updated panels with enhanced visual prompts")
+        else:
+             logger.warning("Enhanced prompt count mismatch, skipping update")
 
         return {
             **state,
+            "panels": panels, # Return updated panels
             "enhanced_prompts": result_state.enhanced_prompts,
             "current_step": "prompts_enhanced"
         }

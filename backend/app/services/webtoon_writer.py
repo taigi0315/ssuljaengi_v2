@@ -298,6 +298,16 @@ class WebtoonWriter:
             # This prevents validation errors when LLM returns incomplete data
             result = self._fill_missing_fields_in_dict(result)
             
+            # Log generation
+            from app.utils.llm_logger import llm_logger
+            await llm_logger.log_request(
+                service_name="webtoon_writer",
+                model_name=str(self.llm),
+                prompt=f"Genre: {story_genre}\nStyle: {image_style}\nStory Length: {len(story)} chars",
+                output=result, # Log raw dict before pydantic conversion to catch schema issues
+                metadata={"genre": story_genre, "style": image_style}
+            )
+            
             # Convert dict to WebtoonScript model (now with all fields filled)
             webtoon_script = WebtoonScript(**result)
             

@@ -702,7 +702,9 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
                     for char in characters:
                         if char["name"] == char_name:
                             # Use the programmatically built visual_description
-                            desc = f"- {char_name}: {char.get('gender', 'unknown')} character (reference image provided - appearance locked)"
+                            # Explicitly add gender as requested by user
+                            gender = char.get('gender', 'unknown')
+                            desc = f"- {char_name} ({gender}): {char.get('visual_description', '')} (reference image provided - appearance locked)"
                             character_descriptions.append(desc)
                             break
                 break
@@ -961,7 +963,8 @@ async def generate_page_image(request: GeneratePageImageRequest):
             panels=page_panels,
             style_description=style_desc,
             style_modifiers=request.style_modifiers,
-            reference_images=reference_images
+            reference_images=reference_images,
+            characters=script_data.get("characters", [])
         )
         
         # Store in page_images

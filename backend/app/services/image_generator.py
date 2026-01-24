@@ -99,6 +99,17 @@ class ImageGenerator:
                 # Direct call, let exception propagate as requested
                 image_url = await self._generate_with_gemini(final_prompt, character_name)
                 logger.info(f"Image generated with Gemini for {character_name}")
+                
+                # Log image generation (store meta, not heavy base64)
+                from app.utils.llm_logger import llm_logger
+                await llm_logger.log_request(
+                    service_name="image_generator_character",
+                    model_name=get_settings().model_image_gen,
+                    prompt=final_prompt,
+                    output="<Base64 Image Data>", # Don't log full base64
+                    metadata={"character": character_name, "gender": gender, "style": image_style}
+                )
+                
                 return image_url, final_prompt
             else:
                 raise Exception("Gemini API not initialized, cannot generate image.")
@@ -241,6 +252,17 @@ class ImageGenerator:
             self._save_image_to_cache(image_base64, "scene", mime_type)
             
             logger.info(f"Scene image generated successfully with references")
+            
+            # Log scene generation
+            from app.utils.llm_logger import llm_logger
+            await llm_logger.log_request(
+                service_name="image_generator_scene",
+                model_name=model_name,
+                prompt=prompt,
+                output="<Base64 Image Data>",
+                metadata={"style": image_style, "ref_count": len(reference_images)}
+            )
+            
             return f"data:{mime_type};base64,{image_base64}"
             
         except Exception as e:
@@ -563,6 +585,17 @@ class ImageGenerator:
             self._save_image_to_cache(image_base64, f"multi_panel_{panel_count}", mime_type)
 
             logger.info(f"Multi-panel page ({panel_count} panels) generated successfully")
+            
+            # Log multi-panel generation
+            from app.utils.llm_logger import llm_logger
+            await llm_logger.log_request(
+                service_name="image_generator_multi_panel",
+                model_name=model_name,
+                prompt=prompt,
+                output="<Base64 Image Data>",
+                metadata={"panel_count": panel_count}
+            )
+            
             return f"data:{mime_type};base64,{image_base64}"
 
         except Exception as e:

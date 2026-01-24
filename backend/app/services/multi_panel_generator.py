@@ -14,7 +14,7 @@ from typing import List, Optional, Dict
 from google.genai import types
 from app.config import get_settings
 from app.models.story import WebtoonPanel
-from app.prompt.multi_panel_generator import build_multi_panel_prompt
+# from app.prompt.multi_panel_generator import build_multi_panel_prompt
 from app.services.image_generator import image_generator, CACHE_DIR
 from app.utils.dialogue_formatter import format_dialogue_as_visual_context
 
@@ -36,7 +36,8 @@ class MultiPanelGenerator:
         panels: List[WebtoonPanel],
         style_description: str,
         style_modifiers: Optional[List[str]] = None,
-        reference_images: Optional[List[str]] = None
+        reference_images: Optional[List[str]] = None,
+        characters: Optional[List[Dict]] = None
     ) -> str:
         """
         Generate a single vertical image containing multiple panels.
@@ -46,6 +47,7 @@ class MultiPanelGenerator:
             style_description: Description of the art style.
             style_modifiers: Optional list of style keywords.
             reference_images: Optional list of base64 data URLs for reference.
+            characters: Optional list of character dictionaries for rich descriptions.
 
         Returns:
             The data URL (base64) of the generated image.
@@ -56,14 +58,42 @@ class MultiPanelGenerator:
         if not self.image_gen.client:
             raise Exception("Gemini API client not initialized via ImageGenerator.")
 
-        # 1. Prepare panel specifications for the prompt builder
-        panel_specs: List[Dict[str, str]] = []
+        # 1. Prepare character references for consistent appearance
+        character_references = {}
+        if characters:
+            for char in characters:
+                name = char.get("name", "Unknown")
+                # Build rich description: "Name (Gender, Age...): Description"
+                details = []
+                if char.get("gender"): details.append(char["gender"])
+                if char.get("age"): details.append(str(char["age"]))
+                
+                desc_parts = [f"{name} ({', '.join(details)})" if details else name]
+                
+                if char.get("visual_description"):
+                    desc_parts.append(char["visual_description"])
+                
+                # Add specific visual traits if available
+                visual_traits = []
+                for trait in ["hair", "face", "outfit", "body"]:
+                    if char.get(trait):
+                        visual_traits.append(f"{trait}: {char[trait]}")
+                
+                if visual_traits:
+                    desc_parts.append(f"Visual traits: {', '.join(visual_traits)}")
+                
+                character_references[name] = ": ".join(desc_parts)
+
+        # 1.5. Inject dialogue expressions into visual prompts (Legacy "Good Part")
+        # The legacy code correctly extracted dialogue and converted it to visual expressions.
+        # We perform this enhancement here to ensure the visual prompt includes acting guidance.
+        enhanced_panels = []
         for p in panels:
-            # Extract subject: use characters or default to generic if none
-            subject = ", ".join(p.active_character_names) if p.active_character_names else "scene characters"
+            # We create a copy or modify if possible. internal usage so straightforward modification is okay
+            # but cleaner to not mutate input list if possible. 
+            # WebtoonPanel is Pydantic, so we can use model_copy() if needed, or just set attribute if mutable.
+            # Assuming we can modify or just rely on dynamic attribute for the formatter.
             
-            # Extract dialogue and convert to VISUAL context (expressions, not text)
-            # This informs character expressions WITHOUT rendering speech bubbles
             expression_context = ""
             if hasattr(p, 'dialogue') and p.dialogue:
                 if isinstance(p.dialogue, list):
@@ -72,38 +102,37 @@ class MultiPanelGenerator:
                     # Extract just the expression part, not the header
                     if "CHARACTER EXPRESSIONS" in expression_context:
                         lines = expression_context.split("\n")
-                        expression_lines = [l.strip("- ") for l in lines if l.startswith("- ")]
-                        expression_context = ", ".join(expression_lines)
-
-            # Construct spec dictionary
-            # Note: We combine environment and atmospheric details
-            details_parts = []
-            if p.environment_details:
-                details_parts.append(p.environment_details)
-            if p.atmospheric_conditions:
-                details_parts.append(p.atmospheric_conditions)
-
-            # Start action description with character placement
-            action_desc = p.character_placement_and_action
-            # Append expression context (NOT dialogue text) to guide facial expressions
+                        expression_lines = [l.strip("- ") for l in lines if l.startswith("- ") and ":" in l]
+                        # Only take lines that look like "Name: Expression"
+                        if expression_lines:
+                            expression_context = ". ".join(expression_lines)
+                        else:
+                             # Fallback if parsing fails but content exists
+                             expression_context = expression_context.replace("CHARACTER EXPRESSIONS", "").replace("\n", ". ").strip()
+            
+            # Append expression context to visual prompt if found
             if expression_context:
-                action_desc += f", {expression_context}"
+                original_prompt = getattr(p, "visual_prompt", "")
+                # Avoid duplication if already present
+                if expression_context[:20] not in original_prompt:
+                    p.visual_prompt = f"{original_prompt} [EXPRESSION: {expression_context}]"
+            
+            enhanced_panels.append(p)
 
-            spec = {
-                "shot_type": p.shot_type,
-                "subject": subject,
-                "action": action_desc,
-                "details": ", ".join(details_parts)
-            }
-            panel_specs.append(spec)
-
-        # 2. Build the structured prompt
+        # 2. Build the structured prompt using the standardized builder
+        from app.prompt.multi_panel import format_panels_from_webtoon_panels
+        
+        # Convert explicit style modifiers to keywords string if provided
+        style_keywords = "High resolution, clean line art, professional webtoon quality"
+        if style_modifiers:
+            style_keywords += ", " + ", ".join(style_modifiers)
+            
         try:
-            prompt = build_multi_panel_prompt(
-                panel_count=len(panels),
+            prompt = format_panels_from_webtoon_panels(
+                webtoon_panels=enhanced_panels,
                 style_description=style_description,
-                panels=panel_specs,
-                style_modifiers=style_modifiers
+                style_keywords=style_keywords,
+                character_references=character_references
             )
         except ValueError as e:
             logger.error(f"Failed to build prompt: {e}")
@@ -184,6 +213,16 @@ class MultiPanelGenerator:
             # 5. Save to cache
             filename_prefix = f"multi_panel_{len(panels)}p"
             self.image_gen._save_image_to_cache(image_base64, filename_prefix, mime_type)
+
+            # Log completion
+            from app.utils.llm_logger import llm_logger
+            await llm_logger.log_request(
+                service_name="multi_panel_generator",
+                model_name=model_name,
+                prompt=prompt,
+                output="<Base64 Image Data>",
+                metadata={"panel_count": len(panels), "style": style_description}
+            )
 
             return f"data:{mime_type};base64,{image_base64}"
 
