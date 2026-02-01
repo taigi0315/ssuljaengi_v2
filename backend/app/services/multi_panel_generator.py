@@ -14,7 +14,7 @@ from typing import List, Optional, Dict
 from google.genai import types
 from app.config import get_settings
 from app.models.story import WebtoonPanel
-from app.prompt.multi_panel_generator import build_multi_panel_prompt
+from app.prompt.multi_panel import format_panels_from_webtoon_panels
 from app.services.image_generator import image_generator, CACHE_DIR
 from app.utils.dialogue_formatter import format_dialogue_as_visual_context
 
@@ -99,11 +99,10 @@ class MultiPanelGenerator:
 
         # 2. Build the structured prompt
         try:
-            prompt = build_multi_panel_prompt(
-                panel_count=len(panels),
+            prompt = format_panels_from_webtoon_panels(
+                webtoon_panels=panels,
                 style_description=style_description,
-                panels=panel_specs,
-                style_modifiers=style_modifiers
+                style_keywords=style_modifiers
             )
         except ValueError as e:
             logger.error(f"Failed to build prompt: {e}")
