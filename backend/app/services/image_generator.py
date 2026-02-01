@@ -107,6 +107,141 @@ class ImageGenerator:
             logger.error(f"Image generation failed: {str(e)}", exc_info=True)
             raise Exception(f"Image generation failed: {str(e)}")
     
+    async def generate_character_image_with_reference(
+        self,
+        description: str,
+        character_name: str,
+        gender: str,
+        image_style: str,
+        reference_image: str
+    ) -> Tuple[str, str]:
+        """
+        Generate a character image with a reference image for consistency.
+        
+        Args:
+            description: Visual description of the character
+            character_name: Name of the character
+            gender: Character gender (male/female)
+            image_style: Image style/mood selection
+            reference_image: Base64 data URL of reference image
+            
+        Returns:
+            Tuple of (image_url, prompt_used)
+            
+        Raises:
+            Exception: If image generation fails
+        """
+        try:
+            logger.info(f"Generating character image with reference for: {character_name}")
+            logger.info(f"Style: {image_style}")
+            
+            # Select base style based on gender and description
+            base_style = self._get_base_style(gender, description)
+            
+            # Get image style prompt
+            image_style_prompt = self.image_styles.get(image_style, self.image_styles.get("SOFT_ROMANTIC_WEBTOON", ""))
+            
+            # Build final prompt using template - SAME as text-only generation
+            final_prompt = CHARACTER_IMAGE_TEMPLATE.format(
+                gender_style=base_style,
+                character_description=description,
+                visual_style=image_style_prompt
+            )
+            
+            logger.info(f"Final prompt (first 200 chars): {final_prompt[:200]}...")
+            
+            # Reuse the multimodal generation logic (but we call local private helper or reimplement)
+            # Reimplementing slightly to use the constructed prompt
+            
+            if not self.use_real_generation:
+                raise Exception("Gemini API not initialized, cannot generate image.")
+                
+            settings = get_settings()
+            model_name = settings.model_image_gen
+            
+            # Build multimodal contents
+            contents = []
+            
+            # Add reference image
+            try:
+                if reference_image.startswith('data:'):
+                    parts = reference_image.split(',', 1)
+                    if len(parts) == 2:
+                        mime_part = parts[0]
+                        image_data = parts[1]
+                        
+                        mime_type = "image/png"
+                        if "image/" in mime_part:
+                            mime_type = mime_part.split(';')[0].replace('data:', '')
+                        
+                        image_bytes = base64.b64decode(image_data)
+                        
+                        from google.genai import types
+                        image_part = types.Part.from_bytes(
+                            data=image_bytes,
+                            mime_type=mime_type
+                        )
+                        contents.append(image_part)
+            except Exception as e:
+                logger.warning(f"Failed to process reference image: {str(e)}")
+            
+            # Add the text prompt
+            contents.append(final_prompt)
+            
+            # Generate
+            response = self.client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    image_config=types.ImageConfig(
+                        aspect_ratio="9:16",
+                    ),
+                    safety_settings=[
+                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                    ],
+                )
+            )
+            
+            # Extract image (same logic as before)
+            image_bytes_result = None
+            if response.candidates and response.candidates[0].content.parts:
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        image_bytes_result = part.inline_data.data
+                        break
+            
+            if not image_bytes_result:
+                raise Exception("No image data in response")
+            
+            # Determine mime type
+            res_mime_type = 'image/png'
+            if response.candidates and response.candidates[0].content.parts:
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        if hasattr(part.inline_data, 'mime_type'):
+                            res_mime_type = part.inline_data.mime_type
+                        break
+
+            # Encode base64
+            if isinstance(image_bytes_result, bytes):
+                image_base64 = base64.b64encode(image_bytes_result).decode('utf-8')
+            elif isinstance(image_bytes_result, str):
+                image_base64 = image_bytes_result
+            else:
+                image_base64 = str(image_bytes_result)
+                
+            # Save to cache
+            self._save_image_to_cache(image_base64, character_name, res_mime_type)
+            
+            return f"data:{res_mime_type};base64,{image_base64}", final_prompt
+            
+        except Exception as e:
+            logger.error(f"Character image generation with reference failed: {str(e)}", exc_info=True)
+            raise Exception(f"Image generation failed: {str(e)}")
+
     async def generate_scene_image_with_references(
         self,
         prompt: str,

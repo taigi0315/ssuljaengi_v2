@@ -387,12 +387,14 @@ async def generate_character_image(request: GenerateCharacterImageRequest) -> Ch
             logger.info(f"Reference image URL length: {len(request.reference_image_url)}")
             
             # Use multimodal generation with reference
-            image_url = await image_generator.generate_scene_image_with_references(
-                prompt=request.description,
-                reference_images=[request.reference_image_url],
-                image_style=request.image_style
+            # Use specific character generation method that supports prompt templates + reference
+            image_url, prompt_used = await image_generator.generate_character_image_with_reference(
+                description=request.description,
+                character_name=request.character_name,
+                gender=request.gender,
+                image_style=request.image_style,
+                reference_image=request.reference_image_url
             )
-            prompt_used = request.description
         else:
             # Use text-only generation (existing code)
             logger.info("Using text-only generation (no reference image)")
