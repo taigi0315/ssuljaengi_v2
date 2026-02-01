@@ -123,7 +123,7 @@ class ImageGenerator:
             character_name: Name of the character
             gender: Character gender (male/female)
             image_style: Image style/mood selection
-            reference_image: Base64 data URL of reference image
+            reference_image: Base64 data URL or local /api/ path of reference image
             
         Returns:
             Tuple of (image_url, prompt_used)
@@ -150,9 +150,6 @@ class ImageGenerator:
             
             logger.info(f"Final prompt (first 200 chars): {final_prompt[:200]}...")
             
-            # Reuse the multimodal generation logic (but we call local private helper or reimplement)
-            # Reimplementing slightly to use the constructed prompt
-            
             if not self.use_real_generation:
                 raise Exception("Gemini API not initialized, cannot generate image.")
                 
@@ -164,6 +161,11 @@ class ImageGenerator:
             
             # Add reference image
             try:
+                from google.genai import types
+                
+                image_processed = False
+                
+                # Case 1: Base64 Data URL
                 if reference_image.startswith('data:'):
                     parts = reference_image.split(',', 1)
                     if len(parts) == 2:
@@ -176,12 +178,45 @@ class ImageGenerator:
                         
                         image_bytes = base64.b64decode(image_data)
                         
-                        from google.genai import types
                         image_part = types.Part.from_bytes(
                             data=image_bytes,
                             mime_type=mime_type
                         )
                         contents.append(image_part)
+                        image_processed = True
+                        logger.info("Processed reference image from Data URL")
+                        
+                # Case 2: Local API Path
+                elif '/api/assets/cache/images/' in reference_image:
+                    filename = reference_image.split('/api/assets/cache/images/')[-1]
+                    file_path = CACHE_DIR / filename
+                    
+                    if file_path.exists():
+                        # Determine mime type from extension
+                        ext = file_path.suffix.lower()
+                        mime_type = "image/png" # default
+                        if ext == '.jpg' or ext == '.jpeg':
+                            mime_type = "image/jpeg"
+                        elif ext == '.webp':
+                            mime_type = "image/webp"
+                            
+                        # Read file
+                        with open(file_path, "rb") as f:
+                            image_bytes = f.read()
+                            
+                        image_part = types.Part.from_bytes(
+                            data=image_bytes,
+                            mime_type=mime_type
+                        )
+                        contents.append(image_part)
+                        image_processed = True
+                        logger.info(f"Processed reference image from local file: {filename}")
+                    else:
+                        logger.warning(f"Local reference image not found: {file_path}")
+                
+                if not image_processed:
+                    logger.warning(f"Reference image format not recognized or not found: {reference_image[:50]}...")
+                    
             except Exception as e:
                 logger.warning(f"Failed to process reference image: {str(e)}")
             
