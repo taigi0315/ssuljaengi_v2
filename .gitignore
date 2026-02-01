@@ -11,7 +11,7 @@
 .env.development
 .env.production
 backend/.env
-viral-story-search/.env.local
+frontend/.env.local
 
 # ---------------------------------
 # Python

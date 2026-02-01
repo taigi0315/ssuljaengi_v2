@@ -28,7 +28,7 @@ REM Wait for backend
 timeout /t 5 /nobreak >nul
 
 REM Start frontend minimized
-start /min "Ssuljaengi Frontend" cmd /c "cd /d "%~dp0viral-story-search" && npm run dev"
+start /min "Ssuljaengi Frontend" cmd /c "cd /d "%~dp0frontend" && npm run dev"
 
 REM Wait for frontend
 echo ⏳ Waiting for servers to initialize...

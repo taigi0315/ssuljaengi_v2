@@ -76,7 +76,7 @@ gossiptoon_v2_2/
 │   ├── requirements.txt       # Python dependencies
 │   └── .env.example           # Environment template
 │
-├── viral-story-search/         # Next.js frontend
+├── frontend/                   # Next.js frontend
 │   ├── src/
 │   │   ├── app/               # Next.js app router
 │   │   ├── components/        # React components
@@ -87,8 +87,22 @@ gossiptoon_v2_2/
 │   ├── public/                # Static assets
 │   └── .env.local.example     # Environment template
 │
-├── docs/                       # Project documentation
-│   └── archive/               # Historical development notes
+├── docs/                       # Project documentation & guides
+│   ├── archive/               # Historical development notes
+│   ├── CHANGELOG.md           # Version history
+│   ├── CONTRIBUTING.md        # Contribution guidelines
+│   ├── HOW_TO_RUN.md          # User manual
+│   ├── LAUNCHER_README.md     # Launcher documentation
+│   └── QUICK_REFERENCE.md     # Quick start guide
+│
+├── scripts/                    # Automation scripts
+│   ├── START_APP.bat          # Main launcher script
+│   ├── build_exe.bat          # Executable builder
+│   └── INSTALL_FFMPEG.bat     # FFmpeg installer
+│
+├── launchers/                  # GUI launchers
+│   ├── launcher_gui.py        # Python GUI launcher
+│   └── Ssuljaengi Launcher.spec # PyInstaller spec
 │
 └── package.json               # Root package for monorepo scripts
 ```
@@ -104,9 +118,9 @@ gossiptoon_v2_2/
 | Python      | 3.10+   | Required                                                                    |
 | Node.js     | 18+     | Required                                                                    |
 | npm         | 9+      | Required                                                                    |
-| **FFmpeg**  | Latest  | **Required for video generation** - [Installation Guide](INSTALL_FFMPEG.md) |
+| **FFmpeg**  | Latest  | **Required for video generation** - [Installation Guide](docs/INSTALL_FFMPEG.md) |
 
-⚠️ **Important:** FFmpeg must be installed and added to your system PATH for video generation to work. Run `INSTALL_FFMPEG.bat` for automatic setup.
+⚠️ **Important:** FFmpeg must be installed and added to your system PATH for video generation to work. Run `scripts/INSTALL_FFMPEG.bat` for automatic setup.
 
 ### 1. Clone & Install
 
@@ -124,7 +138,7 @@ pip install -r requirements.txt
 cd ..
 
 # Install frontend dependencies
-cd viral-story-search
+cd frontend
 npm install
 cd ..
 ```
@@ -154,7 +168,7 @@ GOOGLE_API_KEY=your_api_key
 #### Frontend Configuration
 
 ```bash
-cd viral-story-search
+cd frontend
 cp .env.local.example .env.local
 ```
 
@@ -179,7 +193,7 @@ npm run dev
 
 ### Option 1: Batch File Launcher ⚡ (Quickest)
 
-**Just double-click: `START_APP.bat`**
+**Just double-click: `scripts/START_APP.bat`**
 
 - ✅ Works immediately, no setup required
 - ✅ Automatically starts both backend and frontend
@@ -188,7 +202,7 @@ npm run dev
 
 **How to use:**
 
-1. Find the `START_APP.bat` file in the project root
+1. Find the `START_APP.bat` file in the `scripts/` folder
 2. Double-click it
 3. Two console windows will open (keep them running!)
 4. Your browser will open automatically
@@ -196,7 +210,7 @@ npm run dev
 
 ### Option 2: GUI Launcher 🎨 (Best User Experience)
 
-**Double-click: `launcher_gui.py`** (requires Python)
+**Double-click: `launchers/launcher_gui.py`** (requires Python)
 
 - ✅ Beautiful graphical interface
 - ✅ Progress bar showing launch status
@@ -205,7 +219,7 @@ npm run dev
 
 **How to use:**
 
-1. Double-click `launcher_gui.py`
+1. Double-click `launchers/launcher_gui.py`
 2. Click the "🚀 Launch App" button
 3. Watch the progress bar
 4. Browser opens automatically when ready!
@@ -214,7 +228,7 @@ npm run dev
 
 **Create a single executable file that anyone can run:**
 
-1. Double-click `build_exe.bat`
+1. Double-click `scripts/build_exe.bat`
 2. Choose option 2 (GUI Launcher - recommended)
 3. Wait for the build to complete
 4. Find `Ssuljaengi Launcher.exe` in the `dist/` folder
@@ -231,9 +245,9 @@ npm run dev
 
 For detailed instructions, troubleshooting, and more:
 
-- **[LAUNCHER_README.md](LAUNCHER_README.md)** - Complete launcher guide
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - One-page quick start
-- **[HOW_TO_RUN.md](HOW_TO_RUN.md)** - User manual with troubleshooting
+- **[docs/LAUNCHER_README.md](docs/LAUNCHER_README.md)** - Complete launcher guide
+- **[docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** - One-page quick start
+- **[docs/HOW_TO_RUN.md](docs/HOW_TO_RUN.md)** - User manual with troubleshooting
 
 ### What the Launchers Do Automatically
 
@@ -284,7 +298,7 @@ flake8 app/
 ### Frontend Development
 
 ```bash
-cd viral-story-search
+cd frontend
 
 # Development server
 npm run dev
@@ -403,7 +417,7 @@ class VideoConfig(BaseModel):
 
 ### 2. Frontend (Browser Preview)
 
-- **File**: `viral-story-search/src/components/VideoGenerator.tsx`
+- **File**: `frontend/src/components/VideoGenerator.tsx`
 - **Object**: `VIDEO_CONFIG`
 
 ```typescript

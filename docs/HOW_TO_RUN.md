@@ -50,12 +50,12 @@ If you want an even cleaner experience with a single `.exe` file:
 
 4. **Create the .exe file**:
    ```
-   pyinstaller --onefile --noconsole --icon=viral-story-search/public/favicon.ico --name="Ssuljaengi Launcher" launcher.py
+   pyinstaller --onefile --noconsole --icon=frontend/public/favicon.ico --name="Ssuljaengi Launcher" launcher.py
    ```
    
    Or if you want to see the console for debugging:
    ```
-   pyinstaller --onefile --icon=viral-story-search/public/favicon.ico --name="Ssuljaengi Launcher" launcher.py
+   pyinstaller --onefile --icon=frontend/public/favicon.ico --name="Ssuljaengi Launcher" launcher.py
    ```
 
 5. **Find your .exe**:
@@ -94,7 +94,7 @@ pyinstaller --onefile --name="Ssuljaengi Launcher" launcher.py
    ```
 3. For frontend:
    ```
-   cd viral-story-search
+   cd frontend
    npm install
    ```
 

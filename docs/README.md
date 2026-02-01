@@ -10,7 +10,7 @@ Welcome to the Gossiptoon V2 documentation.
 | -------------------------------------------------- | -------------------------------- |
 | [Main README](../README.md)                        | Project overview and quick start |
 | [Backend README](../backend/README.md)             | Backend API documentation        |
-| [Frontend README](../viral-story-search/README.md) | Frontend application docs        |
+| [Frontend README](../frontend/README.md)           | Frontend application docs        |
 | [Contributing Guide](../CONTRIBUTING.md)           | How to contribute                |
 | [Changelog](../CHANGELOG.md)                       | Version history                  |
 

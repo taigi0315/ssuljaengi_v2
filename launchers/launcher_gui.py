@@ -32,7 +32,7 @@ class LauncherGUI:
         # Project directories
         self.project_root = self.get_project_root()
         self.backend_dir = self.project_root / "backend"
-        self.frontend_dir = self.project_root / "viral-story-search"
+        self.frontend_dir = self.project_root / "frontend"
         
         # Processes
         self.backend_process = None

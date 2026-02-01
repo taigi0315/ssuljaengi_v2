@@ -45,7 +45,7 @@ git remote add upstream https://github.com/taigi0315/ssuljaengi_v2.git
 # Install dependencies
 npm install
 cd backend && pip install -r requirements.txt && cd ..
-cd viral-story-search && npm install && cd ..
+cd frontend && npm install && cd ..
 ```
 
 ---
@@ -78,7 +78,7 @@ cd backend
 pytest
 
 # Frontend tests
-cd viral-story-search
+cd frontend
 npm test
 ```
 

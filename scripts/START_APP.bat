@@ -30,7 +30,7 @@ timeout /t 5 /nobreak >nul
 
 REM Start frontend server in a new window
 echo 🎨 Starting Frontend Server...
-start "Ssuljaengi Frontend" cmd /c "cd /d "%~dp0viral-story-search" && npm run dev"
+start "Ssuljaengi Frontend" cmd /c "cd /d "%~dp0frontend" && npm run dev"
 
 REM Wait for frontend to start
 echo ⏳ Waiting for servers to start...

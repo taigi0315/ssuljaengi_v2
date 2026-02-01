@@ -42,7 +42,7 @@ A modern Next.js application for discovering viral Reddit stories and transformi
 ### 1. Install Dependencies
 
 ```bash
-cd viral-story-search
+cd frontend
 npm install
 ```
 
