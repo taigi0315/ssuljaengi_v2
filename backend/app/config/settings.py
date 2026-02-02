@@ -85,7 +85,7 @@ class Settings(BaseSettings):
         le=2.0
     )
     gemini_max_tokens: int = Field(
-        default=2000,
+        default=8000,
         description="Maximum tokens for story generation",
         ge=100
     )

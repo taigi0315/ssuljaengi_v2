@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from typing import List, Dict, Tuple, Optional
 from app.models.story import WebtoonScript, ShotType
 from app.config import get_settings
+from app.config.enhanced_panel_config import get_enhanced_panel_config
 from app.services.panel_composer import group_panels_into_pages, calculate_page_statistics, Page
 
 
@@ -39,13 +40,13 @@ EVALUATION_WEIGHTS = {
     "page_grouping": 0.05,         # NEW v2.0.0: Multi-panel page efficiency
 }
 
-# Panel count targets for multi-panel system (Phase 3.4)
-# These replace the old 8-12 scene targets
+# Panel count targets for enhanced panel generation system
+# Updated for 20-50 panel range with ideal 25-40
 PANEL_COUNT_TARGET = {
-    "min": 10,   # Minimum panels for a complete story
-    "ideal_min": 15,  # Ideal range start
-    "ideal_max": 25,  # Ideal range end
-    "max": 30,   # Maximum before it's too long
+    "min": 20,   # Minimum panels for a complete story (enhanced)
+    "ideal_min": 25,  # Ideal range start (enhanced)
+    "ideal_max": 40,  # Ideal range end (enhanced)
+    "max": 50,   # Maximum before it's too long (enhanced)
 }
 
 # Page count targets (panels grouped into multi-panel pages)
@@ -474,20 +475,22 @@ class WebtoonEvaluator:
         characters = script.characters
 
         # ===== 1. Scene/Panel Count Evaluation (Weight: 15%) =====
-        # v2.0.0 Phase 3.4: Updated targets for multi-panel system
+        # Enhanced panel generation system: Updated targets for 20-50 panel range
+        enhanced_config = get_enhanced_panel_config()
         num_panels = len(panels)
-        min_panels = PANEL_COUNT_TARGET["min"]
-        max_panels = PANEL_COUNT_TARGET["max"]
-        ideal_min = PANEL_COUNT_TARGET["ideal_min"]
-        ideal_max = PANEL_COUNT_TARGET["ideal_max"]
+        min_panels = enhanced_config.panel_count_min
+        max_panels = enhanced_config.panel_count_max
+        ideal_min = enhanced_config.panel_count_ideal_min
+        ideal_max = enhanced_config.panel_count_ideal_max
 
         if num_panels < min_panels:
-            scores["scene_count"] = max(0, (num_panels / min_panels) * 10)
+            # Be more strict about insufficient panels - force rewrite
+            scores["scene_count"] = max(0, (num_panels / min_panels) * 6)  # Max 6 points for insufficient panels
             issues.append(f"Only {num_panels} panels. Need {min_panels}-{max_panels}.")
             feedback_parts.append(
                 f"ADD {min_panels - num_panels} MORE PANELS. "
                 f"Current: {num_panels}, Required: {ideal_min}-{ideal_max}. "
-                "Multi-panel pages need sufficient content."
+                "Enhanced panel generation needs sufficient content for rich storytelling."
             )
         elif num_panels > max_panels:
             scores["scene_count"] = max(0, 10 - ((num_panels - max_panels) * 0.5))

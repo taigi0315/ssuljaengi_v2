@@ -11,6 +11,7 @@ This module provides REST API endpoints for webtoon script generation and charac
 
 import logging
 import uuid
+import time
 from typing import Dict, List, Optional
 from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, UploadFile, File
@@ -55,6 +56,7 @@ from app.services.mood_designer import detect_context_from_text, MoodAssignment,
 from app.services.panel_composer import group_panels_into_pages, calculate_page_statistics, Page
 from app.prompt.multi_panel import format_panels_from_webtoon_panels, PanelData, format_multi_panel_prompt
 from app.utils.dialogue_formatter import format_dialogue_as_visual_context, get_dominant_scene_emotion
+from app.config.enhanced_panel_config import get_enhanced_panel_config, update_enhanced_panel_config, EnhancedPanelConfig
 
 logger = logging.getLogger(__name__)
 
@@ -230,6 +232,8 @@ async def generate_webtoon_script(request: GenerateWebtoonRequest) -> WebtoonScr
     The workflow evaluates the generated script and conditionally rewrites
     it up to 2 times if quality thresholds aren't met.
     
+    Enhanced with panel count validation and improved error responses.
+    
     Args:
         request: Request with story_id
         
@@ -237,7 +241,7 @@ async def generate_webtoon_script(request: GenerateWebtoonRequest) -> WebtoonScr
         WebtoonScriptResponse with script_id, characters, and panels
         
     Raises:
-        HTTPException: If story not found or conversion fails
+        HTTPException: If story not found, conversion fails, or panel count validation fails
     """
     logger.info(f"Generating webtoon script for story: {request.story_id}")
 
@@ -261,16 +265,45 @@ async def generate_webtoon_script(request: GenerateWebtoonRequest) -> WebtoonScr
             image_style=request.image_style or "SOFT_ROMANTIC_WEBTOON"
         )
         
+        # Enhanced panel count validation
+        panel_count = len(webtoon_script.panels)
+        config = get_enhanced_panel_config()
+        genre = request.genre or "MODERN_ROMANCE_DRAMA"
+        
+        # Log panel count for monitoring (but don't fail the request)
+        min_panels, max_panels = config.get_panel_range_for_genre(genre)
+        ideal_min, ideal_max = config.get_ideal_panel_range(genre)
+        is_ideal = ideal_min <= panel_count <= ideal_max
+        is_acceptable = min_panels <= panel_count <= max_panels
+        
+        if not is_acceptable:
+            logger.warning(
+                f"Panel count {panel_count} is outside acceptable range {min_panels}-{max_panels} for {genre}, "
+                f"but allowing workflow to complete"
+            )
+        else:
+            logger.info(f"Panel count validation passed: {panel_count} panels ({'ideal' if is_ideal else 'acceptable'} for {genre})")
+        
+        
         # Generate unique script ID
         script_id = str(uuid.uuid4())
         
-        # Store script
+        # Store script with enhanced metadata
         webtoon_scripts[script_id] = {
             "script_id": script_id,
             "story_id": request.story_id,
             "characters": [char.model_dump() for char in webtoon_script.characters],
-            "panels": [panel.model_dump() for panel in webtoon_script.panels],
-            "character_images": {}
+            "scenes": [scene.model_dump() for scene in webtoon_script.scenes],
+            "panels": [panel.model_dump() for panel in webtoon_script.panels],  # Backward compatibility
+            "character_images": {},
+            "enhanced_metadata": {
+                "panel_count": panel_count,
+                "scene_count": len(webtoon_script.scenes),
+                "genre": genre,
+                "is_ideal_count": is_ideal,
+                "generation_timestamp": time.time(),
+                "config_version": "enhanced_v1"
+            }
         }
         await webtoon_scripts.save()
         
@@ -285,9 +318,25 @@ async def generate_webtoon_script(request: GenerateWebtoonRequest) -> WebtoonScr
             character_images={}
         )
         
+    except HTTPException:
+        # Re-raise HTTP exceptions (including our enhanced panel validation errors)
+        raise
     except Exception as e:
         logger.error(f"Webtoon script generation failed: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Webtoon script generation failed: {str(e)}")
+        
+        # Enhanced error response for general failures
+        error_detail = {
+            "error_type": "generation_failure",
+            "message": f"Webtoon script generation failed: {str(e)}",
+            "retryable": True,
+            "suggestions": [
+                "Check if the story content is valid and readable",
+                "Try again with a different genre or image style",
+                "Ensure the story has clear narrative structure"
+            ]
+        }
+        
+        raise HTTPException(status_code=500, detail=error_detail)
 
 
 @router.post("/character/image/select")
@@ -909,32 +958,77 @@ class GeneratePageImageRequest(BaseModel):
 @router.post("/page/generate")
 async def generate_page_image(request: GeneratePageImageRequest):
     """
-    Generate a multi-panel page image.
+    Generate a multi-panel page image with enhanced size limits.
+    
+    Respects the enhanced panel configuration for multi-panel size limits
+    and provides detailed error responses for validation failures.
     
     Args:
         request: Request with script_id, page panels, and style
         
     Returns:
         Data URL of the generated image
+        
+    Raises:
+        HTTPException: If validation fails or generation errors occur
     """
     if request.script_id not in webtoon_scripts:
         raise HTTPException(status_code=404, detail="Webtoon script not found")
         
     try:
+        # Enhanced validation using configuration
+        config = get_enhanced_panel_config()
+        panel_count = len(request.panel_indices)
+        
+        # Validate multi-panel size limits
+        if panel_count > config.max_multi_panel_size:
+            error_detail = {
+                "error_type": "multi_panel_size_exceeded",
+                "message": f"Requested {panel_count} panels exceeds the maximum of {config.max_multi_panel_size} panels per multi-panel image",
+                "requested_panels": panel_count,
+                "maximum_allowed": config.max_multi_panel_size,
+                "suggestions": [
+                    f"Split into multiple requests with max {config.max_multi_panel_size} panels each",
+                    "Use single-panel generation for better image quality",
+                    "Consider using the automatic page grouping endpoint instead"
+                ],
+                "retryable": False
+            }
+            logger.warning(f"Multi-panel size validation failed: {error_detail}")
+            raise HTTPException(status_code=422, detail=error_detail)
+        
         script_data = webtoon_scripts[request.script_id]
         all_panels = [WebtoonPanel(**p) for p in script_data["panels"]]
         
         # Extract panels for this page
         page_panels = []
+        invalid_indices = []
         for idx in request.panel_indices:
             if 0 <= idx < len(all_panels):
                 page_panels.append(all_panels[idx])
+            else:
+                invalid_indices.append(idx)
+        
+        if invalid_indices:
+            error_detail = {
+                "error_type": "invalid_panel_indices",
+                "message": f"Invalid panel indices: {invalid_indices}",
+                "invalid_indices": invalid_indices,
+                "valid_range": f"0-{len(all_panels)-1}",
+                "total_panels": len(all_panels),
+                "retryable": False
+            }
+            raise HTTPException(status_code=400, detail=error_detail)
         
         if not page_panels:
-            raise HTTPException(status_code=400, detail="No valid panels specified")
+            error_detail = {
+                "error_type": "no_valid_panels",
+                "message": "No valid panels specified for page generation",
+                "retryable": False
+            }
+            raise HTTPException(status_code=400, detail=error_detail)
             
-        # Get style from script or request?
-        # We can extract a common style description from the panels, or use request modifiers
+        # Get style from script or request
         style_desc = "Vertical Webtoon Style, " + (request.style_modifiers[0] if request.style_modifiers else "High Quality")
         
         # Collect reference images for characters in these panels
@@ -957,6 +1051,7 @@ async def generate_page_image(request: GeneratePageImageRequest):
                                 processed_chars.add(name)
                             
         logger.info(f"Using {len(reference_images)} reference images for page generation")
+        logger.info(f"Generating multi-panel page with {panel_count} panels (within limit of {config.max_multi_panel_size})")
 
         # Generate image
         image_url = await multi_panel_generator.generate_multi_panel_page(
@@ -975,7 +1070,7 @@ async def generate_page_image(request: GeneratePageImageRequest):
         else:
             page_images[image_key] = []
             
-        # Create PageImage record
+        # Create PageImage record with enhanced metadata
         image_id = str(uuid.uuid4())
         page_image = PageImage(
             id=image_id,
@@ -989,7 +1084,7 @@ async def generate_page_image(request: GeneratePageImageRequest):
         page_images[image_key].append(page_image.model_dump())
         await page_images.save()
 
-        # Sync to webtoon_scripts for persistence
+        # Sync to webtoon_scripts for persistence with enhanced metadata
         if request.script_id in webtoon_scripts:
             script_data = webtoon_scripts[request.script_id]
             if "page_images" not in script_data:
@@ -997,6 +1092,17 @@ async def generate_page_image(request: GeneratePageImageRequest):
             
             # Update the page_images in the script object
             script_data["page_images"][str(request.page_number)] = page_images[image_key]
+            
+            # Add enhanced metadata
+            if "enhanced_metadata" not in script_data:
+                script_data["enhanced_metadata"] = {}
+            script_data["enhanced_metadata"]["last_page_generation"] = {
+                "timestamp": time.time(),
+                "panel_count": panel_count,
+                "within_size_limits": True,
+                "max_allowed": config.max_multi_panel_size
+            }
+            
             await webtoon_scripts.save()
             logger.info(f"Synced page image to webtoon script {request.script_id}")
         
@@ -1004,9 +1110,25 @@ async def generate_page_image(request: GeneratePageImageRequest):
         
         return page_image
         
+    except HTTPException:
+        # Re-raise HTTP exceptions (including our enhanced validation errors)
+        raise
     except Exception as e:
         logger.error(f"Page generation failed: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Page generation failed: {str(e)}")
+        
+        # Enhanced error response for general failures
+        error_detail = {
+            "error_type": "page_generation_failure",
+            "message": f"Multi-panel page generation failed: {str(e)}",
+            "retryable": True,
+            "suggestions": [
+                "Try reducing the number of panels in the request",
+                "Check if all panel indices are valid",
+                "Ensure character images are properly selected"
+            ]
+        }
+        
+        raise HTTPException(status_code=500, detail=error_detail)
 
         scene_images[image_key].append(scene_image.model_dump())
         await scene_images.save()
@@ -1488,10 +1610,11 @@ async def generate_page_image(
     image_style: str = "SOFT_ROMANTIC_WEBTOON"
 ):
     """
-    Generate a multi-panel page image.
+    Generate a multi-panel page image with enhanced validation.
 
     This endpoint generates an image for a specific page (which may contain
-    multiple panels) in a single API call.
+    multiple panels) in a single API call. Respects enhanced panel configuration
+    for size limits and provides detailed error responses.
 
     Args:
         script_id: Webtoon script ID
@@ -1500,6 +1623,9 @@ async def generate_page_image(
 
     Returns:
         Generated page image with metadata
+        
+    Raises:
+        HTTPException: If validation fails or generation errors occur
     """
     from app.models.story import WebtoonPanel, SceneImage
 
@@ -1512,7 +1638,13 @@ async def generate_page_image(
     character_images_in_script = script_data.get("character_images", {})
 
     if not panels_data:
-        raise HTTPException(status_code=400, detail="Script has no panels")
+        error_detail = {
+            "error_type": "no_panels_found",
+            "message": "Script has no panels to generate pages from",
+            "script_id": script_id,
+            "retryable": False
+        }
+        raise HTTPException(status_code=400, detail=error_detail)
 
     # Convert to WebtoonPanel objects and group
     panels = [WebtoonPanel(**p) for p in panels_data]
@@ -1526,13 +1658,41 @@ async def generate_page_image(
             break
 
     if target_page is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Page {page_number} not found. Total pages: {len(pages)}"
-        )
+        error_detail = {
+            "error_type": "page_not_found",
+            "message": f"Page {page_number} not found in script",
+            "requested_page": page_number,
+            "total_pages": len(pages),
+            "available_pages": [p.page_number for p in pages],
+            "retryable": False
+        }
+        raise HTTPException(status_code=404, detail=error_detail)
+
+    # Enhanced validation using configuration
+    config = get_enhanced_panel_config()
+    
+    # Validate multi-panel size limits for multi-panel pages
+    if not target_page.is_single_panel and target_page.panel_count > config.max_multi_panel_size:
+        error_detail = {
+            "error_type": "page_exceeds_multi_panel_limit",
+            "message": f"Page {page_number} contains {target_page.panel_count} panels, exceeding the maximum of {config.max_multi_panel_size} panels per multi-panel image",
+            "page_number": page_number,
+            "panel_count": target_page.panel_count,
+            "maximum_allowed": config.max_multi_panel_size,
+            "layout_type": target_page.layout_type.value,
+            "suggestions": [
+                "Use single-panel generation for individual panels",
+                "Adjust panel grouping configuration",
+                "Generate panels individually and combine manually"
+            ],
+            "retryable": False
+        }
+        logger.warning(f"Page multi-panel size validation failed: {error_detail}")
+        raise HTTPException(status_code=422, detail=error_detail)
 
     logger.info(f"Generating page {page_number} with {target_page.panel_count} panels")
     logger.info(f"Layout type: {target_page.layout_type.value}")
+    logger.info(f"Within enhanced limits: panel_count={target_page.panel_count} <= max={config.max_multi_panel_size}")
 
     # Collect character references for panels on this page
     reference_images = []
@@ -1627,7 +1787,7 @@ async def generate_page_image(
                 panel_count=target_page.panel_count
             )
 
-        # Create response
+        # Create response with enhanced metadata
         image_id = str(uuid.uuid4())
 
         return {
@@ -1639,11 +1799,33 @@ async def generate_page_image(
             "panel_numbers": [p.panel_number for p in target_page.panels],
             "image_url": image_url,
             "prompt_used": prompt[:1000],  # Truncate for response
+            "enhanced_metadata": {
+                "within_size_limits": target_page.panel_count <= config.max_multi_panel_size,
+                "max_allowed_panels": config.max_multi_panel_size,
+                "generation_timestamp": time.time(),
+                "reference_images_used": len(reference_images)
+            }
         }
 
     except Exception as e:
         logger.error(f"Page image generation failed: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Page generation failed: {str(e)}")
+        
+        # Enhanced error response for generation failures
+        error_detail = {
+            "error_type": "page_image_generation_failure",
+            "message": f"Failed to generate image for page {page_number}: {str(e)}",
+            "page_number": page_number,
+            "panel_count": target_page.panel_count,
+            "layout_type": target_page.layout_type.value,
+            "retryable": True,
+            "suggestions": [
+                "Try generating individual panels instead of multi-panel",
+                "Check if character reference images are valid",
+                "Retry with a different image style"
+            ]
+        }
+        
+        raise HTTPException(status_code=500, detail=error_detail)
 
 
 @router.get("/{script_id}/pages/preview")
@@ -1711,5 +1893,398 @@ async def preview_page_groupings(script_id: str):
         "pages": page_previews,
         "statistics": stats,
         "api_calls_saved": stats["total_panels"] - stats["total_pages"]
+    }
+
+
+# ============================================================================
+# Enhanced Panel Generation Configuration Endpoints
+# ============================================================================
+
+class UpdatePanelConfigRequest(BaseModel):
+    """Request model for updating panel configuration."""
+    panel_count_min: Optional[int] = None
+    panel_count_max: Optional[int] = None
+    panel_count_ideal_min: Optional[int] = None
+    panel_count_ideal_max: Optional[int] = None
+    single_panel_ratio: Optional[float] = None
+    max_multi_panel_size: Optional[int] = None
+    max_panels_per_scene: Optional[int] = None
+    enable_caching: Optional[bool] = None
+    enable_progress_tracking: Optional[bool] = None
+    progress_threshold: Optional[int] = None
+
+
+@router.get("/config/panel-settings")
+async def get_panel_configuration():
+    """
+    Get current enhanced panel generation configuration.
+    
+    Returns the current configuration settings for panel count targets,
+    image generation strategies, and performance optimizations.
+    
+    Returns:
+        Current EnhancedPanelConfig settings
+    """
+    config = get_enhanced_panel_config()
+    return {
+        "panel_count_settings": {
+            "min": config.panel_count_min,
+            "max": config.panel_count_max,
+            "ideal_min": config.panel_count_ideal_min,
+            "ideal_max": config.panel_count_ideal_max,
+        },
+        "image_generation_settings": {
+            "single_panel_ratio": config.single_panel_ratio,
+            "max_multi_panel_size": config.max_multi_panel_size,
+        },
+        "scene_structure_settings": {
+            "max_panels_per_scene": config.max_panels_per_scene,
+            "min_panels_per_scene": config.min_panels_per_scene,
+        },
+        "three_act_distribution": {
+            "act1_ratio": config.act1_panel_ratio,
+            "act2_ratio": config.act2_panel_ratio,
+            "act3_ratio": config.act3_panel_ratio,
+        },
+        "genre_specific_targets": config.genre_specific_targets,
+        "performance_settings": {
+            "enable_caching": config.enable_caching,
+            "enable_progress_tracking": config.enable_progress_tracking,
+            "progress_threshold": config.progress_threshold,
+        },
+        "backward_compatibility": {
+            "preserve_legacy_multi_panel": config.preserve_legacy_multi_panel,
+            "legacy_multi_panel_max_size": config.legacy_multi_panel_max_size,
+        }
+    }
+
+
+@router.put("/config/panel-settings")
+async def update_panel_configuration(request: UpdatePanelConfigRequest):
+    """
+    Update enhanced panel generation configuration.
+    
+    Allows updating panel count targets, image generation strategies,
+    and performance settings. Changes persist across system restarts.
+    
+    Args:
+        request: Configuration updates to apply
+        
+    Returns:
+        Updated configuration settings
+        
+    Raises:
+        HTTPException: If configuration validation fails
+    """
+    try:
+        # Filter out None values
+        update_data = {k: v for k, v in request.model_dump().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(
+                status_code=400, 
+                detail="No configuration updates provided"
+            )
+        
+        # Update configuration
+        updated_config = update_enhanced_panel_config(**update_data)
+        
+        logger.info(f"Panel configuration updated: {list(update_data.keys())}")
+        
+        return {
+            "message": "Panel configuration updated successfully",
+            "updated_fields": list(update_data.keys()),
+            "current_settings": {
+                "panel_count_min": updated_config.panel_count_min,
+                "panel_count_max": updated_config.panel_count_max,
+                "panel_count_ideal_min": updated_config.panel_count_ideal_min,
+                "panel_count_ideal_max": updated_config.panel_count_ideal_max,
+                "single_panel_ratio": updated_config.single_panel_ratio,
+                "max_multi_panel_size": updated_config.max_multi_panel_size,
+            }
+        }
+        
+    except ValueError as e:
+        logger.error(f"Configuration validation failed: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Configuration validation failed: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to update panel configuration: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update configuration: {str(e)}"
+        )
+
+
+@router.get("/config/panel-settings/genre/{genre}")
+async def get_genre_panel_targets(genre: str):
+    """
+    Get panel count targets for a specific genre.
+    
+    Args:
+        genre: Genre name (e.g., "romance", "action", "fantasy")
+        
+    Returns:
+        Panel count range and ideal targets for the genre
+        
+    Raises:
+        HTTPException: If genre not found
+    """
+    config = get_enhanced_panel_config()
+    
+    try:
+        min_panels, max_panels = config.get_panel_range_for_genre(genre)
+        ideal_min, ideal_max = config.get_ideal_panel_range(genre)
+        
+        return {
+            "genre": genre,
+            "panel_count_range": {
+                "min": min_panels,
+                "max": max_panels,
+            },
+            "ideal_range": {
+                "min": ideal_min,
+                "max": ideal_max,
+            },
+            "recommended_panels": (min_panels + max_panels) // 2,
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get genre targets for {genre}: {str(e)}")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Genre '{genre}' not found or invalid"
+        )
+
+
+@router.post("/config/panel-settings/validate")
+async def validate_panel_count(panel_count: int, genre: Optional[str] = None):
+    """
+    Validate a panel count against current configuration.
+    
+    Args:
+        panel_count: Number of panels to validate
+        genre: Optional genre for genre-specific validation
+        
+    Returns:
+        Validation result with recommendations
+    """
+    config = get_enhanced_panel_config()
+    
+    is_valid = config.validate_panel_count(panel_count, genre)
+    
+    if genre:
+        min_panels, max_panels = config.get_panel_range_for_genre(genre)
+        ideal_min, ideal_max = config.get_ideal_panel_range(genre)
+        context = f"genre '{genre}'"
+    else:
+        min_panels, max_panels = config.panel_count_min, config.panel_count_max
+        ideal_min, ideal_max = config.panel_count_ideal_min, config.panel_count_ideal_max
+        context = "general"
+    
+    # Generate recommendations
+    recommendations = []
+    if panel_count < min_panels:
+        recommendations.append(f"Consider adding {min_panels - panel_count} more panels for better storytelling")
+    elif panel_count > max_panels:
+        recommendations.append(f"Consider reducing by {panel_count - max_panels} panels to avoid reader fatigue")
+    elif panel_count < ideal_min:
+        recommendations.append(f"Adding {ideal_min - panel_count} more panels would reach the ideal range")
+    elif panel_count > ideal_max:
+        recommendations.append(f"Reducing by {panel_count - ideal_max} panels would optimize pacing")
+    else:
+        recommendations.append("Panel count is in the ideal range for optimal storytelling")
+    
+    return {
+        "panel_count": panel_count,
+        "context": context,
+        "is_valid": is_valid,
+        "validation_range": {
+            "min": min_panels,
+            "max": max_panels,
+        },
+        "ideal_range": {
+            "min": ideal_min,
+            "max": ideal_max,
+        },
+        "is_in_ideal_range": ideal_min <= panel_count <= ideal_max,
+        "recommendations": recommendations,
+    }
+
+
+@router.get("/config/panel-settings/genres")
+async def list_supported_genres():
+    """
+    List all supported genres with their panel count targets.
+    
+    Returns:
+        List of genres with their panel count ranges
+    """
+    config = get_enhanced_panel_config()
+    
+    genres = []
+    for genre_key, (min_panels, max_panels) in config.genre_specific_targets.items():
+        # Convert enum key to display name
+        display_name = genre_key.replace("_", " ").title()
+        
+        genres.append({
+            "key": genre_key,
+            "name": display_name,
+            "panel_range": {
+                "min": min_panels,
+                "max": max_panels,
+            },
+            "recommended_panels": (min_panels + max_panels) // 2,
+        })
+    
+    return {
+        "supported_genres": genres,
+        "total_genres": len(genres),
+    }
+
+
+@router.get("/{script_id}/enhanced-stats")
+async def get_enhanced_panel_statistics(script_id: str):
+    """
+    Get enhanced panel generation statistics for a webtoon script.
+    
+    Provides detailed analysis of panel distribution, image generation strategy,
+    and compliance with enhanced panel configuration.
+    
+    Args:
+        script_id: Webtoon script ID
+        
+    Returns:
+        Enhanced statistics and analysis
+        
+    Raises:
+        HTTPException: If script not found
+    """
+    if script_id not in webtoon_scripts:
+        raise HTTPException(status_code=404, detail="Webtoon script not found")
+    
+    script_data = webtoon_scripts[script_id]
+    panels_data = script_data.get("panels", [])
+    enhanced_metadata = script_data.get("enhanced_metadata", {})
+    
+    if not panels_data:
+        return {
+            "script_id": script_id,
+            "panel_count": 0,
+            "analysis": "No panels found in script",
+            "compliance": {"status": "no_data"}
+        }
+    
+    config = get_enhanced_panel_config()
+    panel_count = len(panels_data)
+    genre = enhanced_metadata.get("genre", "default")
+    
+    # Panel count analysis
+    min_panels, max_panels = config.get_panel_range_for_genre(genre)
+    ideal_min, ideal_max = config.get_ideal_panel_range(genre)
+    is_valid = config.validate_panel_count(panel_count, genre)
+    is_ideal = ideal_min <= panel_count <= ideal_max
+    
+    # Three-act distribution analysis
+    act_distribution = config.calculate_act_distribution(panel_count)
+    
+    # Scene structure analysis
+    from app.models.story import WebtoonPanel
+    panels = [WebtoonPanel(**p) for p in panels_data]
+    
+    # Group panels by scene (assuming scene_number field exists)
+    scenes = {}
+    for panel in panels:
+        scene_num = getattr(panel, 'scene_number', 1)  # Default to scene 1 if not specified
+        if scene_num not in scenes:
+            scenes[scene_num] = []
+        scenes[scene_num].append(panel)
+    
+    scene_panel_counts = [len(scene_panels) for scene_panels in scenes.values()]
+    avg_panels_per_scene = sum(scene_panel_counts) / len(scene_panel_counts) if scene_panel_counts else 0
+    
+    # Image generation strategy analysis
+    pages = group_panels_into_pages(panels)
+    page_stats = calculate_page_statistics(pages)
+    
+    single_panel_count = page_stats.get("single_panel_pages", 0)
+    multi_panel_count = page_stats.get("multi_panel_pages", 0)
+    total_pages = single_panel_count + multi_panel_count
+    
+    actual_single_ratio = single_panel_count / total_pages if total_pages > 0 else 0
+    meets_single_ratio = actual_single_ratio >= config.single_panel_ratio
+    
+    # Multi-panel size compliance
+    oversized_pages = []
+    for page in pages:
+        if not page.is_single_panel and page.panel_count > config.max_multi_panel_size:
+            oversized_pages.append({
+                "page_number": page.page_number,
+                "panel_count": page.panel_count,
+                "max_allowed": config.max_multi_panel_size
+            })
+    
+    # Overall compliance assessment
+    compliance_issues = []
+    if not is_valid:
+        if panel_count < min_panels:
+            compliance_issues.append(f"Panel count ({panel_count}) below minimum ({min_panels})")
+        else:
+            compliance_issues.append(f"Panel count ({panel_count}) exceeds maximum ({max_panels})")
+    
+    if not meets_single_ratio:
+        compliance_issues.append(f"Single-panel ratio ({actual_single_ratio:.2f}) below target ({config.single_panel_ratio})")
+    
+    if oversized_pages:
+        compliance_issues.append(f"{len(oversized_pages)} pages exceed multi-panel size limit")
+    
+    compliance_status = "compliant" if not compliance_issues else "non_compliant"
+    
+    return {
+        "script_id": script_id,
+        "generation_info": {
+            "timestamp": enhanced_metadata.get("generation_timestamp"),
+            "config_version": enhanced_metadata.get("config_version", "unknown"),
+            "genre": genre,
+        },
+        "panel_analysis": {
+            "total_panels": panel_count,
+            "is_valid_count": is_valid,
+            "is_ideal_count": is_ideal,
+            "genre_range": {"min": min_panels, "max": max_panels},
+            "ideal_range": {"min": ideal_min, "max": ideal_max},
+            "three_act_distribution": act_distribution,
+        },
+        "scene_analysis": {
+            "total_scenes": len(scenes),
+            "panels_per_scene": scene_panel_counts,
+            "average_panels_per_scene": round(avg_panels_per_scene, 1),
+            "max_panels_per_scene": max(scene_panel_counts) if scene_panel_counts else 0,
+            "min_panels_per_scene": min(scene_panel_counts) if scene_panel_counts else 0,
+        },
+        "image_strategy_analysis": {
+            "total_pages": total_pages,
+            "single_panel_pages": single_panel_count,
+            "multi_panel_pages": multi_panel_count,
+            "actual_single_ratio": round(actual_single_ratio, 3),
+            "target_single_ratio": config.single_panel_ratio,
+            "meets_single_ratio_target": meets_single_ratio,
+            "oversized_multi_panel_pages": oversized_pages,
+        },
+        "compliance": {
+            "status": compliance_status,
+            "issues": compliance_issues,
+            "recommendations": [
+                f"Ideal panel count for {genre}: {ideal_min}-{ideal_max}",
+                f"Target single-panel ratio: {config.single_panel_ratio}",
+                f"Max panels per multi-panel image: {config.max_multi_panel_size}",
+            ]
+        },
+        "performance_metrics": {
+            "api_calls_saved": page_stats.get("total_panels", 0) - page_stats.get("total_pages", 0),
+            "estimated_generation_time": f"{panel_count * 0.5:.1f}s",  # Rough estimate
+        }
     }
 

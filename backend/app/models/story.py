@@ -511,6 +511,46 @@ class WebtoonPanel(BaseModel):
         }
 
 
+class WebtoonScene(BaseModel):
+    """
+    Webtoon scene containing multiple panels.
+    
+    Each scene represents a narrative unit that can contain 1-3 panels
+    for detailed storytelling within that scene context.
+    """
+    scene_number: int = Field(
+        ..., 
+        description="Sequential scene number starting from 1.",
+        ge=1,
+        le=50
+    )
+    scene_type: str = Field(
+        default="story", 
+        description="Scene type: bridge (transition), story (plot), impact (emotional peak).",
+        max_length=20
+    )
+    scene_title: str = Field(
+        default="", 
+        description="Brief title or description of the scene.",
+        max_length=100
+    )
+    panels: List[WebtoonPanel] = Field(
+        ..., 
+        description="List of panels within this scene (1-3 panels recommended).",
+        min_items=1,
+        max_items=3
+    )
+    is_hero_shot: bool = Field(
+        default=False,
+        description="Whether this scene is the hero shot (thumbnail/key visual)."
+    )
+    hero_video_prompt: Optional[str] = Field(
+        default=None,
+        description="Video generation prompt for hero shot scenes.",
+        max_length=500
+    )
+
+
 class WebtoonScript(BaseModel):
     """
     Complete webtoon script with characters and panels.
@@ -524,12 +564,25 @@ class WebtoonScript(BaseModel):
         min_items=1,
         max_items=20
     )
-    panels: List[WebtoonPanel] = Field(
+    scenes: List[WebtoonScene] = Field(
         ..., 
-        description="List of sequential panels (8-16 recommended).",
+        description="List of sequential scenes (8-20 recommended).",
         min_items=1,
         max_items=50
     )
+    
+    @property
+    def panels(self) -> List[WebtoonPanel]:
+        """Get all panels from all scenes as a flat list for backward compatibility."""
+        all_panels = []
+        panel_number = 1
+        for scene in self.scenes:
+            for panel in scene.panels:
+                # Update panel number to be sequential across all scenes
+                panel.panel_number = panel_number
+                all_panels.append(panel)
+                panel_number += 1
+        return all_panels
     
     class Config:
         json_schema_extra = {

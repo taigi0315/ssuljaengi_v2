@@ -72,7 +72,7 @@ async def webtoon_writer_node(state: WebtoonWorkflowState) -> WebtoonWorkflowSta
         # Serialize to dict for state (TypedDict doesn't support Pydantic models directly)
         script_dict = {
             "characters": [c.model_dump() for c in script.characters],
-            "panels": [p.model_dump() for p in script.panels],
+            "scenes": [s.model_dump() for s in script.scenes],
             "script_id": getattr(script, 'script_id', None),
         }
         
@@ -178,7 +178,7 @@ async def webtoon_rewriter_node(state: WebtoonWorkflowState) -> WebtoonWorkflowS
         # Serialize back to dict
         script_dict = {
             "characters": [c.model_dump() for c in rewritten_script.characters],
-            "panels": [p.model_dump() for p in rewritten_script.panels],
+            "scenes": [s.model_dump() for s in rewritten_script.scenes],
             "script_id": getattr(rewritten_script, 'script_id', None),
         }
         
@@ -192,10 +192,13 @@ async def webtoon_rewriter_node(state: WebtoonWorkflowState) -> WebtoonWorkflowS
         }
     except Exception as e:
         logger.error(f"Rewriter node failed: {str(e)}", exc_info=True)
+        # Instead of failing, continue with original script and mark rewrite as failed
+        logger.warning("Continuing workflow with original script due to rewriter failure")
         return {
             **state,
-            "error": f"Rewriter failed: {str(e)}",
-            "current_step": "failed"
+            "rewrite_count": state.get("rewrite_count", 0) + 1,
+            "current_step": "rewrite_failed_continuing",
+            "rewriter_error": str(e)
         }
 
 async def sfx_enhancer_node(state: WebtoonWorkflowState) -> WebtoonWorkflowState:
@@ -284,7 +287,7 @@ async def sfx_enhancer_node(state: WebtoonWorkflowState) -> WebtoonWorkflowState
         # Serialize back to dict
         script_dict = {
             "characters": [c.model_dump() for c in script.characters],
-            "panels": [p.model_dump() for p in script.panels],
+            "scenes": [s.model_dump() for s in script.scenes],
             "script_id": getattr(script, 'script_id', None),
         }
         
@@ -317,10 +320,16 @@ def should_rewrite(state: WebtoonWorkflowState) -> Literal["rewrite", "end"]:
     score = state.get("evaluation_score", 10.0)
     rewrite_count = state.get("rewrite_count", 0)
     error = state.get("error")
+    current_step = state.get("current_step", "")
     
     # If there was an error, don't try to rewrite
     if error:
         logger.warning(f"Workflow has error, ending: {error}")
+        return "end"
+    
+    # If rewriter failed but we're continuing, don't try to rewrite again
+    if current_step == "rewrite_failed_continuing":
+        logger.warning("Rewriter failed, continuing to SFX with original script")
         return "end"
     
     # Check if score is below threshold and we haven't exceeded max rewrites
@@ -428,9 +437,12 @@ async def run_webtoon_workflow(story: str, story_genre: str = "MODERN_ROMANCE_DR
     # Run the workflow
     final_state = await webtoon_workflow.ainvoke(initial_state)
     
-    # Check for errors
-    if final_state.get("error"):
-        raise Exception(final_state["error"])
+    # Check for critical errors (but allow rewriter failures)
+    error = final_state.get("error")
+    current_step = final_state.get("current_step", "")
+    
+    if error and current_step != "rewrite_failed_continuing":
+        raise Exception(error)
     
     # Extract the final script
     script_dict = final_state.get("webtoon_script")
@@ -439,6 +451,11 @@ async def run_webtoon_workflow(story: str, story_genre: str = "MODERN_ROMANCE_DR
     
     # Reconstruct WebtoonScript
     script = WebtoonScript(**script_dict)
+    
+    # Log any rewriter errors as warnings
+    rewriter_error = final_state.get("rewriter_error")
+    if rewriter_error:
+        logger.warning(f"Workflow completed with rewriter error: {rewriter_error}")
     
     logger.info(
         f"Webtoon workflow complete. Final score: {final_state.get('evaluation_score')}, "

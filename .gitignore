@@ -136,3 +136,4 @@ service-account.json
 # Kiro / Claude (if applicable)
 # ---------------------------------
 .kiro/
+.hypothesis/
