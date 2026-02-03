@@ -217,10 +217,10 @@ class WebtoonWriter:
                 if "character_placement_and_action" not in panel:
                     # Try to build a better default action
                     char_names = panel.get("active_character_names", [])
-                if char_names:
-                    panel["character_placement_and_action"] = f"{', '.join(char_names)} in the scene"
-                else:
-                    panel["character_placement_and_action"] = "No characters present"
+                    if char_names:
+                        panel["character_placement_and_action"] = f"{', '.join(char_names)} in the scene"
+                    else:
+                        panel["character_placement_and_action"] = "No characters present"
                 
                 # Fill missing visual_prompt - RICH FALLBACK
                 if "visual_prompt" not in panel or not panel.get("visual_prompt", "").strip() or len(panel.get("visual_prompt", "")) < 20: 
@@ -467,6 +467,15 @@ class WebtoonWriter:
                 "image_style": image_style,
                 "format_instructions": self.parser.get_format_instructions()
             })
+            
+            # Handle edge case where LLM returns a list instead of a dict
+            if isinstance(result, list):
+                logger.warning(f"LLM returned a list of type {type(result)}. Attempting to extract dictionary.")
+                if result and isinstance(result[0], dict):
+                    result = result[0]
+                else:
+                    logger.warning("List was empty or didn't contain dict. Using empty dict to force fallback.")
+                    result = {}
             
             # CRITICAL: Fill missing fields in raw dict BEFORE Pydantic validation
             # This prevents validation errors when LLM returns incomplete data

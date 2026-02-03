@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Gossiptoon V2 - Next.js frontend with Python FastAPI backend",
   "scripts": {
-    "dev": "concurrently \"cd backend && run.bat\" \"cd frontend && npm run dev\"",
-    "dev:resume": "concurrently \"cd backend && run.bat\" \"cd frontend && npm run dev\"",
+    "dev": "concurrently \"cd backend && python -m uvicorn app.main:app --reload --port 8000\" \"cd frontend && npm run dev\"",
+    "dev:resume": "concurrently \"cd backend && python -m uvicorn app.main:app --reload --port 8000\" \"cd frontend && npm run dev\"",
     "dev:test": "cd backend && python setup_test_data.py && cd .. && npm run dev:resume",
-    "backend": "cd backend && run.bat",
+    "backend": "cd backend && python -m uvicorn app.main:app --reload --port 8000",
     "frontend": "cd frontend && npm run dev",
     "kill": "lsof -ti:8000,3000 | xargs kill -9 2>/dev/null; echo 'Servers stopped (data preserved)'",
     "stop": "lsof -ti:8000,3000 | xargs kill -9",

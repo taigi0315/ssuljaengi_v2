@@ -100,19 +100,18 @@ setup: install
 # Maintenance commands
 clean:
 	@echo "🧹 Cleaning cache and temporary files..."
-	@if exist "backend\data\*.json" del /q "backend\data\*.json"
-	@if exist "backend\cache\images\*" del /q "backend\cache\images\*"
-	@if exist "backend\__pycache__" rmdir /s /q "backend\__pycache__"
-	@if exist "frontend\.next" rmdir /s /q "frontend\.next"
-	@if exist "frontend\node_modules\.cache" rmdir /s /q "frontend\node_modules\.cache"
+	@rm -f backend/data/*.json
+	@rm -rf backend/cache/images/*
+	@rm -rf backend/__pycache__
+	@rm -rf frontend/.next
+	@rm -rf frontend/node_modules/.cache
 	@echo "✅ Cleanup complete!"
 
 kill:
 	@echo "⏹️ Stopping all servers..."
-	@taskkill /f /im "uvicorn.exe" 2>nul || echo "No uvicorn processes found"
-	@taskkill /f /im "node.exe" 2>nul || echo "No node processes found"
-	@for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8000') do taskkill /f /pid %%a 2>nul
-	@for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3000') do taskkill /f /pid %%a 2>nul
+	@-pkill -f "uvicorn" || true
+	@-pkill -f "node" || true
+	@-lsof -ti:8000,3000 | xargs kill -9 2>/dev/null || true
 	@echo "✅ Servers stopped!"
 
 # Testing commands
