@@ -214,10 +214,12 @@ Not all scenes are equal. You must **IDENTIFY the emotional weight** and choose 
 **DIALOGUE REQUIREMENTS:**
 - ALL dialogue must be SPOKEN words only
 - NO internal monologue, NO narration, NO "(thinking)" or "(internal)" tags
-- Bridge panels: 3-5 lines of spoken dialogue
-- Story panels: 5-8 lines of spoken dialogue
-- Impact panels: 6-12 lines of spoken dialogue (emotional exchanges)
-- Total across all scenes: 80-150+ spoken dialogue lines minimum
+- Some panels MAY be silent (especially establishing/object-only panels), but most story progression panels should have dialogue.
+- Bridge panels: 1-3 lines of spoken dialogue (or silence if pure establishing)
+- Story panels: 2-6 lines of spoken dialogue
+- Impact panels: 3-10 lines of spoken dialogue (emotional exchanges)
+- Total across all scenes: 40-120 spoken dialogue lines recommended
+- IMPORTANT: `dialogue` must be a JSON array of objects with `character`, `text`, and `order` (not a string).
 
 **HERO SHOT (THUMBNAIL SCENE) - MANDATORY:**
 You MUST designate exactly ONE scene as the `hero_shot`. This is the most visually stunning, emotionally powerful moment.
@@ -226,6 +228,13 @@ You MUST designate exactly ONE scene as the `hero_shot`. This is the most visual
 - Set `is_hero_shot: true` on the chosen scene
 - Provide `hero_video_prompt`: A detailed prompt for video generation (pan/zoom/motion)
 - The visual_prompt should be extra detailed (200-300 words) for maximum quality
+- The hero shot scene MUST be a SINGLE-PANEL scene (exactly 1 panel in that scene)
+- The hero shot panel MUST have `emotional_intensity` 9-10
+- The hero shot should read as a full-page moment (not a small multi-panel beat)
+
+**SINGLE-PANEL MOMENT REQUIREMENT (IMPORTANT):**
+- In addition to the hero shot, include at least ONE more SINGLE-PANEL scene (exactly 1 panel) for another high-impact beat.
+- These single-panel scenes should be emotionally intense and visually iconic.
 
 **PROPER ENDING:**
 - Final 2-3 scenes must show resolution (regardless of total scene count)
@@ -277,6 +286,7 @@ You MUST designate exactly ONE scene as the `hero_shot`. This is the most visual
           "environment_details": "string",
           "atmospheric_conditions": "string",
           "story_beat": "string",
+          "emotional_intensity": integer (1-10),
           "character_placement_and_action": "string",
           "character_frame_percentage": integer,
           "environment_frame_percentage": integer,
@@ -302,7 +312,7 @@ You MUST designate exactly ONE scene as the `hero_shot`. This is the most visual
 - ✅ 3-5 scenes marked as "impact" with appropriate visual treatment (single panel each!)
 - ✅ Shot types match emotional weight (close-ups for intimacy, wide shots for establishing)
 - ✅ At least 3-5 scenes use style variations
-- ✅ Total dialogue = 30-60 lines of SPOKEN words only
+- ✅ Total dialogue = 40-120 lines of SPOKEN words only
 - ✅ ZERO internal monologue or narration in dialogue
 - ✅ Emotions shown through visuals, body language, and composition
 - ✅ Story has complete ending

@@ -185,10 +185,10 @@ def get_panel_count_for_scene_type(scene_type: str) -> int:
     """
     recommendations = {
         "action": 4,
-        "dialogue": 3,
+        "dialogue": 2,
         "emotional": 2,
-        "establishing": 2,
-        "transition": 3,
+        "establishing": 1,
+        "transition": 2,
     }
     return recommendations.get(scene_type, 3)
 
@@ -255,12 +255,36 @@ class PanelComposer:
         current_page_panels: List[int] = []
         current_scene_type = None
         page_number = 1
+        
+        # Guarantee at least 1-2 full-page single panels (climax/hero moment)
+        # Even if emotional_intensity isn't populated, pick the best available candidate.
+        hero_panel_index = 0
+        hero_intensity = -1
+        for idx, p in enumerate(panels):
+            intensity = getattr(p, "emotional_intensity", 5)
+            if intensity > hero_intensity:
+                hero_intensity = intensity
+                hero_panel_index = idx
+
+        single_panel_budget = max(1, len(panels) // 12)  # ~2 for 24+ panels
+        extra_single_budget = max(0, single_panel_budget - 1)  # hero doesn't consume budget
+        extra_single_used = 0
 
         for i, panel in enumerate(panels):
             # Check if this panel should be single
-            is_single, reason = should_be_single_panel(panel)
+            if i == hero_panel_index:
+                is_single, reason = True, f"Hero moment (peak emotional intensity {hero_intensity})"
+            else:
+                is_single, reason = should_be_single_panel(panel)
+                # Promote a small number of high-intensity panels to single-page even if < 9
+                if not is_single and extra_single_used < extra_single_budget:
+                    intensity = getattr(panel, "emotional_intensity", 5)
+                    if intensity >= 8:
+                        is_single, reason = True, f"High emotional intensity ({intensity})"
 
             if is_single:
+                if i != hero_panel_index and reason.startswith("High emotional intensity"):
+                    extra_single_used += 1
                 # First, close out any pending page
                 if current_page_panels:
                     pages.append(self._create_page(

@@ -393,8 +393,17 @@ class WebtoonRewriter:
             
             # Validate enhanced panel requirements
             panel_count = len(rewritten_script.panels)
+            original_count = len(original_script.panels)
             from app.config.enhanced_panel_config import get_enhanced_panel_config
             config = get_enhanced_panel_config()
+
+            # Guardrail: never accept a rewrite that regresses panel count
+            if panel_count < original_count:
+                logger.warning(
+                    f"Rewriter regression: panel count decreased from {original_count} to {panel_count}. "
+                    "Discarding rewrite and keeping original script."
+                )
+                return original_script
             
             if not config.validate_panel_count(panel_count):
                 logger.warning(
