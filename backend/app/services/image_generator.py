@@ -416,6 +416,87 @@ class ImageGenerator:
         except Exception as e:
             logger.error(f"Scene image generation with references failed: {str(e)}", exc_info=True)
             raise Exception(f"Scene image generation failed: {str(e)}")
+
+    async def generate_scene_image(
+        self,
+        prompt: str,
+        image_style: str
+    ) -> str:
+        """
+        Generate a scene image from a text prompt (no reference images).
+
+        This is intentionally separate from `generate_character_image` so that
+        environment-only and object-only panels don't get biased toward portraits.
+        """
+        try:
+            logger.info("Generating scene image (text-only)")
+            logger.info(f"Style: {image_style}")
+            logger.info(f"Prompt (first 200 chars): {prompt[:200]}...")
+
+            if not self.use_real_generation:
+                raise Exception("Gemini API not initialized, cannot generate image.")
+
+            settings = get_settings()
+            model_name = settings.model_image_gen
+            logger.info(f"Using model: {model_name}")
+
+            from google.genai import types
+            response = self.client.models.generate_content(
+                model=model_name,
+                contents=[prompt],
+                config=types.GenerateContentConfig(
+                    image_config=types.ImageConfig(
+                        aspect_ratio="9:16",
+                    ),
+                    safety_settings=[
+                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                    ],
+                ),
+            )
+
+            image_bytes = None
+            mime_type = "image/png"
+            if response.candidates and response.candidates[0].content.parts:
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, "inline_data") and part.inline_data:
+                        image_bytes = part.inline_data.data
+                        if hasattr(part.inline_data, "mime_type") and part.inline_data.mime_type:
+                            mime_type = part.inline_data.mime_type
+                        break
+
+            if not image_bytes:
+                logger.error(f"No image in response. Candidates: {response.candidates}")
+                if response.prompt_feedback:
+                    logger.error(f"Prompt feedback: {response.prompt_feedback}")
+                raise Exception("No image data in response")
+
+            if isinstance(image_bytes, bytes):
+                prefix = image_bytes[:20]
+                is_raw_image = prefix.startswith(b"\x89PNG") or prefix.startswith(b"\xff\xd8")
+                if is_raw_image:
+                    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+                else:
+                    try:
+                        image_base64 = image_bytes.decode("utf-8")
+                    except UnicodeDecodeError:
+                        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+            elif isinstance(image_bytes, str):
+                image_base64 = image_bytes
+            else:
+                raise Exception(f"Unexpected image data type: {type(image_bytes)}")
+
+            # Save to cache (use a stable key)
+            self._save_image_to_cache(image_base64, "scene_text_only", mime_type)
+
+            logger.info("Scene image generated successfully (text-only)")
+            return f"data:{mime_type};base64,{image_base64}"
+
+        except Exception as e:
+            logger.error(f"Scene image generation (text-only) failed: {str(e)}", exc_info=True)
+            raise Exception(f"Scene image generation failed: {str(e)}")
     
     def _get_base_style(self, gender: str, description: str = "") -> str:
         """

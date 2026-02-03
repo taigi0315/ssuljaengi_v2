@@ -776,7 +776,27 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
         if character_descriptions:
             character_desc_text = "\n".join(character_descriptions)
         else:
-            character_desc_text = "No specific character reference - generate generic scene"
+            character_desc_text = "No characters should be visible in this panel."
+
+        # High-priority character presence rules (prevents character-overuse)
+        shot_type_raw = str(panel_metadata.get("shot_type", "")).lower()
+        has_visible_characters = bool(active_char_names)
+        if not has_visible_characters:
+            character_presence_instructions = (
+                "- This panel MUST contain NO visible people/characters.\n"
+                "- Focus on environment, atmosphere, or a meaningful object/prop that communicates the story beat.\n"
+                "- Do NOT add random characters in the background.\n"
+                "- If any human body parts appear, it is incorrect."
+            )
+            # Ensure placement text doesn't accidentally ask for characters
+            panel_metadata["character_placement_and_action"] = "No characters visible; environment/object-only storytelling panel"
+        else:
+            character_presence_instructions = (
+                f"- Visible characters (or identifiable body parts) in this panel: {', '.join(active_char_names)}.\n"
+                "- Avoid generic 'two characters staring at each other' staging unless explicitly required by the story beat.\n"
+                "- Use the shot type to emphasize the moment (mouth/hands/eyes for detail or extreme close-ups; reactions for close-ups; context for wide shots).\n"
+                "- Do NOT turn the frame into a centered studio portrait."
+            )
 
         logger.info(f"Character descriptions for prompt:\n{character_desc_text}")
 
@@ -801,6 +821,7 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
         # Build final prompt using the template
         final_prompt = SCENE_IMAGE_TEMPLATE.format(
             character_description=character_desc_text,
+            character_presence_instructions=character_presence_instructions,
             visual_prompt=request.visual_prompt,
             negative_prompt=panel_metadata["negative_prompt"],
             shot_type=panel_metadata["shot_type"],
@@ -870,11 +891,8 @@ async def generate_scene_image(request: "GenerateSceneImageRequest"):
         else:
             # Fallback to text-only generation
             logger.info("No reference images, using text-only generation")
-            # Unpack tuple from generate_character_image
-            image_url, _ = await image_generator.generate_character_image(
-                description=final_prompt,
-                character_name=f"scene_{request.panel_number}",
-                gender="neutral",
+            image_url = await image_generator.generate_scene_image(
+                prompt=final_prompt,
                 image_style=request.genre  # For logging - actual style is in prompt
             )
         
@@ -1773,10 +1791,8 @@ async def generate_page_image(
                     image_style=image_style
                 )
             else:
-                image_url, _ = await image_generator.generate_character_image(
-                    description=prompt,
-                    character_name=f"page_{page_number}",
-                    gender="neutral",
+                image_url = await image_generator.generate_scene_image(
+                    prompt=prompt,
                     image_style=image_style
                 )
         else:
@@ -2287,4 +2303,3 @@ async def get_enhanced_panel_statistics(script_id: str):
             "estimated_generation_time": f"{panel_count * 0.5:.1f}s",  # Rough estimate
         }
     }
-

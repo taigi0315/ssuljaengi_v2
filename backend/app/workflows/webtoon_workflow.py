@@ -45,6 +45,10 @@ class WebtoonWorkflowState(TypedDict):
     evaluation_score: float
     evaluation_feedback: str
     evaluation_issues: list
+    best_webtoon_script: Optional[dict]  # Best attempt across rewrites
+    best_evaluation_score: float
+    best_evaluation_feedback: str
+    best_evaluation_issues: list
     rewrite_count: int
     current_step: str
     error: Optional[str]
@@ -123,13 +127,24 @@ async def webtoon_evaluator_node(state: WebtoonWorkflowState) -> WebtoonWorkflow
             f"valid={evaluation.is_valid}, issues={len(evaluation.issues)}"
         )
         
-        return {
+        updated_state: WebtoonWorkflowState = {
             **state,
             "evaluation_score": evaluation.score,
             "evaluation_feedback": evaluation.feedback,
             "evaluation_issues": evaluation.issues,
             "current_step": "evaluated",
         }
+        
+        # Keep the best-scoring script so later rewrites can't regress panel count/quality
+        prev_best_score = state.get("best_evaluation_score", float("-inf"))
+        if (updated_state["evaluation_score"] >= prev_best_score) or (not state.get("best_webtoon_script")):
+            updated_state["best_webtoon_script"] = script_dict
+            updated_state["best_evaluation_score"] = updated_state["evaluation_score"]
+            updated_state["best_evaluation_feedback"] = updated_state["evaluation_feedback"]
+            updated_state["best_evaluation_issues"] = updated_state["evaluation_issues"]
+            logger.info(f"New best script selected: score={updated_state['best_evaluation_score']}")
+        
+        return updated_state
     except Exception as e:
         logger.error(f"Evaluator node failed: {str(e)}", exc_info=True)
         return {
@@ -212,7 +227,8 @@ async def sfx_enhancer_node(state: WebtoonWorkflowState) -> WebtoonWorkflowState
         Updated state with SFX-enriched script
     """
     try:
-        script_dict = state.get("webtoon_script")
+        # Prefer best attempt across rewrites (prevents last rewrite regression)
+        script_dict = state.get("best_webtoon_script") or state.get("webtoon_script")
         if not script_dict:
             return {
                 **state,
@@ -427,6 +443,10 @@ async def run_webtoon_workflow(story: str, story_genre: str = "MODERN_ROMANCE_DR
         "evaluation_score": 0.0,
         "evaluation_feedback": "",
         "evaluation_issues": [],
+        "best_webtoon_script": None,
+        "best_evaluation_score": float("-inf"),
+        "best_evaluation_feedback": "",
+        "best_evaluation_issues": [],
         "rewrite_count": 0,
         "current_step": "starting",
         "error": None,
@@ -444,8 +464,8 @@ async def run_webtoon_workflow(story: str, story_genre: str = "MODERN_ROMANCE_DR
     if error and current_step != "rewrite_failed_continuing":
         raise Exception(error)
     
-    # Extract the final script
-    script_dict = final_state.get("webtoon_script")
+    # Extract the best script (not necessarily the last attempt)
+    script_dict = final_state.get("best_webtoon_script") or final_state.get("webtoon_script")
     if not script_dict:
         raise Exception("Workflow completed but no script was generated")
     
@@ -459,6 +479,7 @@ async def run_webtoon_workflow(story: str, story_genre: str = "MODERN_ROMANCE_DR
     
     logger.info(
         f"Webtoon workflow complete. Final score: {final_state.get('evaluation_score')}, "
+        f"best score: {final_state.get('best_evaluation_score')}, "
         f"rewrites: {final_state.get('rewrite_count')}, panels: {len(script.panels)}"
     )
     

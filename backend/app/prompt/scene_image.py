@@ -17,7 +17,8 @@ You are precise, detail-oriented, and follow instructions exactly as specified.
    - High-definition quality optimized for vertical scrolling
    - Follow the specified shot type and framing EXACTLY
 
-3. **CHARACTER CONSISTENCY:** Use provided character references
+3. **CHARACTER CONSISTENCY (ONLY IF CHARACTERS ARE VISIBLE IN THIS SHOT):**
+   - If any characters (or identifiable body parts like hands/mouth/eyes) are visible, use provided character references
    - Apply character reference images with 0.65 weight
    - Maintain consistent character appearance throughout
 
@@ -32,6 +33,11 @@ You are precise, detail-oriented, and follow instructions exactly as specified.
 <character_references>
 {character_description}
 </character_references>
+
+<character_presence_rules>
+**STORY-FIRST FRAMING RULES (HIGHEST PRIORITY):**
+{character_presence_instructions}
+</character_presence_rules>
 
 
 

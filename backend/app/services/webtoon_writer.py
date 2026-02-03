@@ -73,7 +73,13 @@ class WebtoonWriter:
         return ", ".join(parts) if parts else "A character in the story"
     
     
-    def _fill_missing_fields_in_dict(self, result: dict) -> dict:
+    def _fill_missing_fields_in_dict(
+        self,
+        result: dict,
+        original_story: str | None = None,
+        story_genre: str | None = None,
+        image_style: str | None = None,
+    ) -> dict:
         """
         Fill in missing fields in the raw dict BEFORE Pydantic validation.
         
@@ -133,9 +139,21 @@ class WebtoonWriter:
         if "scenes" not in result:
             result["scenes"] = []
             
-        # Critical Fallback: If scenes is still empty, create a default scene
+        # Critical Fallback: If scenes is still empty, generate a robust fallback (NOT a single panel)
         if not result["scenes"]:
-            logger.warning("LLM returned empty scenes list. Generating fallback scene to prevent crash.")
+            if original_story and original_story.strip():
+                logger.warning(
+                    "LLM returned empty scenes list. Generating robust fallback script from the original story "
+                    "(prevents 1-panel outputs)."
+                )
+                fallback = self._create_fallback_script(
+                    original_story,
+                    story_genre or "MODERN_ROMANCE_DRAMA",
+                    image_style or "SOFT_ROMANTIC_WEBTOON",
+                )
+                return fallback.model_dump()
+
+            logger.warning("LLM returned empty scenes list and no original story provided. Generating minimal fallback scene.")
             result["scenes"] = [{
                 "scene_number": 1,
                 "scene_type": "story",
@@ -208,7 +226,15 @@ class WebtoonWriter:
                 if "story_beat" not in panel:
                     panel["story_beat"] = "Scene action"
                 if "negative_prompt" not in panel:
-                    panel["negative_prompt"] = "worst quality, low quality, bad anatomy, text, watermark, close-up portrait, headshot, face-only, zoomed face, cropped body, simple background, plain background, empty space, floating character, studio photo, profile picture, character fills frame, minimal environment, blurred background"
+                    panel["negative_prompt"] = (
+                        "worst quality, low quality, blurry, bad anatomy, malformed hands, extra fingers, extra limbs, "
+                        "distorted face, duplicated face, "
+                        "text, speech bubbles, thought bubbles, dialogue bubbles, captions, subtitles, "
+                        "watermark, logo, UI, "
+                        "device frame, border, "
+                        "photorealistic studio portrait, passport photo, profile picture, "
+                        "plain empty background"
+                    )
                 if "character_frame_percentage" not in panel:
                     panel["character_frame_percentage"] = 40
                 if "environment_frame_percentage" not in panel:
@@ -479,7 +505,12 @@ class WebtoonWriter:
             
             # CRITICAL: Fill missing fields in raw dict BEFORE Pydantic validation
             # This prevents validation errors when LLM returns incomplete data
-            result = self._fill_missing_fields_in_dict(result)
+            result = self._fill_missing_fields_in_dict(
+                result,
+                original_story=story,
+                story_genre=story_genre,
+                image_style=image_style,
+            )
             
             # Convert dict to WebtoonScript model (now with all fields filled)
             webtoon_script = WebtoonScript(**result)

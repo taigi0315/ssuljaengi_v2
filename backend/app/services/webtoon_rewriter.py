@@ -382,7 +382,11 @@ class WebtoonRewriter:
             })
             
             # Fill in any missing fields using the existing logic from WebtoonWriter
-            result = self.webtoon_writer._fill_missing_fields_in_dict(result)
+            # If the LLM returns empty scenes/panels, regenerate a robust fallback from the original story.
+            result = self.webtoon_writer._fill_missing_fields_in_dict(
+                result,
+                original_story=original_story,
+            )
             
             # Convert to WebtoonScript
             rewritten_script = WebtoonScript(**result)
