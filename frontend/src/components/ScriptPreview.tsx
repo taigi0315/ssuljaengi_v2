@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { WebtoonScript, StoryGenre, Character, WebtoonPanel } from '@/types';
+import { useState } from 'react';
+import { WebtoonScript, StoryGenre, Character, WebtoonPanel, DialogueLine } from '@/types';
 import { generateWebtoonScript } from '@/lib/apiClient';
 import { formatGenreName } from '@/utils/formatters';
 
@@ -178,10 +178,10 @@ export default function ScriptPreview({
                 {panel.dialogue && Array.isArray(panel.dialogue) && panel.dialogue.length > 0 && (
                   <div className="mt-2 p-2 bg-white rounded border-l-4 border-purple-400">
                     <p className="text-xs text-gray-500 mb-1">💬 Dialogue:</p>
-                    {panel.dialogue.map((line: any, idx: number) => (
+                    {panel.dialogue.map((line: DialogueLine, idx: number) => (
                       <p key={idx} className="text-sm text-gray-800">
                         <span className="font-semibold text-purple-700">{line.character}:</span> 
-                        <span className="italic ml-1">"{line.text}"</span>
+                        <span className="italic ml-1">&quot;{line.text}&quot;</span>
                       </p>
                     ))}
                   </div>

@@ -42,28 +42,33 @@ export default function CharacterImageDisplay({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const prevImagesLengthRef = useRef(images.length);
 
-  // Reset fields when character changes
   useEffect(() => {
-    setName(character.name || '');
-    setGender(character.gender || '');
-    setAge(character.age || '');
+    const timeoutId = window.setTimeout(() => {
+      setName(character.name || '');
+      setGender(character.gender || '');
+      setAge(character.age || '');
 
-    // Map new fields to old UI fields if old ones are missing
-    setFace(character.face || '');
-    setHair(character.hair || '');
-    setBody(character.body || '');
+      setFace(character.face || '');
+      setHair(character.hair || '');
+      setBody(character.body || '');
 
-    setOutfit(character.outfit || '');
-    setMood(character.mood || '');
+      setOutfit(character.outfit || '');
+      setMood(character.mood || '');
 
-    setCurrentImageIndex(0);
-    prevImagesLengthRef.current = images.length;
-  }, [character]);
+      setCurrentImageIndex(0);
+      prevImagesLengthRef.current = images.length;
+    }, 0);
 
-  // Only update index when a NEW image is added (length increases)
+    return () => window.clearTimeout(timeoutId);
+  }, [character, images.length]);
+
   useEffect(() => {
     if (images.length > prevImagesLengthRef.current) {
-      setCurrentImageIndex(images.length - 1);
+      const timeoutId = window.setTimeout(() => {
+        setCurrentImageIndex(images.length - 1);
+      }, 0);
+      prevImagesLengthRef.current = images.length;
+      return () => window.clearTimeout(timeoutId);
     }
     prevImagesLengthRef.current = images.length;
   }, [images.length]);
@@ -399,12 +404,13 @@ export default function CharacterImageDisplay({
             <div className="relative bg-gray-100 rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
               {currentImage && (
                 <div className="flex items-center justify-center p-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={currentImage.image_url}
                     alt={`${character.name} - Image ${currentImageIndex + 1}`}
                     className="max-w-full max-h-[500px] object-contain rounded-lg shadow-lg"
                     onLoad={() => console.log('Image loaded successfully')}
-                    onError={(e) => {
+                    onError={() => {
                       console.error('Image failed to load');
                       console.error('Image URL:', currentImage.image_url);
                       console.error('URL length:', currentImage.image_url.length);
@@ -562,7 +568,7 @@ export default function CharacterImageDisplay({
             <div className="text-6xl mb-4">🖼️</div>
             <p className="text-gray-600">No images generated yet</p>
             <p className="text-sm text-gray-500 mt-2">
-              Click "Generate Image" to create your first character image
+              Click &quot;Generate Image&quot; to create your first character image
             </p>
           </div>
         </div>

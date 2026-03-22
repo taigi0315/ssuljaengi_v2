@@ -94,13 +94,6 @@ const IMAGE_STYLE_METADATA: Record<string, { name: string; description: string; 
   },
 };
 
-// Placeholder image generator using gradients
-const generatePlaceholderImage = (styleId: string) => {
-  const meta = IMAGE_STYLE_METADATA[styleId];
-  if (!meta) return null;
-  return meta.gradient;
-};
-
 export default function ImageStyleSelector({ selectedStyle, onStyleSelect }: ImageStyleSelectorProps) {
   const [styles, setStyles] = useState<ImageStyleOption[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -257,15 +250,18 @@ export default function ImageStyleSelector({ selectedStyle, onStyleSelect }: Ima
 
                   {/* Actual image if available */}
                   {style.previewImage && (
-                    <img
-                      src={style.previewImage}
-                      alt={style.name}
-                      className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 ${selectedStyle === style.id ? 'scale-110' : 'group-hover/card:scale-110'}`}
-                      onError={(e) => {
-                        // Hide image on error, show gradient instead
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={style.previewImage}
+                        alt={style.name}
+                        className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 ${selectedStyle === style.id ? 'scale-110' : 'group-hover/card:scale-110'}`}
+                        onError={(e) => {
+                          // Hide image on error, show gradient instead
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </>
                   )}
 
                   {/* Gradient Overlay */}

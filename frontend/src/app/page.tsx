@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useCallback, useEffect } from 'react';
 import { SearchControls, ResultsList, ErrorMessage, GenreSelector, WebtoonSceneEditor, VideoGenerator, EyeCandyGenerator, WorkflowSelector, ShortsGenerator } from '@/components';
 import StoryTabs from '@/components/StoryTabs';
 import StoryBuilder from '@/components/StoryBuilder';
@@ -10,7 +9,6 @@ import ScriptPreview from '@/components/ScriptPreview';
 import ImageStyleSelector from '@/components/ImageStyleSelector';
 import { SearchCriteria, ViralPost, ErrorState, StoryGenre, ImageStyle, WebtoonScript } from '@/types';
 import { searchCache } from '@/utils/searchCache';
-import { debounce } from '@/utils/debounce';
 import { searchPosts } from '@/lib/apiClient';
 import { useSessionStorage, SESSION_KEYS } from '@/hooks/useSessionStorage';
 
@@ -69,8 +67,6 @@ export default function Home() {
     'gossiptoon_workflowMode',
     'story'
   );
-
-  const router = useRouter();
 
   // Sync with backend on startup - provides "Cache Mode" persistence
   useEffect(() => {
@@ -189,12 +185,6 @@ export default function Home() {
     }
   }, []);
 
-  // Debounced search handler (300ms delay)
-  const debouncedSearch = useMemo(
-    () => debounce(performSearch, 300),
-    [performSearch]
-  );
-
   // Handle search execution
   const handleSearch = useCallback((criteria: SearchCriteria) => {
     // Use immediate execution for button clicks
@@ -212,7 +202,7 @@ export default function Home() {
   const handlePostSelect = useCallback((post: ViralPost) => {
     setSelectedPost(post);
     setCustomStorySeed(''); // Clear custom seed when selecting a post
-  }, []);
+  }, [setCustomStorySeed, setSelectedPost]);
 
   // Handle create story navigation
   const handleCreateStory = useCallback(() => {
@@ -268,7 +258,7 @@ export default function Home() {
     if (tab === 'video' && !webtoonScript) return;
 
     setActiveTab(tab);
-  }, [selectedGenre, generatedStoryId, webtoonScript, selectedImageStyle, workflowMode]);
+  }, [generatedStoryId, selectedImageStyle, setActiveTab, webtoonScript, workflowMode]);
 
   // Handle proceed to shorts from Eye Candy
   const handleProceedToShorts = useCallback((referenceImage: import('@/types').CharacterImage) => {
@@ -280,7 +270,7 @@ export default function Home() {
   const handleGenerateImages = useCallback((storyId: string) => {
     setGeneratedStoryId(storyId);
     setActiveTab('style');
-  }, []);
+  }, [setActiveTab, setGeneratedStoryId]);
 
   // Handle webtoon script generated (called from ScriptPreview)
   const handleScriptGenerated = useCallback((script: WebtoonScript) => {
@@ -332,8 +322,9 @@ export default function Home() {
       setCustomStorySeed('E2E Test Story'); // Dummy to satisfy checks
 
       setActiveTab('video');
-    } catch (e: any) {
-      alert('Failed to load test story: ' + e.message);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      alert('Failed to load test story: ' + message);
     }
   };
 

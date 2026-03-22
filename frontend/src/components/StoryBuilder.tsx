@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ViralPost, Story, WorkflowStatus, StoryGenre } from '@/types';
 import { generateStory, getStoryStatus, getStory } from '@/lib/apiClient';
 import { formatGenreName } from '@/utils/formatters';
@@ -24,43 +24,16 @@ export default function StoryBuilder({ post, customStorySeed, selectedGenre, onG
   // Update edited content when story is loaded
   useEffect(() => {
     if (story) {
-      setEditedContent(story.content);
+      const timeoutId = window.setTimeout(() => {
+        setEditedContent(story.content);
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
     }
   }, [story]);
 
-  // Poll for status updates
-  useEffect(() => {
-    if (workflowId && status?.status === 'in_progress') {
-      const interval = setInterval(() => {
-        pollStatus();
-      }, 2000); // Poll every 2 seconds
-
-      return () => clearInterval(interval);
-    }
-  }, [workflowId, status]);
-
-  // Check for cached story on mount, only generate if no cache
-  useEffect(() => {
-    const cachedStory = sessionStorage.getItem('generatedStory');
-    const cachedGenre = sessionStorage.getItem('storyGenre');
-
-    if (cachedStory && cachedGenre === selectedGenre) {
-      // Use cached story if genre matches
-      try {
-        const parsedStory = JSON.parse(cachedStory);
-        setStory(parsedStory);
-        return;
-      } catch (err) {
-        console.error('Failed to parse cached story:', err);
-      }
-    }
-
-    // No cache or genre changed, generate new story
-    handleGenerateStory();
-  }, []);
-
   // Start story generation
-  const handleGenerateStory = async () => {
+  const handleGenerateStory = useCallback(async () => {
     try {
       setIsGenerating(true);
       setError(null);
@@ -94,10 +67,10 @@ export default function StoryBuilder({ post, customStorySeed, selectedGenre, onG
       setError(err instanceof Error ? err.message : 'Failed to start story generation');
       setIsGenerating(false);
     }
-  };
+  }, [customStorySeed, post, selectedGenre]);
 
   // Poll for workflow status
-  const pollStatus = async () => {
+  const pollStatus = useCallback(async () => {
     if (!workflowId) return;
 
     try {
@@ -124,7 +97,42 @@ export default function StoryBuilder({ post, customStorySeed, selectedGenre, onG
       console.error('Status polling error:', err);
       // Don't set error here, just log it - we'll retry on next poll
     }
-  };
+  }, [selectedGenre, workflowId]);
+
+  // Poll for status updates
+  useEffect(() => {
+    if (workflowId && status?.status === 'in_progress') {
+      const interval = setInterval(() => {
+        void pollStatus();
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
+  }, [pollStatus, status, workflowId]);
+
+  // Check for cached story on mount, only generate if no cache
+  useEffect(() => {
+    const cachedStory = sessionStorage.getItem('generatedStory');
+    const cachedGenre = sessionStorage.getItem('storyGenre');
+
+    if (cachedStory && cachedGenre === selectedGenre) {
+      try {
+        const parsedStory = JSON.parse(cachedStory) as Story;
+        const timeoutId = window.setTimeout(() => {
+          setStory(parsedStory);
+        }, 0);
+        return () => window.clearTimeout(timeoutId);
+      } catch (err) {
+        console.error('Failed to parse cached story:', err);
+      }
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void handleGenerateStory();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [handleGenerateStory, selectedGenre]);
 
   // Handle retry
   const handleRetry = () => {
@@ -276,7 +284,7 @@ export default function StoryBuilder({ post, customStorySeed, selectedGenre, onG
                   }}
                   className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-lg hover:shadow-lg transition-all transform hover:scale-105"
                 >
-                  🎨 Let's Create Webtoon
+                  🎨 Let&apos;s Create Webtoon
                 </button>
               )}
             </div>

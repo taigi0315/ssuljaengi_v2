@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { WebtoonScript, StoryGenre } from '@/types';
+import { useState, useRef } from 'react';
+import { WebtoonScript, StoryGenre, DialogueBubble, DialogueLine, PageImage } from '@/types';
+
+type RenderBubble = Omit<DialogueBubble, 'id'> & { id?: string };
 
 interface VideoGeneratorProps {
   webtoonScript: WebtoonScript;
@@ -28,7 +30,6 @@ const VIDEO_CONFIG = {
 
   // Bubble styling - WEBTOON STYLE (matching frontend EXACTLY)
   BUBBLE_FONT_SIZE: 50,            // Font size for dialogue text
-  BUBBLE_PADDING: 12,              // Reduced padding for tighter bubbles
   BUBBLE_BORDER_RADIUS: 20,        // Matches frontend rounded-[20px]
   BUBBLE_BORDER_WIDTH: 2.5,        // Matches frontend border-[2.5px]
   BUBBLE_BG_COLOR: '#FFFFFF',      // Pure white background
@@ -44,6 +45,7 @@ const VIDEO_CONFIG = {
 };
 
 export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorProps) {
+  void genre;
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0); // 0 to 100
   const [statusText, setStatusText] = useState('');
@@ -112,9 +114,6 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
     console.log('Starting video generation for script:', webtoonScript.script_id);
     console.log('Total panels:', webtoonScript.panels.length);
 
-    // Track the image area for bubble positioning
-    let imageRect = { x: 0, y: 0, width: canvas.width, height: canvas.height };
-
     // Helper to draw image in COVER mode (zoom to fill, crop sides)
     const drawImageCover = async (imageUrl: string) => {
       try {
@@ -129,9 +128,6 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
 
         const x = (canvas.width - width) / 2;
         const y = (canvas.height - height) / 2;
-
-        // Store image rectangle for bubble positioning (will be larger than canvas)
-        imageRect = { x, y, width, height };
 
         // Draw image (centered, cropping sides)
         ctx.fillStyle = '#000';
@@ -180,7 +176,7 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       characterName?: string // Keep for narrator detection only
     ) => {
       const {
-        BUBBLE_PADDING, BUBBLE_BORDER_RADIUS,
+        BUBBLE_BORDER_RADIUS,
         BUBBLE_BORDER_WIDTH, BUBBLE_BG_OPACITY, BUBBLE_BORDER_COLOR, BUBBLE_TEXT_COLOR,
         BUBBLE_SHADOW_OFFSET, BUBBLE_SHADOW_COLOR
       } = VIDEO_CONFIG;
@@ -447,7 +443,7 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
         // Get Bubbles for this page/panel
         // First try page_dialogue_bubbles (new format from WebtoonSceneEditor)
         // Then fallback to dialogue_bubbles, then to panel.dialogue
-        let bubbles: any[] = [];
+        let bubbles: RenderBubble[] = [];
 
         // Extract page number from pageKey (format: "scriptId:pageNum" or just "pageNum")
         const pageNumberForPanel = pageKey ? parseInt(pageKey.split(':').pop() || pageKey) : null;
@@ -463,14 +459,14 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
           console.log(`Panel ${panel.panel_number} using dialogue_bubbles:`, bubbles.length, 'bubbles');
         }
         // Final fallback to panel.dialogue - if multi-panel page, collect all panel dialogues
-        else if (selectedImage && 'panel_indices' in selectedImage && Array.isArray((selectedImage as any).panel_indices)) {
+        else if (selectedImage && 'panel_indices' in selectedImage && Array.isArray((selectedImage as PageImage).panel_indices)) {
           // Multi-panel page - collect dialogues from all panels in this page
-          const pageImg = selectedImage as any;
+          const pageImg = selectedImage as PageImage;
           console.log(`Collecting dialogues from panels:`, pageImg.panel_indices);
           pageImg.panel_indices.forEach((panelIdx: number) => {
             const p = webtoonScript.panels[panelIdx];
             if (p?.dialogue && Array.isArray(p.dialogue)) {
-              p.dialogue.forEach((d: any, idx: number) => {
+              p.dialogue.forEach((d: DialogueLine) => {
                 bubbles.push({
                   text: d.text,
                   characterName: d.character,
@@ -486,7 +482,7 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
         }
         else if (panel.dialogue && Array.isArray(panel.dialogue) && panel.dialogue.length > 0) {
           console.log(`Using fallback dialogue from panel ${panel.panel_number}`);
-          bubbles = panel.dialogue.map((d: any, idx: number) => ({
+          bubbles = panel.dialogue.map((d: DialogueLine, idx: number) => ({
             text: d.text,
             characterName: d.character,
             x: 50,
@@ -669,7 +665,18 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
                   try {
                     // Prepare panel data with bubbles
                     // Group by PAGES (not panels) since page_images contain multi-panel images
-                    const panelsData: any[] = [];
+	                    const panelsData: Array<{
+	                      panel_number: number;
+	                      image_url: string;
+	                      bubbles: Array<{
+                        text: string;
+                        x: number;
+                        y: number;
+                        width?: number;
+                        height?: number;
+                        character_name: string;
+                      }>;
+                    }> = [];
                     const processedPages = new Set<number>();
 
                     webtoonScript.panels.forEach(panel => {
@@ -705,7 +712,7 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
                       }
 
                       // Get bubbles - prioritize page_dialogue_bubbles (new format)
-                      let bubbles: any[] = [];
+                      let bubbles: RenderBubble[] = [];
                       if (pageNumber && webtoonScript.page_dialogue_bubbles?.[pageNumber]) {
                         bubbles = webtoonScript.page_dialogue_bubbles[pageNumber];
                         console.log(`[Video] Page ${pageNumber} using page_dialogue_bubbles:`, bubbles.length, 'bubbles');
@@ -798,12 +805,12 @@ export default function VideoGenerator({ webtoonScript, genre }: VideoGeneratorP
       ) : (
         <div className="space-y-6">
           <div className="aspect-[9/16] max-w-sm mx-auto bg-black rounded-lg overflow-hidden shadow-2xl">
-            <video
-              ref={videoRef}
-              src={videoUrl}
-              controls
-              className="w-full h-full object-contain"
-            />
+              <video
+                ref={videoRef}
+                src={videoUrl}
+                controls
+                className="w-full h-full object-contain"
+              />
           </div>
 
           <div className="flex justify-center gap-4 flex-wrap">

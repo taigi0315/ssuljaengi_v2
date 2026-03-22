@@ -68,10 +68,10 @@ async def test_generate_multi_panel_page_success(mock_image_generator, panels):
     prompt = call_kwargs['contents'][0]
     
     assert "Panel 1: Wide Shot of Hero" in prompt
-    assert "Running fast towards the sunset" in prompt
-    assert "City street with neon signs" in prompt
-    assert "Rainy night" in prompt
-    assert "Style modifiers: High Contrast" in prompt
+    assert "A wide shot of Hero running..." in prompt
+    assert "EXPRESSION:" in prompt
+    assert "High Contrast" in prompt
+    assert "NO TEXT. NO BUBBLES. EXPRESSIONS ONLY." in prompt
     assert "9:16" == call_kwargs['config'].image_config.aspect_ratio
 
 @pytest.mark.asyncio

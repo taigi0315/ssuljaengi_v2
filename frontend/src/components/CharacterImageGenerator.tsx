@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { WebtoonScript, Character, CharacterImage, ImageStyle } from '@/types';
+import { WebtoonScript, Character, ImageStyle } from '@/types';
 import { generateCharacterImage, selectCharacterImage, saveCharacterToLibrary } from '@/lib/apiClient';
 import { formatGenreName } from '@/utils/formatters';
 import CharacterList from './CharacterList';
@@ -24,6 +24,7 @@ export default function CharacterImageGenerator({
   onUpdateScript,
   onProceedToScenes
 }: CharacterImageGeneratorProps) {
+  void storyId;
   // Use the passed script as source of truth
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);

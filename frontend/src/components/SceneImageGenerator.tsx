@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { WebtoonScript, WebtoonPanel, SceneImage, ImageStyle } from '@/types';
-import { generateSceneImage, getSceneImages, selectSceneImage } from '@/lib/apiClient';
+import { WebtoonScript, SceneImage, ImageStyle } from '@/types';
+import { generateSceneImage, selectSceneImage } from '@/lib/apiClient';
 import { formatGenreName } from '@/utils/formatters';
 import SceneSidebar from './SceneSidebar';
 import ScenePromptEditor from './ScenePromptEditor';
@@ -19,7 +19,6 @@ interface SceneImageGeneratorProps {
 export default function SceneImageGenerator({
   webtoonScript,
   imageStyle,
-  onUpdateScript,
   onProceedToVideo
 }: SceneImageGeneratorProps) {
   const [currentPanelIndex, setCurrentPanelIndex] = useState(0);

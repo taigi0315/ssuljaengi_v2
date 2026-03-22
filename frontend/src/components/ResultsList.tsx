@@ -10,7 +10,6 @@ const ResultsList: React.FC<ResultsListProps> = ({
   error,
   selectedPost = null,
   onPostSelect,
-  onCreateStory,
 }) => {
   // Loading state
   if (isLoading) {

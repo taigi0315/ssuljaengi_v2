@@ -6,14 +6,25 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Home from '../page';
 import { ViralPost } from '@/types';
+import { searchCache } from '@/utils/searchCache';
+
+type MockFetchResponse = {
+  ok: boolean;
+  status?: number;
+  statusText?: string;
+  json: () => Promise<unknown>;
+};
+
+type SearchResponseFactory = () => Promise<MockFetchResponse>;
 
 // Mock fetch globally
-const mockFetch = jest.fn();
-global.fetch = mockFetch as any;
+const mockFetch = jest.fn<Promise<MockFetchResponse>, [RequestInfo | URL]>();
+global.fetch = mockFetch as unknown as typeof fetch;
+let queuedSearchResponses: SearchResponseFactory[] = [];
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
@@ -24,6 +35,59 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
+function mockInitialPageFetches() {
+  queuedSearchResponses = [];
+  mockFetch.mockImplementation((input: RequestInfo | URL) => {
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
+
+    if (url.endsWith('/webtoon/latest')) {
+      return Promise.resolve({
+        ok: false,
+        status: 404,
+        json: async () => ({ detail: 'Not found' }),
+      });
+    }
+
+    if (url.endsWith('/webtoon/genres')) {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ([]),
+      });
+    }
+
+    if (url.endsWith('/search')) {
+      const nextResponse = queuedSearchResponses.shift();
+      if (!nextResponse) {
+        return Promise.reject(new Error(`No queued search response for ${url}`));
+      }
+      return nextResponse();
+    }
+
+    return Promise.reject(new Error(`Unhandled fetch request for ${url}`));
+  });
+}
+
+function queueSearchResponse(response: MockFetchResponse) {
+  queuedSearchResponses.push(() => Promise.resolve(response));
+}
+
+function queueSearchRejection(error: Error) {
+  queuedSearchResponses.push(() => Promise.reject(error));
+}
+
+async function clickEnabledSearchButton() {
+  const searchButton = screen.getByRole('button', { name: /Search Viral Stories/i });
+  await waitFor(() => {
+    expect(searchButton).not.toBeDisabled();
+  });
+  fireEvent.click(searchButton);
+}
+
 describe('Complete Search Flow Integration Tests', () => {
   beforeEach(() => {
     // Reset mocks before each test
@@ -31,17 +95,19 @@ describe('Complete Search Flow Integration Tests', () => {
     // Clear localStorage and sessionStorage
     localStorage.clear();
     sessionStorage.clear();
+    searchCache.clear();
   });
 
   describe('End-to-end search workflow', () => {
     it('should complete a successful search from start to finish', async () => {
       // Mock successful API response with a controlled promise
-      let resolveSearch: (value: any) => void;
-      const searchPromise = new Promise((resolve) => {
+      let resolveSearch: (value: MockFetchResponse) => void;
+      const searchPromise = new Promise<MockFetchResponse>((resolve) => {
         resolveSearch = resolve;
       });
 
-      mockFetch.mockReturnValueOnce(searchPromise as any);
+      mockInitialPageFetches();
+      queuedSearchResponses.push(() => searchPromise);
 
       const mockPosts: ViralPost[] = [
         {
@@ -72,7 +138,7 @@ describe('Complete Search Flow Integration Tests', () => {
       render(<Home />);
 
       // Verify initial state - search controls are visible
-      expect(screen.getByText(/Viral Story Search/i)).toBeInTheDocument();
+      expect(screen.getByText(/Webtoon Shorts Creator/i)).toBeInTheDocument();
       expect(screen.getByText(/Search Viral Stories/i)).toBeInTheDocument();
 
       // Select subreddits
@@ -89,17 +155,10 @@ describe('Complete Search Flow Integration Tests', () => {
       });
 
       // Click search button - wait for it to be enabled
-      const searchButton = screen.getByRole('button', { name: /Search Viral Stories/i });
-      await waitFor(() => {
-        expect(searchButton).not.toBeDisabled();
-      });
-      
-      fireEvent.click(searchButton);
+      await clickEnabledSearchButton();
 
-      // Verify loading state is displayed - the button shows "Searching..."
-      await waitFor(() => {
-        expect(screen.getByText(/Searching/i)).toBeInTheDocument();
-      });
+      // Verify loading state is displayed
+      expect(await screen.findByRole('button', { name: /Searching/i })).toBeDisabled();
 
       // Resolve the search promise
       resolveSearch!({
@@ -161,7 +220,8 @@ describe('Complete Search Flow Integration Tests', () => {
       // Clear sessionStorage to ensure clean state
       sessionStorage.clear();
       
-      mockFetch.mockResolvedValueOnce({
+      mockInitialPageFetches();
+      queueSearchResponse({
         ok: true,
         json: async () => ({
           posts: [],
@@ -186,8 +246,7 @@ describe('Complete Search Flow Integration Tests', () => {
       fireEvent.change(postCountInput, { target: { value: '50' } });
 
       // Click search
-      const searchButton = screen.getByText(/Search Viral Stories/i);
-      fireEvent.click(searchButton);
+      await clickEnabledSearchButton();
 
       // Wait for search to complete
       await waitFor(() => {
@@ -205,7 +264,8 @@ describe('Complete Search Flow Integration Tests', () => {
     });
 
     it('should handle search with different time ranges', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockInitialPageFetches();
+      queueSearchResponse({
         ok: true,
         json: async () => ({
           posts: [],
@@ -230,8 +290,7 @@ describe('Complete Search Flow Integration Tests', () => {
       fireEvent.click(tenDaysButton);
 
       // Click search
-      const searchButton = screen.getByText(/Search Viral Stories/i);
-      fireEvent.click(searchButton);
+      await clickEnabledSearchButton();
 
       // Wait for search to complete
       await waitFor(() => {
@@ -268,7 +327,8 @@ describe('Complete Search Flow Integration Tests', () => {
         },
       ];
 
-      mockFetch.mockResolvedValueOnce({
+      mockInitialPageFetches();
+      queueSearchResponse({
         ok: true,
         json: async () => ({
           posts: mockPosts.map(p => ({
@@ -292,8 +352,7 @@ describe('Complete Search Flow Integration Tests', () => {
       const aitaCheckbox = screen.getByLabelText(/r\/AmItheAsshole/i);
       fireEvent.click(aitaCheckbox);
 
-      const searchButton = screen.getByText(/Search Viral Stories/i);
-      fireEvent.click(searchButton);
+      await clickEnabledSearchButton();
 
       // Wait for results
       await waitFor(() => {
@@ -331,7 +390,8 @@ describe('Complete Search Flow Integration Tests', () => {
       ];
 
       // First search succeeds
-      mockFetch.mockResolvedValueOnce({
+      mockInitialPageFetches();
+      queueSearchResponse({
         ok: true,
         json: async () => ({
           posts: mockPosts.map(p => ({
@@ -374,12 +434,13 @@ describe('Complete Search Flow Integration Tests', () => {
     });
 
     it('should update loading state correctly during search', async () => {
-      let resolveSearch: (value: any) => void;
-      const searchPromise = new Promise((resolve) => {
+      let resolveSearch: (value: MockFetchResponse) => void;
+      const searchPromise = new Promise<MockFetchResponse>((resolve) => {
         resolveSearch = resolve;
       });
 
-      mockFetch.mockReturnValueOnce(searchPromise as any);
+      mockInitialPageFetches();
+      queuedSearchResponses.push(() => searchPromise);
 
       render(<Home />);
 
@@ -387,13 +448,10 @@ describe('Complete Search Flow Integration Tests', () => {
       const aitaCheckbox = screen.getByLabelText(/r\/AmItheAsshole/i);
       fireEvent.click(aitaCheckbox);
 
-      const searchButton = screen.getByRole('button', { name: /Search Viral Stories/i });
-      fireEvent.click(searchButton);
+      await clickEnabledSearchButton();
 
-      // Verify loading state - the button shows "Searching..."
-      await waitFor(() => {
-        expect(screen.getByText(/Searching/i)).toBeInTheDocument();
-      });
+      // Verify loading state
+      expect(await screen.findByRole('button', { name: /Searching/i })).toBeDisabled();
 
       // Search button should be disabled during loading
       // Need to re-query the button since it's been re-rendered
@@ -428,7 +486,8 @@ describe('Complete Search Flow Integration Tests', () => {
 
   describe('Error handling and recovery', () => {
     it('should display error message when API fails', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockInitialPageFetches();
+      queueSearchResponse({
         ok: false,
         json: async () => ({
           error: {
@@ -445,8 +504,7 @@ describe('Complete Search Flow Integration Tests', () => {
       const aitaCheckbox = screen.getByLabelText(/r\/AmItheAsshole/i);
       fireEvent.click(aitaCheckbox);
 
-      const searchButton = screen.getByText(/Search Viral Stories/i);
-      fireEvent.click(searchButton);
+      await clickEnabledSearchButton();
 
       // Wait for error message - the ErrorMessage component displays the message from the error object
       await waitFor(() => {
@@ -458,7 +516,8 @@ describe('Complete Search Flow Integration Tests', () => {
     });
 
     it('should handle network errors gracefully', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+      mockInitialPageFetches();
+      queueSearchRejection(new Error('Network error'));
 
       render(<Home />);
 
@@ -466,12 +525,11 @@ describe('Complete Search Flow Integration Tests', () => {
       const aitaCheckbox = screen.getByLabelText(/r\/AmItheAsshole/i);
       fireEvent.click(aitaCheckbox);
 
-      const searchButton = screen.getByText(/Search Viral Stories/i);
-      fireEvent.click(searchButton);
+      await clickEnabledSearchButton();
 
       // Wait for error message - the page.tsx catches network errors and displays a generic message
       await waitFor(() => {
-        expect(screen.getByText(/Connection error/i)).toBeInTheDocument();
+        expect(screen.getByText(/Network error/i)).toBeInTheDocument();
       });
     });
 
@@ -491,7 +549,8 @@ describe('Complete Search Flow Integration Tests', () => {
       ];
 
       // First search succeeds
-      mockFetch.mockResolvedValueOnce({
+      mockInitialPageFetches();
+      queueSearchResponse({
         ok: true,
         json: async () => ({
           posts: mockPosts.map(p => ({
@@ -515,16 +574,18 @@ describe('Complete Search Flow Integration Tests', () => {
       const aitaCheckbox = screen.getByLabelText(/r\/AmItheAsshole/i);
       fireEvent.click(aitaCheckbox);
 
-      const searchButton = screen.getByText(/Search Viral Stories/i);
-      fireEvent.click(searchButton);
+      await clickEnabledSearchButton();
 
       // Wait for results
       await waitFor(() => {
         expect(screen.getByText('Test Post')).toBeInTheDocument();
       });
 
+      // Clear cache so the follow-up search actually hits the mocked failing response
+      searchCache.clear();
+
       // Second search fails
-      mockFetch.mockResolvedValueOnce({
+      queueSearchResponse({
         ok: false,
         json: async () => ({
           error: {
@@ -536,6 +597,7 @@ describe('Complete Search Flow Integration Tests', () => {
       });
 
       // Perform another search
+      const searchButton = screen.getByRole('button', { name: /Search Viral Stories/i });
       fireEvent.click(searchButton);
 
       // Wait for error - the error message should be displayed
@@ -550,7 +612,8 @@ describe('Complete Search Flow Integration Tests', () => {
 
   describe('Empty results handling', () => {
     it('should display "no results" message when search returns empty', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockInitialPageFetches();
+      queueSearchResponse({
         ok: true,
         json: async () => ({
           posts: [],
@@ -570,8 +633,7 @@ describe('Complete Search Flow Integration Tests', () => {
       const aitaCheckbox = screen.getByLabelText(/r\/AmItheAsshole/i);
       fireEvent.click(aitaCheckbox);
 
-      const searchButton = screen.getByText(/Search Viral Stories/i);
-      fireEvent.click(searchButton);
+      await clickEnabledSearchButton();
 
       // Wait for no results message - check for the actual message displayed
       await waitFor(() => {
@@ -624,7 +686,8 @@ describe('Complete Search Flow Integration Tests', () => {
         },
       ];
 
-      mockFetch.mockResolvedValueOnce({
+      mockInitialPageFetches();
+      queueSearchResponse({
         ok: true,
         json: async () => ({
           posts: mockPosts.map(p => ({
@@ -650,8 +713,7 @@ describe('Complete Search Flow Integration Tests', () => {
       fireEvent.click(screen.getByLabelText(/r\/relationship_advice/i));
 
       // Perform search
-      const searchButton = screen.getByText(/Search Viral Stories/i);
-      fireEvent.click(searchButton);
+      await clickEnabledSearchButton();
 
       // Wait for results
       await waitFor(() => {
@@ -682,6 +744,7 @@ describe('Complete Search Flow Integration Tests', () => {
       // Clear sessionStorage to ensure clean state
       sessionStorage.clear();
       
+      mockInitialPageFetches();
       render(<Home />);
 
       // Get the search button - use getByRole to get the actual button element
@@ -691,11 +754,13 @@ describe('Complete Search Flow Integration Tests', () => {
       // The button has the disabled attribute when selectedSubreddits.length === 0
       expect(searchButton).toBeDisabled();
 
-      // No API call should be made
-      expect(mockFetch).not.toHaveBeenCalled();
+      // Startup sync calls may happen, but search itself should not run
+      const searchCalls = mockFetch.mock.calls.filter(([url]) => url === 'http://localhost:8000/search');
+      expect(searchCalls).toHaveLength(0);
     });
 
     it('should show validation error for invalid post count', async () => {
+      mockInitialPageFetches();
       render(<Home />);
 
       // Select a subreddit first

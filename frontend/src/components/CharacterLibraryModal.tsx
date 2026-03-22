@@ -126,11 +126,14 @@ export default function CharacterLibraryModal({ isOpen, onClose, onSelect }: Cha
                                     {/* Image / Avatar */}
                                     <div className="aspect-[3/4] bg-gray-100 relative overflow-hidden">
                                         {item.image_url ? (
-                                            <img
-                                                src={item.image_url}
-                                                alt={item.character.name}
-                                                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-                                            />
+                                            <>
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img
+                                                    src={item.image_url}
+                                                    alt={item.character.name}
+                                                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                                                />
+                                            </>
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
                                                 <span className="text-4xl">👤</span>
@@ -187,7 +190,7 @@ export default function CharacterLibraryModal({ isOpen, onClose, onSelect }: Cha
                             </div>
                             <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Character?</h3>
                             <p className="text-sm text-gray-500 mb-6">
-                                Are you sure you want to delete "{characterToDelete.character.name}"? This action cannot be undone.
+                                Are you sure you want to delete &quot;{characterToDelete.character.name}&quot;? This action cannot be undone.
                             </p>
                             <div className="flex gap-3 justify-center">
                                 <button

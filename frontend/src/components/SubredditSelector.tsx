@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { SubredditSelectorProps, SubredditOption } from '@/types';
 
 const DEFAULT_SUBREDDITS: SubredditOption[] = [

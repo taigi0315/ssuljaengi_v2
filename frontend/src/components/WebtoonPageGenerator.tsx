@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { WebtoonScript, ImageStyle, PageImage, DialogueBubble } from '@/types';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { WebtoonScript, ImageStyle, PageImage, DialogueBubble, DialogueLine } from '@/types';
 import { formatGenreName } from '@/utils/formatters';
 import { getScriptLayout, generatePageImage, selectPageImage } from '@/lib/apiClient';
 
@@ -16,7 +16,7 @@ interface PageLayout {
   panel_indices: number[];
   layout_type: string;
   is_single_panel: boolean;
-  reasoning: string;
+  reasoning?: string;
 }
 
 export default function WebtoonPageGenerator({
@@ -83,7 +83,7 @@ export default function WebtoonPageGenerator({
     }
   }, [webtoonScript.page_images, webtoonScript.page_dialogue_bubbles]);
 
-  const updateScriptBubbles = (pageNum: number, bubbles: DialogueBubble[]) => {
+  const updateScriptBubbles = useCallback((pageNum: number, bubbles: DialogueBubble[]) => {
       if (onUpdateScript) {
           const updatedBubbles = { ...(webtoonScript.page_dialogue_bubbles || {}), [pageNum]: bubbles };
           onUpdateScript({
@@ -91,7 +91,7 @@ export default function WebtoonPageGenerator({
               page_dialogue_bubbles: updatedBubbles
           });
       }
-  };
+  }, [onUpdateScript, webtoonScript]);
 
   const handleGeneratePage = async (page: PageLayout) => {
     if (isGenerating[page.page_number]) return;
@@ -158,16 +158,6 @@ export default function WebtoonPageGenerator({
       } catch (err) {
           console.error("Failed to select image:", err);
       }
-  };
-
-  const handleDownload = (imageUrl: string, pageNum: number) => {
-    const link = document.createElement('a');
-    link.href = imageUrl; // Assuming base64 or valid URL
-    // If base64 strip logic needed, insert here. Currently keeping simple.
-    link.download = `webtoon_page_${pageNum}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   // --- Dialogue Drag & Drop Logic ---
@@ -273,7 +263,7 @@ export default function WebtoonPageGenerator({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [draggingBubble, resizingBubble, pageBubbles]); // Added pageBubbles to dep array for updateScriptBubbles reference logic check? No, state is fresh in setter. But accessing pageBubbles inside handleMouseUp needs it.
+  }, [draggingBubble, pageBubbles, resizingBubble, updateScriptBubbles]);
 
 
   if (isLoading) {
@@ -318,7 +308,7 @@ export default function WebtoonPageGenerator({
                  // Assuming dialogue is object or parsed properly in backend
                  // For now, assume consistent backend format List[dict]
                  if (Array.isArray(panel.dialogue)) {
-                     return panel.dialogue.map((d: any) => ({ characterName: d.character || 'Unknown', text: d.text || '' }));
+                     return panel.dialogue.map((d: DialogueLine) => ({ characterName: d.character || 'Unknown', text: d.text || '' }));
                  }
                  return [];
             });

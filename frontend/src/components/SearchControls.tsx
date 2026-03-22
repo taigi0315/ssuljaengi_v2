@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { SearchControlsProps, SearchCriteria } from '@/types';
-import { validateSearchCriteria, validatePostCount } from '@/utils/validation';
+import { validatePostCount } from '@/utils/validation';
 import { searchCache } from '@/utils/searchCache';
 import TimeRangeSelector from './TimeRangeSelector';
 import SubredditSelector from './SubredditSelector';
@@ -63,8 +63,7 @@ export default function SearchControls({ onSearch, isLoading }: SearchControlsPr
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [hasAttemptedSearch, setHasAttemptedSearch] = useState(false);
 
-  // Validate all fields and update error state
-  const validateAllFields = (): boolean => {
+  const computedValidationErrors = useMemo(() => {
     const errors: ValidationErrors = {};
 
     // Validate subreddits
@@ -84,22 +83,15 @@ export default function SearchControls({ onSearch, isLoading }: SearchControlsPr
       errors.timeRange = 'Invalid time range selected';
     }
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Validate on field changes if user has attempted search
-  useEffect(() => {
-    if (hasAttemptedSearch) {
-      validateAllFields();
-    }
-  }, [timeRange, selectedSubreddits, postCount, hasAttemptedSearch]);
+    return errors;
+  }, [postCount, selectedSubreddits, timeRange]);
 
   // Handle search button click
   const handleSearch = () => {
     setHasAttemptedSearch(true);
+    setValidationErrors(computedValidationErrors);
 
-    if (!validateAllFields()) {
+    if (Object.keys(computedValidationErrors).length > 0) {
       return;
     }
 
@@ -118,8 +110,8 @@ export default function SearchControls({ onSearch, isLoading }: SearchControlsPr
     // Invalidate cache entries for the old time range
     searchCache.invalidate({ timeRange: timeRange as '1h' | '1d' | '10d' | '100d' });
     // Clear time range error when changed
-    if (validationErrors.timeRange) {
-      setValidationErrors(prev => ({ ...prev, timeRange: undefined }));
+    if (hasAttemptedSearch) {
+      setValidationErrors(prev => ({ ...prev, timeRange: computedValidationErrors.timeRange }));
     }
   };
 
@@ -127,18 +119,18 @@ export default function SearchControls({ onSearch, isLoading }: SearchControlsPr
   const handleSubredditChange = (subreddits: string[]) => {
     setSelectedSubreddits(subreddits);
     // Clear subreddit error when subreddits are selected
-    if (subreddits.length > 0 && validationErrors.subreddits) {
-      setValidationErrors(prev => ({ ...prev, subreddits: undefined }));
+    if (hasAttemptedSearch) {
+      const subredditError = subreddits.length === 0 ? 'Please select at least one subreddit' : undefined;
+      setValidationErrors(prev => ({ ...prev, subreddits: subredditError }));
     }
   };
 
   // Handle post count change
   const handlePostCountChange = (count: number) => {
     setPostCount(count);
-    // Clear post count error when valid count is entered
     const error = validatePostCount(count);
-    if (!error && validationErrors.postCount) {
-      setValidationErrors(prev => ({ ...prev, postCount: undefined }));
+    if (hasAttemptedSearch) {
+      setValidationErrors(prev => ({ ...prev, postCount: error || undefined }));
     }
   };
 

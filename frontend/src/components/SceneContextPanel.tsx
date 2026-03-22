@@ -1,6 +1,6 @@
 'use client';
 
-import { WebtoonPanel } from '@/types';
+import { DialogueLine, WebtoonPanel } from '@/types';
 
 interface SceneContextPanelProps {
   panel: WebtoonPanel;
@@ -13,10 +13,14 @@ export default function SceneContextPanel({
   onGenerateImage,
   isGenerating,
 }: SceneContextPanelProps) {
-  // Parse dialogue into multiple lines if needed
-  const dialogueLines = panel.dialogue
-    ? panel.dialogue.split('\n').filter(line => line.trim())
-    : [];
+  const dialogueLines =
+    typeof panel.dialogue === 'string'
+      ? panel.dialogue.split('\n').filter((line) => line.trim())
+      : Array.isArray(panel.dialogue)
+        ? panel.dialogue
+            .map((line: DialogueLine) => `${line.character}: ${line.text}`.trim())
+            .filter((line) => line.trim())
+        : [];
 
   return (
     <div className="w-64 bg-green-400 rounded-lg overflow-hidden flex flex-col">

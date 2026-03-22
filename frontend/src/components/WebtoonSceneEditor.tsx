@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { WebtoonScript, ImageStyle, PageImage, DialogueBubble, SfxEffect } from '@/types';
+import { WebtoonScript, ImageStyle, PageImage, DialogueBubble, DialogueLine } from '@/types';
 import { formatGenreName } from '@/utils/formatters';
 import { getScriptLayout, generatePageImage, selectPageImage } from '@/lib/apiClient';
 
@@ -16,7 +16,7 @@ interface PageLayout {
   panel_indices: number[];
   layout_type: string;
   is_single_panel: boolean;
-  reasoning: string;
+  reasoning?: string;
 }
 
 interface EditableDialogue {
@@ -152,7 +152,7 @@ export default function WebtoonSceneEditor({
       const panel = webtoonScript.panels[panelIdx];
       if (!panel?.dialogue || !Array.isArray(panel.dialogue)) return;
 
-      panel.dialogue.forEach((d: any, idx: number) => {
+      panel.dialogue.forEach((d: DialogueLine, idx: number) => {
         dialogues.push({
           id: `${panelIdx}-${idx}`,
           characterName: d.character || 'Unknown',
@@ -889,7 +889,7 @@ export default function WebtoonSceneEditor({
             currentScene.panel_indices.forEach((panelIdx: number) => {
               const panel = webtoonScript.panels[panelIdx];
               if (panel?.sfx_effects && Array.isArray(panel.sfx_effects)) {
-                panel.sfx_effects.forEach((sfx: any) => {
+                panel.sfx_effects.forEach((sfx) => {
                   sceneSfx.push({
                     type: sfx.type || 'effect',
                     description: sfx.description || '',
@@ -974,7 +974,7 @@ export default function WebtoonSceneEditor({
                         {bubble.characterName.substring(0, 8)}
                       </span>
                       <span className="truncate flex-1 text-gray-600">
-                        "{bubble.text.substring(0, 25)}{bubble.text.length > 25 ? '...' : ''}"
+                        &quot;{bubble.text.substring(0, 25)}{bubble.text.length > 25 ? '...' : ''}&quot;
                       </span>
                       <button
                         onClick={() => handleDeleteBubble(bubble.id)}

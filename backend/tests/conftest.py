@@ -8,11 +8,54 @@ import pytest
 
 # Add backend app to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from app.config.enhanced_panel_config import update_enhanced_panel_config
 
 # Set environment variables for testing
 os.environ.setdefault("REDDIT_CLIENT_ID", "test_client_id")
 os.environ.setdefault("REDDIT_CLIENT_SECRET", "test_client_secret")
 os.environ.setdefault("GOOGLE_API_KEY", "test_google_api_key")
+
+
+@pytest.fixture(autouse=True)
+def reset_enhanced_panel_config():
+    """Keep shared enhanced panel config isolated between tests."""
+    update_enhanced_panel_config(
+        panel_count_min=20,
+        panel_count_max=50,
+        panel_count_ideal_min=25,
+        panel_count_ideal_max=40,
+        single_panel_ratio=0.6,
+        max_multi_panel_size=3,
+        max_panels_per_scene=8,
+        min_panels_per_scene=1,
+        act1_panel_ratio=0.25,
+        act2_panel_ratio=0.50,
+        act3_panel_ratio=0.25,
+        enable_caching=True,
+        enable_progress_tracking=True,
+        progress_threshold=30,
+        preserve_legacy_multi_panel=True,
+        legacy_multi_panel_max_size=5,
+    )
+    yield
+    update_enhanced_panel_config(
+        panel_count_min=20,
+        panel_count_max=50,
+        panel_count_ideal_min=25,
+        panel_count_ideal_max=40,
+        single_panel_ratio=0.6,
+        max_multi_panel_size=3,
+        max_panels_per_scene=8,
+        min_panels_per_scene=1,
+        act1_panel_ratio=0.25,
+        act2_panel_ratio=0.50,
+        act3_panel_ratio=0.25,
+        enable_caching=True,
+        enable_progress_tracking=True,
+        progress_threshold=30,
+        preserve_legacy_multi_panel=True,
+        legacy_multi_panel_max_size=5,
+    )
 
 
 @pytest.fixture

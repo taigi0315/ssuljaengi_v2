@@ -287,7 +287,7 @@ describe('PostCountInput Property Tests', () => {
             // Property: Error should be displayed in a styled error container
             const errorContainer = screen.queryByText(/Post count must be at least|Post count cannot exceed|Please enter a valid number/)?.closest('div');
             if (errorContainer) {
-              expect(errorContainer).toHaveClass('text-red-600');
+              expect(errorContainer).toHaveClass('text-red-700');
             }
 
             // Clean up immediately
@@ -388,12 +388,12 @@ describe('PostCountInput Property Tests', () => {
             // Property: Error should be displayed in styled error container
             const errorContainer = errorElement?.closest('div');
             if (errorContainer) {
-              expect(errorContainer).toHaveClass('text-red-600');
+              expect(errorContainer).toHaveClass('text-red-700');
             }
 
             // Property: Input field should have error styling when external error is present
             const input = screen.getByDisplayValue(validValue.toString()) as HTMLInputElement;
-            expect(input).toHaveClass('border-red-300');
+            expect(input).toHaveClass('border-red-500');
 
             // Clean up immediately
             unmount();

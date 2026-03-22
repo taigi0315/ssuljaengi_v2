@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { WebtoonScript, WebtoonPanel, SceneImage, ImageStyle, Character, DialogueBubble } from '@/types';
+import { useState, useEffect, useRef } from 'react';
+import { WebtoonScript, ImageStyle, Character, DialogueBubble, DialogueLine } from '@/types';
 import { generateSceneImage, selectSceneImage } from '@/lib/apiClient';
 import { formatGenreName } from '@/utils/formatters';
 
@@ -159,12 +159,12 @@ export default function SceneImageGeneratorV2({
   const currentBubbles = webtoonScript.dialogue_bubbles?.[currentPanel?.panel_number] || [];
 
   // Parse dialogue from panel
-  const parseDialogues = (dialogue: any): { characterName: string; text: string }[] => {
+  const parseDialogues = (dialogue: WebtoonScript['panels'][number]['dialogue']): { characterName: string; text: string }[] => {
     if (!dialogue) return [];
 
     // Check if dialogue is already in list object format
     if (Array.isArray(dialogue)) {
-      return dialogue.map((line: any) => ({
+      return dialogue.map((line: DialogueLine) => ({
         characterName: line.character || 'Character',
         text: line.text || ''
       }));
@@ -620,6 +620,7 @@ export default function SceneImageGeneratorV2({
           >
             {currentImage ? (
               <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={currentImage.image_url}
                   alt={`Scene Panel ${currentPanel.panel_number}`}
@@ -735,7 +736,7 @@ export default function SceneImageGeneratorV2({
                 <div className="text-center text-gray-400">
                   <div className="text-6xl mb-4">🖼️</div>
                   <p className="text-lg font-medium">No image yet</p>
-                  <p className="text-sm">Click "Generate Scene Image" to create</p>
+                  <p className="text-sm">Click &quot;Generate Scene Image&quot; to create</p>
                 </div>
               </div>
             )}

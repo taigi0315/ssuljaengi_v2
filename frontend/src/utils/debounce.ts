@@ -3,7 +3,7 @@
  * Useful for search inputs to avoid excessive API calls
  */
 
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => void>(
   func: T,
   delay: number
 ): (...args: Parameters<T>) => void {
@@ -25,7 +25,7 @@ export function debounce<T extends (...args: any[]) => any>(
  * Debounce with immediate execution option
  * Executes immediately on first call, then debounces subsequent calls
  */
-export function debounceImmediate<T extends (...args: any[]) => any>(
+export function debounceImmediate<T extends (...args: unknown[]) => void>(
   func: T,
   delay: number
 ): (...args: Parameters<T>) => void {
@@ -58,7 +58,7 @@ export function debounceImmediate<T extends (...args: any[]) => any>(
  * Throttle utility for limiting function execution rate
  * Ensures function is called at most once per specified interval
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => void>(
   func: T,
   interval: number
 ): (...args: Parameters<T>) => void {

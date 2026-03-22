@@ -5,8 +5,8 @@ This module defines Pydantic models for story generation requests, responses,
 workflow status tracking, and evaluation results.
 """
 
-from pydantic import BaseModel, Field, field_validator
-from typing import Optional, Literal, List
+from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Optional, Literal, List, Any
 from datetime import datetime
 from enum import Enum
 from app.prompt.story_genre import STORY_GENRE_PROMPTS
@@ -748,11 +748,53 @@ class WebtoonScript(BaseModel):
         max_items=20
     )
     scenes: List[WebtoonScene] = Field(
-        ..., 
+        default_factory=list,
         description="List of sequential scenes (8-20 recommended).",
-        min_items=1,
         max_items=50
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_scenes_from_legacy_panels(cls, data: Any) -> Any:
+        """
+        Accept legacy payloads that still pass flat `panels` lists.
+
+        The release 2.x integration moved the canonical schema to `scenes`,
+        but a large part of the existing code and tests still instantiate
+        `WebtoonScript(characters=[...], panels=[...])`. To preserve backward
+        compatibility we automatically wrap those panels into one-panel scenes.
+        """
+        if not isinstance(data, dict):
+            return data
+
+        if data.get("scenes"):
+            return data
+
+        legacy_panels = data.get("panels")
+        if not legacy_panels:
+            return data
+
+        scenes: list[dict[str, Any]] = []
+        for idx, panel in enumerate(legacy_panels, start=1):
+            if isinstance(panel, WebtoonPanel):
+                panel_payload = panel.model_dump()
+            else:
+                panel_payload = dict(panel)
+            panel_payload.setdefault("scene_number", idx)
+            scenes.append(
+                {
+                    "scene_number": idx,
+                    "scene_type": "story",
+                    "scene_title": panel_payload.get("story_beat", "") or f"Scene {idx}",
+                    "panels": [panel_payload],
+                    "is_hero_shot": False,
+                    "hero_video_prompt": None,
+                }
+            )
+
+        patched = dict(data)
+        patched["scenes"] = scenes
+        return patched
     
     @property
     def panels(self) -> List[WebtoonPanel]:

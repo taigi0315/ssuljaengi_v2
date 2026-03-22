@@ -315,6 +315,7 @@ export default function ShortsGenerator({ referenceImage }: ShortsGeneratorProps
                                     <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg p-4 border-2 border-dashed border-gray-300">
                                         {sceneImages[scene.scene_id] ? (
                                             <>
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                                 <img
                                                     src={sceneImages[scene.scene_id]}
                                                     alt={`Scene ${scene.scene_id}`}
@@ -331,7 +332,7 @@ export default function ShortsGenerator({ referenceImage }: ShortsGeneratorProps
                                             <div className="text-center py-12">
                                                 <div className="text-6xl mb-4">🖼️</div>
                                                 <p className="text-gray-500 font-semibold">
-                                                    Click "Generate Image" to create
+                                                    Click &quot;Generate Image&quot; to create
                                                 </p>
                                             </div>
                                         )}

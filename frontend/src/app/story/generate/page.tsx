@@ -1,64 +1,51 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ViralPost, Story, WorkflowStatus, StoryGenre } from '@/types';
 import { generateStory, getStoryStatus, getStory } from '@/lib/apiClient';
 
 export default function StoryGeneratePage() {
-  const [post, setPost] = useState<ViralPost | null>(null);
-  const [genre, setGenre] = useState<StoryGenre>('MODERN_ROMANCE_DRAMA');
+  const [post] = useState<ViralPost | null>(() => {
+    if (typeof window === 'undefined') return null;
+
+    const storedPost = sessionStorage.getItem('selectedPost');
+    if (!storedPost) return null;
+
+    try {
+      return JSON.parse(storedPost) as ViralPost;
+    } catch {
+      return null;
+    }
+  });
+  const [genre] = useState<StoryGenre>(() => {
+    if (typeof window === 'undefined') return 'MODERN_ROMANCE_DRAMA';
+    return (sessionStorage.getItem('selectedGenre') as StoryGenre) || 'MODERN_ROMANCE_DRAMA';
+  });
   const [story, setStory] = useState<Story | null>(null);
   const [status, setStatus] = useState<WorkflowStatus | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(() => post !== null);
+  const [error, setError] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+
+    const storedPost = sessionStorage.getItem('selectedPost');
+    if (!storedPost) {
+      return 'No post selected. Please go back and select a post.';
+    }
+
+    try {
+      JSON.parse(storedPost);
+      return null;
+    } catch {
+      return 'Failed to load selected post';
+    }
+  });
   const [workflowId, setWorkflowId] = useState<string | null>(null);
 
   const router = useRouter();
 
-  // Load selected post and genre from sessionStorage
-  useEffect(() => {
-    const storedPost = sessionStorage.getItem('selectedPost');
-    const storedGenre = sessionStorage.getItem('selectedGenre');
-    
-    if (storedGenre) {
-      setGenre(storedGenre as StoryGenre);
-    }
-    
-    if (storedPost) {
-      try {
-        const parsedPost = JSON.parse(storedPost);
-        setPost(parsedPost);
-      } catch (err) {
-        setError('Failed to load selected post');
-        setIsLoading(false);
-      }
-    } else {
-      setError('No post selected. Please go back and select a post.');
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Start story generation when post is loaded
-  useEffect(() => {
-    if (post && !workflowId) {
-      startStoryGeneration();
-    }
-  }, [post, workflowId]);
-
-  // Poll for status updates
-  useEffect(() => {
-    if (workflowId && status?.status === 'in_progress') {
-      const interval = setInterval(() => {
-        pollStatus();
-      }, 2000); // Poll every 2 seconds
-
-      return () => clearInterval(interval);
-    }
-  }, [workflowId, status]);
-
   // Start story generation
-  const startStoryGeneration = async () => {
+  const startStoryGeneration = useCallback(async () => {
     if (!post) return;
 
     try {
@@ -84,10 +71,10 @@ export default function StoryGeneratePage() {
       setError(err instanceof Error ? err.message : 'Failed to start story generation');
       setIsLoading(false);
     }
-  };
+  }, [genre, post]);
 
   // Poll for workflow status
-  const pollStatus = async () => {
+  const pollStatus = useCallback(async () => {
     if (!workflowId) return;
 
     try {
@@ -110,7 +97,29 @@ export default function StoryGeneratePage() {
       console.error('Status polling error:', err);
       // Don't set error here, just log it - we'll retry on next poll
     }
-  };
+  }, [workflowId]);
+
+  // Start story generation when post is loaded
+  useEffect(() => {
+    if (post && !workflowId) {
+      const timeoutId = window.setTimeout(() => {
+        void startStoryGeneration();
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
+    }
+  }, [post, startStoryGeneration, workflowId]);
+
+  // Poll for status updates
+  useEffect(() => {
+    if (workflowId && status?.status === 'in_progress') {
+      const interval = setInterval(() => {
+        void pollStatus();
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
+  }, [pollStatus, status, workflowId]);
 
   // Handle retry
   const handleRetry = () => {

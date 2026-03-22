@@ -197,7 +197,7 @@ export interface StoryRequest {
   postTitle: string;
   postContent: string;
   genre: StoryGenre;
-  options?: Record<string, any>;
+  options?: Record<string, unknown>;
 }
 
 export interface Story {
@@ -206,7 +206,7 @@ export interface Story {
   evaluationScore: number;
   rewriteCount: number;
   createdAt: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface StoryResponse {
@@ -250,6 +250,11 @@ export interface SfxEffect {
   details?: string;
 }
 
+export interface DialogueLine {
+  character: string;
+  text: string;
+}
+
 export interface Character {
   name: string;
   gender: string;
@@ -269,7 +274,7 @@ export interface WebtoonPanel {
   shot_type: string;
   active_character_names: string[];
   visual_prompt: string;
-  dialogue?: string;
+  dialogue?: string | DialogueLine[];
   sfx_effects?: SfxEffect[];
 }
 
@@ -366,4 +371,3 @@ export interface ShortsScript {
   metadata: ShortsScriptMetadata;
   scenes: ShortsScene[];
 }
-

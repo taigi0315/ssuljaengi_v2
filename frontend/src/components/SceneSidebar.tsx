@@ -45,11 +45,14 @@ export default function SceneSidebar({
               {/* Thumbnail or placeholder */}
               <div className="aspect-video bg-gray-600 rounded overflow-hidden mb-2">
                 {imageUrl ? (
-                  <img
-                    src={imageUrl}
-                    alt={`Scene ${panel.panel_number}`}
-                    className="w-full h-full object-cover"
-                  />
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imageUrl}
+                      alt={`Scene ${panel.panel_number}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
                     No image

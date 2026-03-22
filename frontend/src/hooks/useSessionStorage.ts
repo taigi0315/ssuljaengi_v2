@@ -10,22 +10,25 @@ export function useSessionStorage<T>(
   key: string,
   initialValue: T
 ): [T, (value: T | ((prev: T) => T)) => void, () => void] {
-  // Initialize state with initialValue to match server-side rendering
-  const [storedValue, setStoredValue] = useState<T>(initialValue);
-
-  // Hydrate from storage after mount (client-side only)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
+  const readStoredValue = useCallback((): T => {
+    if (typeof window === 'undefined') {
+      return initialValue;
+    }
 
     try {
       const item = window.sessionStorage.getItem(key);
-      if (item) {
-        setStoredValue(JSON.parse(item));
-      }
+      return item ? (JSON.parse(item) as T) : initialValue;
     } catch (error) {
       console.warn(`Error reading sessionStorage key "${key}":`, error);
+      return initialValue;
     }
-  }, [key]);
+  }, [initialValue, key]);
+
+  const [storedValue, setStoredValue] = useState<T>(readStoredValue);
+
+  useEffect(() => {
+    setStoredValue(readStoredValue());
+  }, [readStoredValue]);
 
   // Setter function that updates both state and storage
   const setValue = useCallback((value: T | ((prev: T) => T)) => {

@@ -4,7 +4,6 @@ import { StoryGenre, StoryGenreOption } from '@/types';
 import { useState, useEffect, useRef } from 'react';
 import { getGenres } from '@/lib/apiClient';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import Image from 'next/image';
 
 // Import genre preview images
 // Import genre preview images
@@ -263,6 +262,7 @@ export default function GenreSelector({ selectedGenre, onGenreSelect }: GenreSel
           >
             {/* Preview Image */}
             <div className="aspect-[3/4] bg-gray-100 relative overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={genre.previewImage}
                 alt={genre.name}

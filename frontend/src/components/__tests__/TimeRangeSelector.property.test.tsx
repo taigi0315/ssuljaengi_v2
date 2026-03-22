@@ -3,7 +3,6 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import * as fc from 'fast-check';
 import TimeRangeSelector from '../TimeRangeSelector';
-import { TimeRangeOption } from '@/types';
 
 describe('TimeRangeSelector Property Tests', () => {
   // Clean up after each test to prevent DOM pollution

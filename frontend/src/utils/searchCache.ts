@@ -125,7 +125,7 @@ export class SearchCache {
         if (shouldInvalidate) {
           keysToDelete.push(key);
         }
-      } catch (error) {
+      } catch {
         // Invalid key format, delete it
         keysToDelete.push(key);
       }
