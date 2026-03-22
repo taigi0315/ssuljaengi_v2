@@ -45,15 +45,16 @@ Gossiptoon V2 is a monorepo containing:
 - 🎨 **Webtoon Generation** - Transform stories into webtoon-style scripts
 - 🖼️ **AI Image Generation** - Generate character and scene images using Gemini
 - 🎞️ **Multi-Panel Generation** - Create consistent vertical webtoon pages with multiple panels using structured prompts
+- 🤖 **Phase 4 Agent Pipeline** - Story analysis, scene planning, cinematography, mood, SFX, and panel composition modules for higher-quality webtoon output
 - 🎬 **Video Assembly** - Create video content from generated assets
 - ⚡ **Response Caching** - Optimized performance with intelligent caching
 - 🔐 **CORS-enabled API** - Secure frontend-backend communication
 
-### 🔄 Planned Features
+### 🔄 Active Improvement Areas
 
-- LangGraph workflow orchestration enhancements
+- Enhanced LangGraph workflow orchestration stabilization
+- Additional prompt tuning and evaluation loops for higher-quality webtoon output
 - Multiple AI provider support for image generation
-- Enhanced story customization options
 
 ---
 

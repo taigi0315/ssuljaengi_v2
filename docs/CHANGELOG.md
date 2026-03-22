@@ -51,6 +51,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `release/2.0.0` webtoon generation baseline adopted as the active mainline.
+- Phase 4 agent modules for scene planning, cinematography, mood design, SFX, and panel composition are now included in the main integration branch.
+- Enhanced workflow artifacts and quality-focused prompt tooling from `release/2.1.0` were brought forward for continued iteration.
+
+### Changed
+
+- Multi-panel generation now carries richer expression context and character reference details into prompt construction.
+- Panel composition rules were expanded to better support denser story beats and single-panel climax moments.
+- The webtoon writer prompt was updated to the latest `release/2.1.0` quality-tuning version.
+
+### Documentation
+
+- Documentation index links were aligned with the current repository layout.
+- Feature overview and release work notes for the `2.x` webtoon quality effort were preserved in the docs set.
+
 ### Planned
 
 - Enhanced LangGraph workflow orchestration
