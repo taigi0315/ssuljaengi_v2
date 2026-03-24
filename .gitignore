@@ -29,6 +29,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+# Don't ignore frontend source lib (only Python build dirs above)
+!frontend/src/lib/
 parts/
 sdist/
 var/
