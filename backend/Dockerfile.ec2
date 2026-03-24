@@ -1,0 +1,35 @@
+# ── Gossiptoon V2 Backend – EC2 Production Image ──────────────────────────────
+# Python FastAPI + Uvicorn
+# Build context: ssuljaengi_v2/backend/
+# ------------------------------------------------------------------------------
+
+FROM python:3.11-slim
+
+# System deps (ffmpeg for video generation, curl for health-check)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Non-root user
+RUN useradd -m -u 1000 gossiptoon
+
+WORKDIR /app
+
+# Install Python dependencies first (layer-cache friendly)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application source
+COPY . .
+
+# Ensure data/cache directories exist with correct ownership
+RUN mkdir -p data cache && chown -R gossiptoon:gossiptoon /app
+
+USER gossiptoon
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

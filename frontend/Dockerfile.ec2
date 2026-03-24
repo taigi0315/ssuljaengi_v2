@@ -1,0 +1,44 @@
+# ── Gossiptoon V2 Frontend – EC2 Production Image ─────────────────────────────
+# Next.js 16 – multi-stage build with standalone output
+# Build context: ssuljaengi_v2/frontend/
+# ------------------------------------------------------------------------------
+
+# ── Stage 1: install deps ──────────────────────────────────────────────────────
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# ── Stage 2: build ─────────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Receive the public API URL at build time so Next.js can bake it in
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+RUN npm run build
+
+# ── Stage 3: runtime ───────────────────────────────────────────────────────────
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+RUN addgroup -S gossiptoon && adduser -S gossiptoon -G gossiptoon
+
+# Copy only what next start needs (no dev deps, no source)
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+
+USER gossiptoon
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD wget -qO- http://localhost:3000/ > /dev/null || exit 1
+
+CMD ["npm", "start"]
