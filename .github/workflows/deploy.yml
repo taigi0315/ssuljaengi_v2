@@ -3,6 +3,7 @@
 #
 # Required GitHub Secrets:
 #   EC2_HOST              Public IP or hostname of your EC2 instance
+#   EC2_PUBLIC_IP         Same value as EC2_HOST (used by pages.yml too)
 #   EC2_SSH_KEY           Private SSH key (PEM, begins with -----BEGIN RSA...)
 #   REDDIT_CLIENT_ID      Reddit API client ID
 #   REDDIT_CLIENT_SECRET  Reddit API client secret
